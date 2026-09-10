@@ -14,7 +14,7 @@ use App\Http\Controllers\Api\UserRoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('login', [AuthController::class, 'login']);
+Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
     Route::get('me', [AuthController::class, 'me']);
