@@ -78,6 +78,7 @@ class AnnouncementAuthorizationTest extends TestCase
             'content' => 'Scheduled maintenance',
             'department_id' => $department->id,
             'created_by' => $announcementAuthor->id,
+            'is_visible' => true,
         ]);
 
         $commenter = User::query()->create([
@@ -96,8 +97,7 @@ class AnnouncementAuthorizationTest extends TestCase
         $this->assertDatabaseHas('comments', [
             'content' => 'Thanks for the heads up',
             'user_id' => $commenter->id,
-            'commentable_type' => Announcement::class,
-            'commentable_id' => $announcement->id,
+            'announcement_id' => $announcement->id,
         ]);
     }
 

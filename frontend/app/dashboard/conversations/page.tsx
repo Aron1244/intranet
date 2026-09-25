@@ -186,7 +186,7 @@ export default function ConversationsPage() {
         const [meResponse, conversationsResponse, usersResponse] = await Promise.all([
           apiFetch<MeResponse>("/me", { method: "GET" }),
           apiFetch<Conversation[]>("/conversations", { method: "GET" }),
-          apiFetch<{ data: AppUser[] }>("/users", { method: "GET" }),
+          apiFetch<{ data: AppUser[] }>("/chat-partners", { method: "GET" }),
         ]);
 
         if (!ignore) {

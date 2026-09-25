@@ -32,6 +32,7 @@ class CommentTest extends TestCase
             'content' => 'Test content for announcement',
             'department_id' => $department->id,
             'created_by' => $user->id,
+            'is_visible' => true,
         ]);
 
         // Try to comment

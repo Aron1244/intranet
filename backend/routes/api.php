@@ -24,9 +24,13 @@ Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
         return $request->user();
     });
 
-    Route::apiResource('users', UserController::class);
-    Route::get('users/{user}/roles', [UserRoleController::class, 'index']);
-    Route::put('users/{user}/roles', [UserRoleController::class, 'update']);
+    Route::get('chat-partners', [UserController::class, 'chatPartners']);
+
+    Route::middleware('admin')->group(function (): void {
+        Route::apiResource('users', UserController::class);
+        Route::get('users/{user}/roles', [UserRoleController::class, 'index']);
+        Route::put('users/{user}/roles', [UserRoleController::class, 'update']);
+    });
 });
 
 Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
