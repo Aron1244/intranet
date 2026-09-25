@@ -13,12 +13,17 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'department_id'])]
+#[Fillable(['name', 'email', 'password', 'department_id', 'es_lider', 'onboarding_pendiente'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+
+    protected $attributes = [
+        'es_lider' => false,
+        'onboarding_pendiente' => true,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -30,6 +35,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'es_lider' => 'boolean',
+            'onboarding_pendiente' => 'boolean',
         ];
     }
 
@@ -61,6 +68,8 @@ class User extends Authenticatable
             ->where(function ($query): void {
                 $query->where('name', 'admin')
                     ->orWhere('name', 'CTO')
+                    ->orWhere('name', 'Administrador')
+                    ->orWhere('name', 'Líder')
                     ->orWhere('can_post_announcements', true);
             })
             ->exists();
