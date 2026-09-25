@@ -34,8 +34,16 @@ Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
 });
 
 Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
-    Route::apiResource('roles', RoleController::class);
+    Route::get('roles', [RoleController::class, 'index']);
+    Route::get('roles/{role}', [RoleController::class, 'show']);
     Route::get('departments/{department}/roles', [RoleController::class, 'byDepartment']);
+});
+
+Route::middleware(['api', 'auth:sanctum', 'admin'])->group(function (): void {
+    Route::post('roles', [RoleController::class, 'store']);
+    Route::put('roles/{role}', [RoleController::class, 'update']);
+    Route::patch('roles/{role}', [RoleController::class, 'update']);
+    Route::delete('roles/{role}', [RoleController::class, 'destroy']);
 });
 
 Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
