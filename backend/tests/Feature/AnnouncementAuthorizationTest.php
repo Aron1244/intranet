@@ -13,12 +13,12 @@ class AnnouncementAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_cto_role_can_create_department_announcement(): void
+    public function test_administrador_role_can_create_department_announcement(): void
     {
         $department = Department::query()->create(['name' => 'IT']);
-        $role = Role::query()->create(['name' => 'CTO']);
+        $role = Role::query()->firstOrCreate(['name' => 'Administrador']);
         $user = User::query()->create([
-            'name' => 'CTO User',
+            'name' => 'Admin User',
             'email' => 'cto@example.com',
             'password' => 'password',
             'department_id' => $department->id,

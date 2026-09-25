@@ -65,13 +65,7 @@ class User extends Authenticatable
     public function canManageAnnouncements(): bool
     {
         return $this->roles()
-            ->where(function ($query): void {
-                $query->where('name', 'admin')
-                    ->orWhere('name', 'CTO')
-                    ->orWhere('name', 'Administrador')
-                    ->orWhere('name', 'Líder')
-                    ->orWhere('can_post_announcements', true);
-            })
+            ->whereIn('name', Role::ROLES_QUE_PUEDEN_PUBLICAR)
             ->exists();
     }
 }
