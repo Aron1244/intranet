@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDocumentRequest;
 use App\Models\Conversation;
 use App\Models\Document;
 use App\Models\Message;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MessageController extends Controller
 {
@@ -35,12 +38,26 @@ class MessageController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'content' => 'nullable|string',
-            'attachment' => 'nullable|file|max:20480',
-            'document_id' => 'nullable|exists:documents,id',
-        ]);
+        try {
+            $request->validate([
+                'conversation_id' => 'required|exists:conversations,id',
+                'content' => 'nullable|string',
+                'attachment' => 'nullable|file|max:20480|mimes:'.implode(',', StoreDocumentRequest::allowedMimes()),
+                'document_id' => 'nullable|exists:documents,id',
+            ]);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $messages) {
+                foreach ($messages as $message) {
+                    if (str_contains($message, 'must be a file of type')) {
+                        throw new HttpResponseException(response()->json([
+                            'message' => 'El tipo de archivo no es permitido.',
+                            'errors' => $e->errors(),
+                        ], 415));
+                    }
+                }
+            }
+            throw $e;
+        }
 
         $conversation = Conversation::query()->findOrFail($request->integer('conversation_id'));
         abort_unless(
@@ -66,7 +83,7 @@ class MessageController extends Controller
             ]);
         }
 
-        if (!$document && $request->filled('document_id')) {
+        if (! $document && $request->filled('document_id')) {
             $document = Document::query()->findOrFail($request->integer('document_id'));
             $this->ensureDocumentAccess($document);
         }
@@ -74,7 +91,7 @@ class MessageController extends Controller
         $content = trim((string) $request->input('content', ''));
 
         abort_if(
-            $content === '' && !$document,
+            $content === '' && ! $document,
             422,
             'Debes enviar contenido o un archivo.'
         );

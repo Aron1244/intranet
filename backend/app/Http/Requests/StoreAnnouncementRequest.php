@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\RejectsMimeMismatch;
 use App\Models\Announcement;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAnnouncementRequest extends FormRequest
 {
+    use RejectsMimeMismatch;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,7 +33,11 @@ class StoreAnnouncementRequest extends FormRequest
             'is_visible' => ['sometimes', 'boolean'],
             'publish_all' => ['sometimes', 'boolean'],
             'attachments' => ['sometimes', 'array'],
-            'attachments.*' => ['file', 'max:20480'],
+            'attachments.*' => [
+                'file',
+                'max:20480',
+                'mimes:'.implode(',', StoreDocumentRequest::allowedMimes()),
+            ],
         ];
     }
 }
