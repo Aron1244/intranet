@@ -39,15 +39,22 @@ Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
 });
 
 Route::middleware(['api', 'auth:sanctum'])->group(function (): void {
-    Route::apiResource('departments', DepartmentController::class);
-
     Route::get('documents/{document}/download', [DocumentController::class, 'download']);
     Route::apiResource('documents', DocumentController::class);
 
+    Route::get('departments', [DepartmentController::class, 'index']);
+    Route::get('departments/{department}', [DepartmentController::class, 'show']);
     Route::get(
         'departments/{department}/folders',
         [DepartmentFolderController::class, 'index']
     );
+});
+
+Route::middleware(['api', 'auth:sanctum', 'admin'])->group(function (): void {
+    Route::post('departments', [DepartmentController::class, 'store']);
+    Route::put('departments/{department}', [DepartmentController::class, 'update']);
+    Route::patch('departments/{department}', [DepartmentController::class, 'update']);
+    Route::delete('departments/{department}', [DepartmentController::class, 'destroy']);
 
     Route::post(
         'departments/{department}/folders',
