@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Announcement;
+use App\Models\Document;
 use App\Policies\AnnouncementPolicy;
+use App\Policies\DocumentPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
+        Gate::policy(Document::class, DocumentPolicy::class);
 
         RateLimiter::for('login', function (Request $request): Limit {
             $email = strtolower((string) $request->input('email', ''));

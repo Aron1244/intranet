@@ -9,9 +9,8 @@ use App\Models\Department;
 use App\Models\DepartmentFolder;
 use App\Models\Document;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
@@ -30,7 +29,7 @@ class DocumentController extends Controller
             ->latest();
 
         $isAdmin = $user->roles()->where('name', 'admin')->exists();
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $query->where(function ($subQuery) use ($user): void {
                 $subQuery
                     ->where('user_id', $user->id)
@@ -60,13 +59,13 @@ class DocumentController extends Controller
 
                 $origin = [
                     'type' => 'chat',
-                    'label' => 'Chat: ' . ($conversation->name ?: ('Conversacion ' . $conversation->id)),
+                    'label' => 'Chat: '.($conversation->name ?: ('Conversacion '.$conversation->id)),
                     'conversation_id' => (int) $conversation->id,
                 ];
             } elseif ($document->folder) {
                 $origin = [
                     'type' => 'folder',
-                    'label' => 'Carpeta: ' . $document->folder->name,
+                    'label' => 'Carpeta: '.$document->folder->name,
                     'folder_id' => (int) $document->folder->id,
                 ];
             }
@@ -84,15 +83,17 @@ class DocumentController extends Controller
 
     public function store(StoreDocumentRequest $request): JsonResponse
     {
+        $this->authorize('create', Document::class);
+
         $user = auth()->user();
         abort_unless($user, 401);
 
         $validated = $request->validated();
 
         $folder = null;
-        if (!empty($validated['department_folder_id'])) {
+        if (! empty($validated['department_folder_id'])) {
             $folder = DepartmentFolder::query()->findOrFail((int) $validated['department_folder_id']);
-            $this->ensureDepartmentAccess((int) $folder->department_id);
+            $this->authorize('uploadToDepartment', [Document::class, (int) $folder->department_id]);
         }
 
         $file = $request->file('file');
@@ -119,7 +120,7 @@ class DocumentController extends Controller
 
     public function show(Document $document): JsonResponse
     {
-        $this->ensureDocumentAccess($document);
+        $this->authorize('view', $document);
 
         return response()->json([
             'data' => $document,
@@ -128,7 +129,7 @@ class DocumentController extends Controller
 
     public function download(Document $document): StreamedResponse
     {
-        $this->ensureDocumentAccess($document);
+        $this->authorize('view', $document);
 
         $downloadName = $document->original_name ?: ($document->title ?: 'documento');
         $headers = [
@@ -144,20 +145,20 @@ class DocumentController extends Controller
 
     public function update(UpdateDocumentRequest $request, Document $document): JsonResponse
     {
-        $this->ensureDocumentAccess($document, mustOwnOrAdmin: true);
+        $this->authorize('update', $document);
 
         $validated = $request->validated();
 
-        if (!empty($validated['department_folder_id'])) {
+        if (! empty($validated['department_folder_id'])) {
             $folder = DepartmentFolder::query()->findOrFail((int) $validated['department_folder_id']);
-            $this->ensureDepartmentAccess((int) $folder->department_id);
+            $this->authorize('uploadToDepartment', [Document::class, (int) $folder->department_id]);
         }
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $directory = isset($folder)
                 ? "documents/department/{$folder->department_id}/{$folder->id}"
-                : "documents/general/" . auth()->id();
+                : 'documents/general/'.auth()->id();
 
             $validated['file_path'] = $file->store($directory, 'public');
             $validated['original_name'] = $file->getClientOriginalName();
@@ -174,7 +175,7 @@ class DocumentController extends Controller
 
     public function destroy(Document $document): JsonResponse
     {
-        $this->ensureDocumentAccess($document, mustOwnOrAdmin: true);
+        $this->authorize('delete', $document);
 
         $document->delete();
 
@@ -187,9 +188,10 @@ class DocumentController extends Controller
         DepartmentFolder $folder
     ): JsonResponse {
         abort_unless((int) $folder->department_id === (int) $department->id, 404);
-        $this->ensureDepartmentAccess((int) $department->id);
 
-        $user = auth()->user();
+        $this->authorize('uploadToDepartment', [Document::class, (int) $department->id]);
+
+        $user = $request->user();
         abort_unless($user, 401);
 
         $validated = $request->validated();
@@ -213,59 +215,5 @@ class DocumentController extends Controller
         return response()->json([
             'data' => $document,
         ], 201);
-    }
-
-    private function ensureDepartmentAccess(int $departmentId): void
-    {
-        $user = auth()->user();
-        abort_unless($user, 401);
-
-        if ($user->roles()->where('name', 'admin')->exists()) {
-            return;
-        }
-
-        abort_unless((int) $user->department_id === $departmentId, 403);
-    }
-
-    private function ensureDocumentAccess(Document $document, bool $mustOwnOrAdmin = false): void
-    {
-        $user = auth()->user();
-        abort_unless($user, 401);
-
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
-        if ($isAdmin) {
-            return;
-        }
-
-        $isOwner = (int) $document->user_id === (int) $user->id;
-        if ($mustOwnOrAdmin) {
-            abort_unless($isOwner, 403);
-            return;
-        }
-
-        if ($isOwner || $document->visibility === 'public') {
-            return;
-        }
-
-        if (
-            $document->visibility === 'department' &&
-            $document->folder &&
-            (int) $document->folder->department_id === (int) $user->department_id
-        ) {
-            return;
-        }
-
-        $isSharedInUserConversation = $document
-            ->messages()
-            ->whereHas('conversation.users', function ($conversationUserQuery) use ($user): void {
-                $conversationUserQuery->whereKey($user->id);
-            })
-            ->exists();
-
-        if ($isSharedInUserConversation) {
-            return;
-        }
-
-        abort(403);
     }
 }
