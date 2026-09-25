@@ -122,4 +122,9 @@ Route::middleware('auth:sanctum')->group(function () {
         [ConversationController::class, 'store']
     );
 
+    Route::post(
+        '/conversations/{conversation}/read',
+        [ConversationController::class, 'markAsRead']
+    );
+
 });

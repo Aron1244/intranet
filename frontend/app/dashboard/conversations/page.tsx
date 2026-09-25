@@ -30,6 +30,7 @@ type Conversation = {
   }>;
   created_at: string;
   updated_at: string;
+  unread_count?: number;
 };
 
 type AppUser = {
@@ -97,7 +98,6 @@ type IncomingMessageNotice = {
 };
 
 const CHAT_SYNC_CHANNEL = "pr-intra-front-chat-sync";
-const UNREAD_STORAGE_KEY_PREFIX = "pr-intra-front-unread";
 const MAX_ATTACHMENT_SIZE_BYTES = 20 * 1024 * 1024;
 
 export default function ConversationsPage() {
@@ -185,15 +185,21 @@ export default function ConversationsPage() {
       try {
         const [meResponse, conversationsResponse, usersResponse] = await Promise.all([
           apiFetch<MeResponse>("/me", { method: "GET" }),
-          apiFetch<Conversation[]>("/conversations", { method: "GET" }),
+          apiFetch<{ data: Conversation[] }>("/conversations", { method: "GET" }),
           apiFetch<{ data: AppUser[] }>("/chat-partners", { method: "GET" }),
         ]);
 
         if (!ignore) {
           setUser(meResponse.data);
-          setConversations(conversationsResponse);
+          const conversationsList = conversationsResponse.data;
+          setConversations(conversationsList);
           setUsers(usersResponse.data);
-          setSelectedConversationId((current) => current ?? conversationsResponse[0]?.id ?? null);
+          setUnreadByConversation(
+            Object.fromEntries(
+              conversationsList.map((c) => [c.id, c.unread_count ?? 0]),
+            ),
+          );
+          setSelectedConversationId((current) => current ?? conversationsList[0]?.id ?? null);
         }
       } catch (error) {
         if (!ignore) {
@@ -407,7 +413,6 @@ export default function ConversationsPage() {
 
   const activeMatchedMessageId =
     matchedMessageIds.length > 0 ? matchedMessageIds[activeSearchMatchIndex] ?? null : null;
-  const unreadStorageKey = user?.id ? `${UNREAD_STORAGE_KEY_PREFIX}:${user.id}` : null;
 
   const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const container = messagesContainerRef.current;
@@ -481,43 +486,6 @@ export default function ConversationsPage() {
     },
     [],
   );
-
-  useEffect(() => {
-    if (!unreadStorageKey || typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      const storedUnread = window.sessionStorage.getItem(unreadStorageKey);
-      if (!storedUnread) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUnreadByConversation({});
-        return;
-      }
-
-      const parsedUnread = JSON.parse(storedUnread) as Record<string, number>;
-      const normalizedUnread: Record<number, number> = {};
-
-      for (const [conversationId, count] of Object.entries(parsedUnread)) {
-        const numericConversationId = Number(conversationId);
-        if (!Number.isNaN(numericConversationId) && count > 0) {
-          normalizedUnread[numericConversationId] = count;
-        }
-      }
-
-      setUnreadByConversation(normalizedUnread);
-    } catch {
-      setUnreadByConversation({});
-    }
-  }, [unreadStorageKey]);
-
-  useEffect(() => {
-    if (!unreadStorageKey || typeof window === "undefined") {
-      return;
-    }
-
-    window.sessionStorage.setItem(unreadStorageKey, JSON.stringify(unreadByConversation));
-  }, [unreadByConversation, unreadStorageKey]);
 
   useEffect(() => {
     if (!successMessage) {
@@ -683,6 +651,23 @@ export default function ConversationsPage() {
 
     return String(count);
   }, []);
+  const refetchConversationUnreadCounts = useCallback(async () => {
+    try {
+      const response = await apiFetch<{ data: Conversation[] }>(
+        "/conversations",
+        { method: "GET" },
+      );
+      setConversations(response.data);
+      setUnreadByConversation(
+        Object.fromEntries(
+          response.data.map((c) => [c.id, c.unread_count ?? 0]),
+        ),
+      );
+    } catch {
+      // silent: keep optimistic state
+    }
+  }, []);
+
   const markConversationAsRead = useCallback((conversationId: number) => {
     setUnreadByConversation((current) => {
       if (!current[conversationId]) {
@@ -693,7 +678,11 @@ export default function ConversationsPage() {
       delete next[conversationId];
       return next;
     });
-  }, []);
+
+    void apiFetch(`/conversations/${conversationId}/read`, {
+      method: "POST",
+    }).then(() => refetchConversationUnreadCounts());
+  }, [refetchConversationUnreadCounts]);
 
   const appendIncomingMessage = useCallback(
     (incomingMessage: ChatMessage) => {

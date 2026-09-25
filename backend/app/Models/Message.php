@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Message extends Model
 {
@@ -41,5 +42,10 @@ class Message extends Model
     public function document()
     {
         return $this->belongsTo(Document::class);
+    }
+
+    public function reads(): HasMany
+    {
+        return $this->hasMany(MessageRead::class);
     }
 }
