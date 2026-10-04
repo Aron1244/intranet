@@ -32,12 +32,11 @@ export function isLeader(user: RoleAwareUser): boolean {
 }
 
 export function isCollaborator(user: RoleAwareUser): boolean {
-  if (!user || !Array.isArray(user.roles)) {
-    return false;
+  if (!isAdministrator(user) && !isLeader(user)) {
+    return true;
   }
 
-  const isOnlyCollaborator = user.roles.length === 1 && user.roles[0]?.name === ROLE_COLABORADOR;
-  return isOnlyCollaborator;
+  return false;
 }
 
 export function isNewHire(user: RoleAwareUser): boolean {

@@ -5,13 +5,17 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 
 type MeResponse = {
   data: {
     id: number;
     name: string;
     email: string;
+    department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
+    can_manage_announcements?: boolean;
     roles?: Array<{
       id: number;
       name: string;
@@ -447,6 +451,8 @@ export default function DepartmentsPage() {
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdministrator(user)}
+          isLeader={isLeader(user)}
+          isNewHire={isNewHire(user)}
           activeRoute="departments"
           statusMessage={
             isLoadingDepartments

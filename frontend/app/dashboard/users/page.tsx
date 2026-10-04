@@ -5,13 +5,16 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 
 type MeResponse = {
   data: {
     id: number;
     name: string;
     email: string;
+    department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
     roles?: Array<{
       id: number;
@@ -322,6 +325,8 @@ export default function UsersPage() {
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdministrator(user)}
+          isLeader={isLeader(user)}
+          isNewHire={isNewHire(user)}
           canManageAnnouncements={Boolean(user?.can_manage_announcements)}
           activeRoute="users"
           statusMessage={isLoadingUser || isLoadingUsers ? "Cargando usuarios..." : errorMessage ? errorMessage : "Usuarios sincronizados"}

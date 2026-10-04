@@ -6,13 +6,16 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { getConversationChannelName, getEcho } from "@/lib/echo-client";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
 
 type MeResponse = {
   data: {
     id: number;
     name: string;
     email: string;
+    department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
     roles?: Array<{
       id: number;
@@ -229,7 +232,12 @@ export default function ConversationsPage() {
   }, []);
 
   const isAdmin = isAdministrator(user);
+  const isUserLeader = isLeader(user);
+  const isUserNewHire = isNewHire(user);
+  const isUserCollaborator = isCollaborator(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
+  const canCreateConversation = !isUserCollaborator;
+  const canDeleteConversation = isAdmin && !isUserCollaborator;
   const currentUserDepartmentId = useMemo(
     () => users.find((candidate) => candidate.id === user?.id)?.department_id ?? null,
     [user?.id, users],
@@ -1352,7 +1360,7 @@ export default function ConversationsPage() {
   };
 
   const handleDeleteConversation = async (conversation: Conversation) => {
-    if (!isAdmin) {
+    if (!canDeleteConversation) {
       return;
     }
 
@@ -1383,7 +1391,7 @@ export default function ConversationsPage() {
   };
 
   const handleDeleteMessage = async (message: ChatMessage) => {
-    if (!isAdmin) {
+    if (!canDeleteConversation) {
       return;
     }
 
@@ -1443,6 +1451,8 @@ export default function ConversationsPage() {
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdmin}
+          isLeader={isUserLeader}
+          isNewHire={isUserNewHire}
           canManageAnnouncements={canManageAnnouncements}
           activeRoute="conversations"
           statusMessage={isLoadingUser || isLoadingConversations ? "Cargando conversaciones..." : errorMessage ? errorMessage : "Conversaciones sincronizadas"}
@@ -1524,7 +1534,7 @@ export default function ConversationsPage() {
                           </p>
                         </button>
 
-                        {isAdmin ? (
+                        {canDeleteConversation ? (
                           <div className="mt-4 flex justify-end">
                             <button
                               type="button"
@@ -1544,10 +1554,10 @@ export default function ConversationsPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">
-                          {isAdmin ? "Admin" : "Chat"}
+                          {isUserCollaborator ? "Solo lectura" : isAdmin ? "Admin" : "Chat"}
                         </p>
                         <h4 className="mt-1 text-lg font-semibold tracking-tight text-intra-secondary">
-                          Iniciar chat nuevo
+                          {isUserCollaborator ? "Tu buzon" : "Iniciar chat nuevo"}
                         </h4>
                       </div>
                       <span className="rounded-full bg-white px-3 py-1 text-sm font-medium text-intra-secondary">
@@ -1558,10 +1568,10 @@ export default function ConversationsPage() {
                     <button
                       type="button"
                       onClick={() => void openCreateChatModal()}
-                      disabled={!isAdmin && currentUserDepartmentId === null}
+                      disabled={!canCreateConversation || (!isAdmin && currentUserDepartmentId === null)}
                       className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl bg-intra-primary px-4 text-base font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Nuevo chat
+                      {isUserCollaborator ? "Acceso solo lectura" : "Nuevo chat"}
                     </button>
                     {!isAdmin && currentUserDepartmentId === null ? (
                       <p className="mt-2 text-xs text-intra-secondary/70">
@@ -1670,7 +1680,7 @@ export default function ConversationsPage() {
                                   <span className="font-semibold">{message.sender_name}</span>
                                   <div className="flex items-center gap-2">
                                     <span>{new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                                    {isAdmin ? (
+                                    {canDeleteConversation ? (
                                       <button
                                         type="button"
                                         onClick={() => void handleDeleteMessage(message)}
@@ -1829,7 +1839,7 @@ export default function ConversationsPage() {
                 <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-3xl border border-intra-border bg-white p-5 shadow-2xl">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">{isAdmin ? "Admin" : "Chat"}</p>
+                      <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">{isUserCollaborator ? "Solo lectura" : isAdmin ? "Admin" : "Chat"}</p>
                       <h4 className="mt-1 text-xl font-semibold text-intra-secondary">Crear nuevo chat</h4>
                     </div>
                     <button

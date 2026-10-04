@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 
 type DocumentsViewMode = "all" | "chat" | "department" | "other";
 
@@ -14,6 +14,9 @@ type MeResponse = {
     id: number;
     name: string;
     email: string;
+    department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
     roles?: Array<{
       id: number;
@@ -182,6 +185,8 @@ export default function DocumentsPage() {
   }, [successMessage]);
 
   const isAdmin = isAdministrator(user);
+  const isUserLeader = isLeader(user);
+  const isUserNewHire = isNewHire(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedDocuments = useMemo(
@@ -371,6 +376,8 @@ export default function DocumentsPage() {
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdmin}
+          isLeader={isUserLeader}
+          isNewHire={isUserNewHire}
           canManageAnnouncements={canManageAnnouncements}
           activeRoute="documents"
           statusMessage={isLoadingUser || isLoadingDocuments ? "Cargando documentos..." : errorMessage ? errorMessage : "Documentos sincronizados"}

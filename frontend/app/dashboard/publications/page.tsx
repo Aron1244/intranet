@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -13,6 +13,8 @@ type MeResponse = {
     name: string;
     email: string;
     department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
     roles?: Array<{
       id: number;
@@ -242,6 +244,9 @@ export default function PublicationsPage() {
   }, [loadAnnouncements]);
 
   const isAdmin = isAdministrator(user);
+  const isUserLeader = isLeader(user);
+  const isUserNewHire = isNewHire(user);
+  const isUserCollaborator = isCollaborator(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedAnnouncements = useMemo(
@@ -273,9 +278,13 @@ export default function PublicationsPage() {
         return true;
       }
 
+      if (isUserCollaborator) {
+        return false;
+      }
+
       return user?.department_id !== null && user?.department_id === announcement.department_id;
     },
-    [isAdmin, user?.department_id],
+    [isAdmin, isUserCollaborator, user?.department_id],
   );
 
   const resetForm = () => {
@@ -541,6 +550,8 @@ export default function PublicationsPage() {
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdmin}
+          isLeader={isUserLeader}
+          isNewHire={isUserNewHire}
           canManageAnnouncements={canManageAnnouncements}
           activeRoute="publications"
           statusMessage={isLoadingUser || isLoadingAnnouncements ? "Cargando publicaciones..." : errorMessage ? errorMessage : "Publicaciones sincronizadas"}

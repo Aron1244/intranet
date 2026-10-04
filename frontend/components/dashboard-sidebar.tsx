@@ -7,6 +7,7 @@ type SidebarRoute = {
   label: string;
   href: string;
   active?: boolean;
+  highlighted?: boolean;
 };
 
 type DashboardSidebarProps = {
@@ -15,14 +16,18 @@ type DashboardSidebarProps = {
     email: string;
   } | null;
   isAdmin: boolean;
+  isLeader?: boolean;
+  isNewHire?: boolean;
   canManageAnnouncements?: boolean;
-  activeRoute: "dashboard" | "conversations" | "documents" | "publications" | "users" | "departments";
+  activeRoute: "dashboard" | "conversations" | "documents" | "publications" | "users" | "departments" | "tasks" | "onboarding";
   statusMessage: string;
 };
 
 export function DashboardSidebar({
   user,
   isAdmin,
+  isLeader = false,
+  isNewHire = false,
   canManageAnnouncements = false,
   activeRoute,
   statusMessage,
@@ -84,6 +89,14 @@ export function DashboardSidebar({
     });
   }
 
+  if (isLeader && !isAdmin) {
+    routes.push({
+      label: "Tareas",
+      href: "/dashboard/tasks",
+      active: activeRoute === "tasks",
+    });
+  }
+
   if (isAdmin) {
     routes.push({
       label: "Departamentos",
@@ -94,6 +107,15 @@ export function DashboardSidebar({
       label: "Usuarios",
       href: "/dashboard/users",
       active: activeRoute === "users",
+    });
+  }
+
+  if (isNewHire) {
+    routes.push({
+      label: "Panel Novedades",
+      href: "/dashboard/onboarding",
+      active: activeRoute === "onboarding",
+      highlighted: true,
     });
   }
 
@@ -217,22 +239,32 @@ export function DashboardSidebar({
           <p className="mt-1 text-sm font-semibold">{user?.name ?? "Cargando..."}</p>
           <p className="text-xs text-white/70">{user?.email ?? ""}</p>
           <p className="mt-3 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide">
-            {isAdmin ? "admin" : "usuario"}
+            {isAdmin ? "Administrador" : isLeader ? "Líder" : isNewHire ? "Nuevo Ingreso" : "Colaborador"}
           </p>
         </div>
 
         <nav data-onboarding="routes" className="mt-6 space-y-1.5">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={`flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                route.active ? "bg-white/15 text-white" : "text-white/85 hover:bg-white/10"
-              }`}
-            >
-              {route.label}
-            </Link>
-          ))}
+          {routes.map((route) => {
+            const baseClass = "flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm transition";
+            const toneClass = route.highlighted
+              ? "bg-intra-primary/20 text-white ring-1 ring-intra-primary/60 hover:bg-intra-primary/30"
+              : route.active
+                ? "bg-white/15 text-white"
+                : "text-white/85 hover:bg-white/10";
+
+            return (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={`${baseClass} ${toneClass}`}
+              >
+                {route.highlighted ? (
+                  <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-amber-300" aria-hidden="true" />
+                ) : null}
+                {route.label}
+              </Link>
+            );
+          })}
 
           <div className="pt-2">
             <p className="px-3 text-[11px] font-semibold tracking-[0.16em] text-white/50 uppercase">

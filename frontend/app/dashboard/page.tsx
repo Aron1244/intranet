@@ -6,13 +6,16 @@ import { useEffect, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 
 type MeResponse = {
   data: {
     id: number;
     name: string;
     email: string;
+    department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
     roles?: Array<{
       id: number;
@@ -222,6 +225,8 @@ export default function DashboardPage() {
   }, []);
 
   const isAdmin = isAdministrator(user);
+  const isUserLeader = isLeader(user);
+  const isUserNewHire = isNewHire(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const departmentFeed = announcements
@@ -254,6 +259,8 @@ export default function DashboardPage() {
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdmin}
+          isLeader={isUserLeader}
+          isNewHire={isUserNewHire}
           canManageAnnouncements={canManageAnnouncements}
           activeRoute="dashboard"
           statusMessage={isLoading ? "Validando sesion..." : errorMessage ? errorMessage : "Sesion activa"}
