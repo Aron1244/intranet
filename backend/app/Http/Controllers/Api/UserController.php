@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class UserController extends Controller
@@ -56,5 +57,27 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * List users eligible to start a conversation with the authenticated user.
+     *
+     * Admin: every user except themselves.
+     * Non-admin: only users in the same department.
+     */
+    public function chatPartners(Request $request): AnonymousResourceCollection
+    {
+        $currentUser = $request->user();
+        $isAdmin = $currentUser->roles()->where('name', 'admin')->exists();
+
+        $query = User::query()->where('id', '!=', $currentUser->id);
+
+        if (! $isAdmin) {
+            $query->where('department_id', $currentUser->department_id);
+        }
+
+        return UserResource::collection(
+            $query->orderBy('name')->get()
+        );
     }
 }
