@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import { isAdministrator } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -240,8 +241,7 @@ export default function PublicationsPage() {
     };
   }, [loadAnnouncements]);
 
-  const roles = user?.roles?.map((role) => role.name.toLowerCase()) ?? [];
-  const isAdmin = roles.includes("admin");
+  const isAdmin = isAdministrator(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedAnnouncements = useMemo(

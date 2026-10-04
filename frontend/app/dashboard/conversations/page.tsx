@@ -6,6 +6,7 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { getConversationChannelName, getEcho } from "@/lib/echo-client";
+import { isAdministrator } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -227,8 +228,7 @@ export default function ConversationsPage() {
     };
   }, []);
 
-  const roles = user?.roles?.map((role) => role.name.toLowerCase()) ?? [];
-  const isAdmin = roles.includes("admin");
+  const isAdmin = isAdministrator(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
   const currentUserDepartmentId = useMemo(
     () => users.find((candidate) => candidate.id === user?.id)?.department_id ?? null,
@@ -520,6 +520,7 @@ export default function ConversationsPage() {
   }, [highlightedMessageId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveSearchMatchIndex(0);
   }, [messageSearchTerm, selectedConversation?.id]);
 
@@ -974,6 +975,7 @@ export default function ConversationsPage() {
     const lastMessage = selectedConversationMessages[selectedConversationMessages.length - 1];
     lastSeenMessageIdRef.current = lastMessage?.id ?? null;
     markConversationAsRead(selectedConversation.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollMessagesToBottom, selectedConversation?.id]);
 
   useEffect(() => {

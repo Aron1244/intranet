@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
+import { isAdministrator } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -142,7 +143,7 @@ export default function DepartmentsPage() {
           return;
         }
 
-        const allowed = Boolean(meResponse.data.roles?.some((role) => role.name.toLowerCase() === "admin"));
+        const allowed = isAdministrator(meResponse.data);
         setUser(meResponse.data);
         setCanAccessDepartments(allowed);
 
@@ -445,7 +446,7 @@ export default function DepartmentsPage() {
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={Boolean(user?.roles?.some((role) => role.name.toLowerCase() === "admin"))}
+          isAdmin={isAdministrator(user)}
           activeRoute="departments"
           statusMessage={
             isLoadingDepartments

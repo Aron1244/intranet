@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import { isAdministrator } from "@/lib/roles";
 
 type DocumentsViewMode = "all" | "chat" | "department" | "other";
 
@@ -180,8 +181,7 @@ export default function DocumentsPage() {
     };
   }, [successMessage]);
 
-  const roles = user?.roles?.map((role) => role.name.toLowerCase()) ?? [];
-  const isAdmin = roles.includes("admin");
+  const isAdmin = isAdministrator(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedDocuments = useMemo(

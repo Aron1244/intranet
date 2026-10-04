@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
+import { isAdministrator } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -220,8 +221,7 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const roles = user?.roles?.map((role) => role.name.toLowerCase()) ?? [];
-  const isAdmin = roles.includes("admin");
+  const isAdmin = isAdministrator(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const departmentFeed = announcements
