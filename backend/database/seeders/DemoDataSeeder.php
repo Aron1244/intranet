@@ -503,14 +503,15 @@ class DemoDataSeeder extends Seeder
                     }
                 }
 
+                $createdAt = $now->copy()->subMinutes(random_int(1, 60 * 24 * 30));
                 $message = Message::query()->create([
                     'conversation_id' => $conversation->id,
                     'sender_id' => $sender->id,
                     'content' => $content,
                     'document_id' => $documentId,
                     'type' => $isFile ? 'file' : 'text',
-                    'created_at' => $now->copy()->subMinutes(random_int(1, 60 * 24 * 30)),
-                    'updated_at' => $now->copy()->subMinutes(random_int(1, 60 * 24 * 30)),
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
                 ]);
 
                 $messages[] = $message;
