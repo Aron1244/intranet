@@ -68,4 +68,11 @@ class User extends Authenticatable
             ->whereIn('name', Role::ROLES_QUE_PUEDEN_PUBLICAR)
             ->exists();
     }
+
+    public function isAdministrator(): bool
+    {
+        return $this->roles()
+            ->whereIn('name', Role::ROLES_QUE_PUEDEN_ADMINISTRAR)
+            ->exists();
+    }
 }

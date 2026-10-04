@@ -35,7 +35,7 @@ class DepartmentFolderController extends Controller
             'parent_id' => ['nullable', 'integer', 'exists:department_folders,id'],
         ]);
 
-        if (!empty($validated['parent_id'])) {
+        if (! empty($validated['parent_id'])) {
             $parentFolder = DepartmentFolder::query()->findOrFail($validated['parent_id']);
             abort_unless($parentFolder->department_id === $department->id, 422, 'parent_id no pertenece al departamento.');
         }
@@ -87,7 +87,7 @@ class DepartmentFolderController extends Controller
         $user = auth()->user();
         abort_unless($user, 401);
 
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
         if ($isAdmin) {
             return;
         }

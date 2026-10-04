@@ -68,7 +68,7 @@ class UserController extends Controller
     public function chatPartners(Request $request): AnonymousResourceCollection
     {
         $currentUser = $request->user();
-        $isAdmin = $currentUser->roles()->where('name', 'admin')->exists();
+        $isAdmin = $currentUser->isAdministrator();
 
         $query = User::query()->where('id', '!=', $currentUser->id);
 

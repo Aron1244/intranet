@@ -10,7 +10,7 @@ class AdminOnly
     public function handle(Request $request, Closure $next)
     {
         abort_unless(
-            $request->user()?->roles()->where('name', 'admin')->exists(),
+            $request->user()?->isAdministrator() ?? false,
             403
         );
 

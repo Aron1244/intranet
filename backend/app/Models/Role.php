@@ -33,6 +33,17 @@ class Role extends Model
         'admin', // legacy alias
     ];
 
+    /**
+     * Roles authorized to perform administrative mutations (CRUD on
+     * users, departments, roles and destructive operations on
+     * conversations / messages). Distinct from ROLES_QUE_PUEDEN_PUBLICAR
+     * because Lideres are NOT administrators.
+     */
+    public const ROLES_QUE_PUEDEN_ADMINISTRAR = [
+        self::ROLE_ADMINISTRADOR,
+        'admin', // legacy alias
+    ];
+
     protected function casts(): array
     {
         return [

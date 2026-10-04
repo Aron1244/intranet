@@ -42,7 +42,7 @@ class AnnouncementPolicy
     public function update(User $user, Announcement $announcement): bool
     {
         if ($user->canManageAnnouncements()) {
-            if ($user->roles()->where('name', 'admin')->exists()) {
+            if ($user->isAdministrator()) {
                 return true;
             }
 

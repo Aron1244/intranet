@@ -121,7 +121,7 @@ class ConversationController extends Controller
     private function ensureAdmin(): void
     {
         abort_unless(
-            auth()->user()?->roles()->where('name', 'admin')->exists(),
+            auth()->user()?->isAdministrator() ?? false,
             403
         );
     }

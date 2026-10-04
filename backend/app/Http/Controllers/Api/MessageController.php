@@ -131,7 +131,7 @@ class MessageController extends Controller
     private function ensureAdmin(): void
     {
         abort_unless(
-            auth()->user()?->roles()->where('name', 'admin')->exists(),
+            auth()->user()?->isAdministrator() ?? false,
             403
         );
     }
@@ -141,7 +141,7 @@ class MessageController extends Controller
         $user = auth()->user();
         abort_unless($user, 401);
 
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
         if ($isAdmin) {
             return;
         }

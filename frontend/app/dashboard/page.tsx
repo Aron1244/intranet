@@ -138,7 +138,7 @@ export default function DashboardPage() {
       setIsLoadingChats(true);
 
       try {
-        const conversationsResponse = await apiFetch<Conversation[]>("/conversations", {
+        const conversationsResponse = await apiFetch<{ data: Conversation[] } | Conversation[]>("/conversations", {
           method: "GET",
         });
 
@@ -146,9 +146,13 @@ export default function DashboardPage() {
           return;
         }
 
-        setConversations(conversationsResponse);
+        const conversationsList = Array.isArray(conversationsResponse)
+          ? conversationsResponse
+          : conversationsResponse.data;
 
-        const previewTargets = conversationsResponse.slice(0, 6);
+        setConversations(conversationsList);
+
+        const previewTargets = conversationsList.slice(0, 6);
         const previews = await Promise.all(
           previewTargets.map(async (conversation) => {
             try {

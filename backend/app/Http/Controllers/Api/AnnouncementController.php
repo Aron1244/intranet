@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\AnnouncementAttachment;
 use App\Http\Requests\StoreAnnouncementRequest;
 use App\Http\Requests\UpdateAnnouncementRequest;
 use App\Models\Announcement;
+use App\Models\AnnouncementAttachment;
 use App\Models\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +29,7 @@ class AnnouncementController extends Controller
         if (! $user->canManageAnnouncements()) {
             $query->where('is_visible', true)
                 ->where('department_id', $user->department_id);
-        } elseif (! $user->roles()->where('name', 'admin')->exists()) {
+        } elseif (! $user->isAdministrator()) {
             $query->where('department_id', $user->department_id);
         }
 
@@ -43,7 +43,7 @@ class AnnouncementController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
 
         $publishAll = (bool) ($validated['publish_all'] ?? false);
         unset($validated['publish_all']);
@@ -105,11 +105,11 @@ class AnnouncementController extends Controller
 
         unset($validated['publish_all']);
 
-        if (! $user->roles()->where('name', 'admin')->exists()) {
+        if (! $user->isAdministrator()) {
             unset($validated['department_id']);
         }
 
-        if (!empty($validated['remove_attachment_ids'])) {
+        if (! empty($validated['remove_attachment_ids'])) {
             $announcement->attachments()
                 ->whereIn('id', $validated['remove_attachment_ids'])
                 ->get()

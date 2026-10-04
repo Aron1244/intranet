@@ -28,7 +28,7 @@ class DocumentController extends Controller
             ])
             ->latest();
 
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
         if (! $isAdmin) {
             $query->where(function ($subQuery) use ($user): void {
                 $subQuery

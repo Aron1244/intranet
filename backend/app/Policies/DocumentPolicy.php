@@ -55,7 +55,7 @@ class DocumentPolicy
      */
     public function uploadToDepartment(User $user, int $departmentId): bool
     {
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
         if ($isAdmin) {
             return true;
         }
@@ -65,7 +65,7 @@ class DocumentPolicy
 
     private function canAccess(User $user, Document $document): bool
     {
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
         if ($isAdmin) {
             return true;
         }
@@ -96,7 +96,7 @@ class DocumentPolicy
 
     private function canMutate(User $user, Document $document): bool
     {
-        $isAdmin = $user->roles()->where('name', 'admin')->exists();
+        $isAdmin = $user->isAdministrator();
         if ($isAdmin) {
             return true;
         }
