@@ -34,17 +34,17 @@ const ONBOARDING_STEPS: Array<{
   },
   {
     title: "Conoce a tu equipo",
-    description: "Revisa el directorio y envia un mensaje de presentacion en Conversaciones.",
+    description: "Revisa el directorio y envía un mensaje de presentación en Conversaciones.",
     status: "pending",
   },
   {
-    title: "Lee la documentacion clave",
+    title: "Lee la documentación clave",
     description: "Abre los documentos marcados como &quot;onboarding&quot; en la biblioteca del departamento.",
     status: "pending",
   },
   {
-    title: "Confirma con tu lider",
-    description: "Cuando completes estos pasos, avisa a tu lider para cerrar tu onboarding.",
+    title: "Confirma con tu líder",
+    description: "Cuando completes estos pasos, avisa a tu líder para cerrar tu onboarding.",
     status: "pending",
   },
 ];
@@ -72,12 +72,12 @@ export default function OnboardingPage() {
       } catch (error) {
         if (!ignore) {
           if (error instanceof ApiClientError && error.status === 401) {
-            setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+            setErrorMessage("No autenticado. Inicia sesión nuevamente.");
             clearAccessToken();
           } else if (error instanceof ApiClientError) {
             setErrorMessage(error.message);
           } else {
-            setErrorMessage("No se pudo validar la sesion.");
+            setErrorMessage("No se pudo validar la sesión.");
           }
         }
       } finally {
@@ -106,8 +106,9 @@ export default function OnboardingPage() {
           isAdmin={isAdmin}
           isLeader={isUserLeader}
           isNewHire={isUserNewHire}
+          canManageAnnouncements={Boolean(user?.can_manage_announcements)}
           activeRoute="onboarding"
-          statusMessage={isLoading ? "Validando sesion..." : errorMessage ? errorMessage : "Panel de Novedades"}
+          statusMessage={isLoading ? "Validando sesión..." : errorMessage ? errorMessage : "Panel de Novedades"}
         />
 
         <section className="min-w-0 flex-1 px-5 py-6 lg:px-6 xl:px-8">
@@ -124,14 +125,14 @@ export default function OnboardingPage() {
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-intra-secondary/75">
                 Sigue estos pasos para completar tu onboarding. Este panel desaparece cuando tu
-                lider marca la tarea de bienvenida como finalizada.
+                líder marca la tarea de bienvenida como finalizada.
               </p>
             </header>
 
             {!isLoading && !hasAccess ? (
               <article className="rounded-3xl border border-intra-border bg-white px-4 py-3 text-sm text-intra-secondary/70 shadow-sm">
-                No hay pasos pendientes para tu cuenta. Si necesitas acompanamiento adicional,
-                contacta a tu lider o al administrador.
+                No hay pasos pendientes para tu cuenta. Si necesitas acompañamiento adicional,
+                contacta a tu líder o al administrador.
               </article>
             ) : null}
 
