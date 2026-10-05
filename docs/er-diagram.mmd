@@ -1,0 +1,191 @@
+---
+title: Coherev Intranet — Modelo Entidad-Relación
+---
+erDiagram
+    USERS ||--o{ SESSIONS                  : "tiene"
+    USERS ||--o{ PASSWORD_RESET_TOKENS     : "tiene"
+    USERS ||--o{ PERSONAL_ACCESS_TOKENS    : "posee (morph)"
+    USERS }o--|| DEPARTMENTS               : "pertenece"
+    USERS }o--o{ ROLES                     : "tiene (user_roles)"
+    USERS ||--o{ ANNOUNCEMENTS             : "crea"
+    USERS ||--o{ COMMENTS                  : "escribe"
+    USERS ||--o{ ANNOUNCEMENT_ATTACHMENTS  : "sube"
+    USERS ||--o{ MESSAGES                  : "envía (sender)"
+    USERS ||--o{ MESSAGE_READS             : "marca leído"
+    USERS ||--o{ DOCUMENTS                 : "sube"
+    USERS ||--o{ DEPARTMENT_FOLDERS        : "crea"
+    USERS }o--o{ CONVERSATIONS             : "participa (conversation_user)"
+
+    DEPARTMENTS ||--o{ USERS                  : "agrupa"
+    DEPARTMENTS ||--o{ ROLES                  : "asocia"
+    DEPARTMENTS ||--o{ ANNOUNCEMENTS          : "publica"
+    DEPARTMENTS ||--o{ DEPARTMENT_FOLDERS     : "organiza"
+
+    DEPARTMENT_FOLDERS ||--o{ DOCUMENTS       : "contiene"
+    DEPARTMENT_FOLDERS ||--o{ DEPARTMENT_FOLDERS : "padre / hijos"
+
+    ROLES }o--o{ USERS                       : "asignado a (user_roles)"
+
+    ANNOUNCEMENTS ||--o{ COMMENTS             : "recibe"
+    ANNOUNCEMENTS ||--o{ ANNOUNCEMENT_ATTACHMENTS : "adjunta"
+
+    CONVERSATIONS ||--o{ MESSAGES             : "contiene"
+    CONVERSATIONS }o--o{ USERS                : "tiene (conversation_user)"
+
+    MESSAGES ||--o{ MESSAGE_READS            : "leído por"
+    DOCUMENTS ||--o{ MESSAGES                : "referenciado"
+
+    USERS {
+        bigint id PK
+        varchar name
+        varchar email UK
+        timestamp email_verified_at
+        varchar password
+        bigint department_id FK
+        bool es_lider
+        bool onboarding_pendiente
+        varchar remember_token
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    DEPARTMENTS {
+        bigint id PK
+        varchar name
+        varchar description
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ROLES {
+        bigint id PK
+        varchar name
+        bool can_post_announcements
+        bigint department_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    USER_ROLES {
+        bigint id PK
+        bigint user_id FK
+        bigint role_id FK
+    }
+
+    ANNOUNCEMENTS {
+        bigint id PK
+        varchar title
+        text content
+        bool is_visible
+        bigint department_id FK
+        bigint created_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    COMMENTS {
+        bigint id PK
+        bigint user_id FK
+        bigint announcement_id FK
+        text content
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ANNOUNCEMENT_ATTACHMENTS {
+        bigint id PK
+        bigint announcement_id FK
+        bigint user_id FK
+        varchar file_path
+        varchar original_name
+        varchar mime_type
+        bigint size_bytes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    DEPARTMENT_FOLDERS {
+        bigint id PK
+        bigint department_id FK
+        bigint parent_id FK
+        bigint created_by FK
+        varchar name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    DOCUMENTS {
+        bigint id PK
+        varchar title
+        varchar file_path
+        varchar original_name
+        varchar mime_type
+        bigint size_bytes
+        bigint user_id FK
+        bigint department_folder_id FK
+        enum visibility
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CONVERSATIONS {
+        bigint id PK
+        varchar name
+        enum type
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CONVERSATION_USER {
+        bigint id PK
+        bigint conversation_id FK
+        bigint user_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MESSAGES {
+        bigint id PK
+        bigint conversation_id FK
+        bigint sender_id FK
+        text content
+        bigint document_id FK
+        varchar type
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MESSAGE_READS {
+        bigint id PK
+        bigint message_id FK
+        bigint user_id FK
+        timestamp read_at
+    }
+
+    SESSIONS {
+        varchar id PK
+        bigint user_id FK
+        varchar ip_address
+        text user_agent
+        longtext payload
+        int last_activity
+    }
+
+    PASSWORD_RESET_TOKENS {
+        varchar email PK
+        varchar token
+        timestamp created_at
+    }
+
+    PERSONAL_ACCESS_TOKENS {
+        bigint id PK
+        varchar tokenable_type
+        bigint tokenable_id
+        text name
+        varchar token UK
+        text abilities
+        timestamp last_used_at
+        timestamp expires_at
+        timestamp created_at
+        timestamp updated_at
+    }
