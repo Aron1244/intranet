@@ -1,1 +1,4 @@
 graphify-out/
+gen_graph.py
+gen_structure.bat
+graphify-out/*.md
