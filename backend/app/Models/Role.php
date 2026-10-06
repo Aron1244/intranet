@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'can_post_announcements', 'department_id'])]
+#[Fillable(['name', 'can_post_announcements', 'can_manage_department', 'department_id'])]
 class Role extends Model
 {
     /**
@@ -48,6 +48,7 @@ class Role extends Model
     {
         return [
             'can_post_announcements' => 'boolean',
+            'can_manage_department' => 'boolean',
         ];
     }
 

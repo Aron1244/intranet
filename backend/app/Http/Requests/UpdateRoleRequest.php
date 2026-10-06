@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class UpdateRoleRequest extends FormRequest
@@ -26,8 +27,13 @@ class UpdateRoleRequest extends FormRequest
         ];
 
         // Add department_id validation if migration has been applied (but don't allow updating it)
-        if (\Illuminate\Support\Facades\Schema::hasColumn('roles', 'department_id')) {
+        if (Schema::hasColumn('roles', 'department_id')) {
             // Note: department_id should not be updateable, only createable
+        }
+
+        // Add can_manage_department validation if migration has been applied
+        if (Schema::hasColumn('roles', 'can_manage_department')) {
+            $rules['can_manage_department'] = ['sometimes', 'boolean'];
         }
 
         return $rules;

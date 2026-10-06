@@ -1,12 +1,15 @@
 "use client";
 
 import { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Pencil, X } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { getConversationChannelName, getEcho } from "@/lib/echo-client";
-import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isCollaborator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -103,6 +106,38 @@ type IncomingMessageNotice = {
 
 const CHAT_SYNC_CHANNEL = "pr-intra-front-chat-sync";
 const MAX_ATTACHMENT_SIZE_BYTES = 20 * 1024 * 1024;
+const LAST_CONVERSATION_STORAGE_KEY = "intra_last_conversation_id";
+
+function readStoredConversationId(): number | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const stored = window.localStorage.getItem(LAST_CONVERSATION_STORAGE_KEY);
+    if (!stored) {
+      return null;
+    }
+    const parsed = Number.parseInt(stored, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredConversationId(id: number | null): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    if (id === null) {
+      window.localStorage.removeItem(LAST_CONVERSATION_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(LAST_CONVERSATION_STORAGE_KEY, String(id));
+    }
+  } catch {
+    // ignore quota / private mode errors
+  }
+}
 
 export default function ConversationsPage() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
@@ -125,7 +160,9 @@ export default function ConversationsPage() {
   const [chatDepartmentFilter, setChatDepartmentFilter] = useState<string>("all");
   const [chatRoleFilter, setChatRoleFilter] = useState<string>("all");
   const [chatNameSearch, setChatNameSearch] = useState("");
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(() =>
+    readStoredConversationId(),
+  );
   const [draftMessage, setDraftMessage] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [messagesByConversation, setMessagesByConversation] = useState<Record<number, ChatMessage[]>>({});
@@ -136,6 +173,9 @@ export default function ConversationsPage() {
   const [activeSearchMatchIndex, setActiveSearchMatchIndex] = useState(0);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [recentlyBumpedConversationId, setRecentlyBumpedConversationId] = useState<number | null>(null);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [renameName, setRenameName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
   const chatBroadcastRef = useRef<BroadcastChannel | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -146,6 +186,10 @@ export default function ConversationsPage() {
   const bumpConversationTimeoutRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    writeStoredConversationId(selectedConversationId);
+  }, [selectedConversationId]);
 
   const adjustComposerHeight = useCallback(() => {
     const textarea = messageInputRef.current;
@@ -203,7 +247,16 @@ export default function ConversationsPage() {
               conversationsList.map((c) => [c.id, c.unread_count ?? 0]),
             ),
           );
-          setSelectedConversationId((current) => current ?? conversationsList[0]?.id ?? null);
+          setSelectedConversationId((current) => {
+            if (current && conversationsList.some((c) => c.id === current)) {
+              return current;
+            }
+            const stored = readStoredConversationId();
+            if (stored && conversationsList.some((c) => c.id === stored)) {
+              return stored;
+            }
+            return conversationsList[0]?.id ?? null;
+          });
         }
       } catch (error) {
         if (!ignore) {
@@ -238,6 +291,8 @@ export default function ConversationsPage() {
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
   const canCreateConversation = !isUserCollaborator;
   const canDeleteConversation = isAdmin && !isUserCollaborator;
+  const canModerateMessages = (isAdmin || isDepartmentLeader(user)) && !isUserCollaborator;
+  const canRenameConversation = (isAdmin || isUserLeader) && !isUserCollaborator;
   const currentUserDepartmentId = useMemo(
     () => users.find((candidate) => candidate.id === user?.id)?.department_id ?? null,
     [user?.id, users],
@@ -751,19 +806,22 @@ export default function ConversationsPage() {
           setShowJumpToLatest(true);
         }
 
-        if (bumpConversationTimeoutRef.current !== null) {
-          window.clearTimeout(bumpConversationTimeoutRef.current);
-        }
-
-        setRecentlyBumpedConversationId(incomingMessage.conversation_id);
-        bumpConversationTimeoutRef.current = window.setTimeout(() => {
-          setRecentlyBumpedConversationId((current) =>
-            current === incomingMessage.conversation_id ? null : current,
-          );
-          bumpConversationTimeoutRef.current = null;
-        }, 1400);
         return;
       }
+
+      setConversations((current) =>
+        current
+          .map((conversation) =>
+            conversation.id === incomingMessage.conversation_id
+              ? { ...conversation, updated_at: incomingMessage.created_at }
+              : conversation,
+          )
+          .sort(
+            (leftConversation, rightConversation) =>
+              new Date(rightConversation.updated_at).getTime() -
+              new Date(leftConversation.updated_at).getTime(),
+          ),
+      );
 
       setUnreadByConversation((current) => ({
         ...current,
@@ -939,23 +997,6 @@ export default function ConversationsPage() {
             [selectedConversation.id]: normalizedMessages,
           };
         });
-
-        const latestMessage = normalizedMessages[normalizedMessages.length - 1];
-        if (latestMessage) {
-          setConversations((current) =>
-            current
-              .map((conversation) =>
-                conversation.id === selectedConversation.id
-                  ? { ...conversation, updated_at: latestMessage.created_at }
-                  : conversation,
-              )
-              .sort(
-                (leftConversation, rightConversation) =>
-                  new Date(rightConversation.updated_at).getTime() -
-                  new Date(leftConversation.updated_at).getTime(),
-              ),
-          );
-        }
       } catch {
         // Silent fallback: websocket remains the primary real-time mechanism.
       }
@@ -1390,12 +1431,75 @@ export default function ConversationsPage() {
     }
   };
 
-  const handleDeleteMessage = async (message: ChatMessage) => {
-    if (!canDeleteConversation) {
+  const openRenameModal = useCallback(() => {
+    if (!selectedConversation) {
+      return;
+    }
+    setRenameName(selectedConversation.name ?? "");
+    setIsRenameModalOpen(true);
+  }, [selectedConversation]);
+
+  const closeRenameModal = useCallback(() => {
+    if (isRenaming) {
+      return;
+    }
+    setIsRenameModalOpen(false);
+    setRenameName("");
+  }, [isRenaming]);
+
+  const handleRenameConversation = useCallback(async () => {
+    if (!selectedConversation || !canRenameConversation) {
       return;
     }
 
-    const confirmed = window.confirm("Eliminar este mensaje?");
+    const trimmed = renameName.trim();
+    if (!trimmed) {
+      setErrorMessage("El nombre no puede estar vacio.");
+      setIsPermissionError(false);
+      return;
+    }
+
+    if (trimmed === (selectedConversation.name ?? "")) {
+      closeRenameModal();
+      return;
+    }
+
+    setIsRenaming(true);
+    setErrorMessage(null);
+    setIsPermissionError(false);
+    setSuccessMessage(null);
+
+    try {
+      await apiFetch(`/conversations/${selectedConversation.id}`, {
+        method: "PATCH",
+        body: { name: trimmed },
+      });
+
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === selectedConversation.id
+            ? { ...conversation, name: trimmed }
+            : conversation,
+        ),
+      );
+
+      setSuccessMessage("Conversacion renombrada.");
+      closeRenameModal();
+    } catch (error) {
+      setHandledError(error, "No se pudo renombrar la conversacion.");
+    } finally {
+      setIsRenaming(false);
+    }
+  }, [selectedConversation, canRenameConversation, renameName, closeRenameModal]);
+
+  const handleDeleteMessage = async (message: ChatMessage) => {
+    if (!canModerateMessages) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Marcar este mensaje para revision? Un administrador decidira si eliminarlo definitivamente desde la Papelera.",
+    );
     if (!confirmed) {
       return;
     }
@@ -1417,7 +1521,7 @@ export default function ConversationsPage() {
         };
       });
 
-      setSuccessMessage("Mensaje eliminado correctamente.");
+      setSuccessMessage("Mensaje marcado para revision del administrador.");
 
       chatBroadcastRef.current?.postMessage({
         type: "message-deleted",
@@ -1425,7 +1529,7 @@ export default function ConversationsPage() {
         messageId: message.id,
       } satisfies ChatSyncEvent);
     } catch (error) {
-      setHandledError(error, "No se pudo eliminar el mensaje.");
+      setHandledError(error, "No se pudo marcar el mensaje.");
     }
   };
 
@@ -1446,8 +1550,8 @@ export default function ConversationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-intra-ligth">
-      <main className="flex min-h-screen w-full">
+    <div className="h-[100dvh] overflow-hidden bg-intra-ligth">
+      <main className="flex h-[100dvh] w-full overflow-hidden">
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdmin}
@@ -1458,8 +1562,10 @@ export default function ConversationsPage() {
           statusMessage={isLoadingUser || isLoadingConversations ? "Cargando conversaciones..." : errorMessage ? errorMessage : "Conversaciones sincronizadas"}
         />
 
-        <section className="min-w-0 flex flex-1 flex-col px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
-          <div className="mx-auto flex min-h-0 w-full max-w-360 flex-1 flex-col space-y-6">
+        <HelpButton tourId="conversations" variant="floating" />
+
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
+          <div className="mx-auto flex min-h-0 w-full max-w-360 flex-1 flex-col space-y-6 overflow-hidden">
             {errorMessage ? (
               <div className={`rounded-3xl px-4 py-3 text-base shadow-sm ${isPermissionError ? "border border-amber-200 bg-amber-50 text-amber-800" : "border border-red-200 bg-red-50 text-red-700"}`}>
                 {isPermissionError ? (
@@ -1477,8 +1583,8 @@ export default function ConversationsPage() {
               </div>
             ) : null}
 
-            <div className="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
-              <section className="flex h-144 flex-col rounded-3xl border border-intra-border bg-white p-5 shadow-sm lg:h-full lg:min-h-0">
+            <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] lg:items-stretch">
+              <section data-tour-id="conversations-list" className="flex h-144 flex-col rounded-3xl border border-intra-border bg-white p-5 shadow-sm lg:h-full lg:min-h-0">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-intra-secondary">Conversaciones</h3>
                   <span className="rounded-full bg-intra-ligth px-3 py-1 text-sm font-medium text-intra-secondary">
@@ -1510,28 +1616,20 @@ export default function ConversationsPage() {
                           className="w-full text-left"
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-intra-secondary">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-intra-secondary">
                                 {conversation.name ?? `Conversacion ${conversation.id}`}
                               </p>
                               <p className="text-sm text-intra-secondary/55 capitalize">
                                 {conversation.type}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {unreadByConversation[conversation.id] ? (
-                                <span className="rounded-full bg-red-600 px-2 py-1 text-[11px] font-semibold text-white">
-                                  {formatUnreadCount(unreadByConversation[conversation.id])}
-                                </span>
-                              ) : null}
-                              <span className="rounded-full bg-intra-ligth px-2.5 py-1 text-sm font-semibold text-intra-secondary">
-                                {conversation.users.length} usuarios
+                            {unreadByConversation[conversation.id] ? (
+                              <span className="shrink-0 rounded-full bg-red-600 px-2 py-1 text-[11px] font-semibold text-white">
+                                {formatUnreadCount(unreadByConversation[conversation.id])}
                               </span>
-                            </div>
+                            ) : null}
                           </div>
-                          <p className="mt-3 text-base text-intra-secondary/75">
-                            {conversation.users.map((conversationUser) => conversationUser.name).join(", ")}
-                          </p>
                         </button>
 
                         {canDeleteConversation ? (
@@ -1581,11 +1679,24 @@ export default function ConversationsPage() {
                   </div>
               </section>
 
-              <section className="flex h-144 flex-col overflow-hidden rounded-3xl border border-intra-border bg-white p-6 shadow-sm lg:h-full lg:min-h-0">
+              <section data-tour-id="conversations-messages" className="flex h-144 flex-col overflow-hidden rounded-3xl border border-intra-border bg-white p-6 shadow-sm lg:h-full lg:min-h-0">
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-2xl font-semibold tracking-tight text-intra-secondary">
-                    {selectedConversation ? selectedConversation.name ?? `Conversacion ${selectedConversation.id}` : "Panel de conversacion"}
-                  </h3>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h3 className="truncate text-2xl font-semibold tracking-tight text-intra-secondary">
+                      {selectedConversation ? selectedConversation.name ?? `Conversacion ${selectedConversation.id}` : "Panel de conversacion"}
+                    </h3>
+                    {selectedConversation && canRenameConversation ? (
+                      <button
+                        type="button"
+                        onClick={openRenameModal}
+                        aria-label="Renombrar conversacion"
+                        title="Renombrar conversacion"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-intra-border bg-white text-intra-secondary transition hover:border-intra-primary hover:text-intra-primary active:scale-[0.96]"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
 
                   {selectedConversation ? (
                     <div className="flex items-center gap-2">
@@ -1680,10 +1791,11 @@ export default function ConversationsPage() {
                                   <span className="font-semibold">{message.sender_name}</span>
                                   <div className="flex items-center gap-2">
                                     <span>{new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                                    {canDeleteConversation ? (
+                                    {canModerateMessages ? (
                                       <button
                                         type="button"
                                         onClick={() => void handleDeleteMessage(message)}
+                                        title="Marcar para revision"
                                         className={`rounded-full border px-2 py-0.5 text-xs font-semibold transition ${isOwnMessage ? "border-white/30 text-white hover:bg-white/10" : "border-red-200 text-red-700 hover:bg-red-50"}`}
                                       >
                                         Borrar
@@ -1760,7 +1872,7 @@ export default function ConversationsPage() {
                       <label htmlFor="message" className="sr-only">
                         Mensaje
                       </label>
-                      <div className="flex items-end gap-2">
+                      <div data-tour-id="conversations-composer" className="flex items-end gap-2">
                         <textarea
                           ref={messageInputRef}
                           id="message"
@@ -1996,6 +2108,142 @@ export default function ConversationsPage() {
           </div>
         </section>
       </main>
+
+      <RenameConversationModal
+        open={isRenameModalOpen}
+        onClose={closeRenameModal}
+        value={renameName}
+        onChange={setRenameName}
+        onSubmit={handleRenameConversation}
+        isSaving={isRenaming}
+      />
     </div>
+  );
+}
+
+type RenameConversationModalProps = {
+  open: boolean;
+  onClose: () => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  isSaving: boolean;
+};
+
+function RenameConversationModal({
+  open,
+  onClose,
+  value,
+  onChange,
+  onSubmit,
+  isSaving,
+}: RenameConversationModalProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        onSubmit();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose, onSubmit]);
+
+  return (
+    <AnimatePresence>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.button
+            type="button"
+            aria-label="Cerrar modal"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Renombrar conversacion"
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)]"
+          >
+            <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+              <div>
+                <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+                  Renombrar conversacion
+                </h3>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Cambia el nombre visible de la conversacion.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Cerrar"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSubmit();
+              }}
+              className="space-y-4 px-5 py-5"
+            >
+              <div>
+                <label htmlFor="rename-conversation" className="text-xs font-medium text-[var(--foreground)]">
+                  Nombre <span className="ml-0.5 text-[color:var(--danger)]">*</span>
+                </label>
+                <input
+                  id="rename-conversation"
+                  type="text"
+                  autoFocus
+                  maxLength={120}
+                  value={value}
+                  onChange={(event) => onChange(event.target.value)}
+                  placeholder="Ej: Equipo de Marketing"
+                  className="mt-1 h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-soft)] outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                />
+              </div>
+              <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving || value.trim().length === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-16px_var(--primary-glow)] transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  {isSaving ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      ) : null}
+    </AnimatePresence>
   );
 }

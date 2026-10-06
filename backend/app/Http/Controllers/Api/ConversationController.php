@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\MessageRead;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -118,11 +119,50 @@ class ConversationController extends Controller
         return response()->json(null, 204);
     }
 
+    /**
+     * Rename a conversation. Only administrators or department leaders
+     * (Líder) can edit the display name of a conversation they participate in.
+     */
+    public function update(Request $request, Conversation $conversation): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $conversation->users()->whereKey($user->id)->exists(),
+            403,
+            'No participas en esta conversacion.'
+        );
+
+        $this->ensureAdminOrLeader($user);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+        ]);
+
+        $conversation->name = trim($validated['name']);
+        $conversation->save();
+
+        return response()->json($conversation->load('users'));
+    }
+
     private function ensureAdmin(): void
     {
         abort_unless(
             auth()->user()?->isAdministrator() ?? false,
             403
+        );
+    }
+
+    private function ensureAdminOrLeader(User $user): void
+    {
+        if ($user->isAdministrator()) {
+            return;
+        }
+
+        abort_unless(
+            (bool) ($user->es_lider ?? false),
+            403,
+            'Solo administradores o lideres pueden renombrar conversaciones.'
         );
     }
 }

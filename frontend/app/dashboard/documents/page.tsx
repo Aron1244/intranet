@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
-import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
 
 type DocumentsViewMode = "all" | "chat" | "department" | "other";
 
@@ -132,43 +133,33 @@ export default function DocumentsPage() {
     setIsPermissionError(false);
   }, []);
 
-  useEffect(() => {
-    let ignore = false;
+  const loadPageData = useCallback(async () => {
+    setIsLoadingUser(true);
+    setIsLoadingDocuments(true);
+    setErrorMessage(null);
+    setIsPermissionError(false);
 
-    const loadPageData = async () => {
-      setIsLoadingUser(true);
-      setIsLoadingDocuments(true);
-      setErrorMessage(null);
-      setIsPermissionError(false);
+    try {
+      const [meResponse, documentsResponse] = await Promise.all([
+        apiFetch<MeResponse>("/me", { method: "GET" }),
+        apiFetch<DocumentsResponse>("/documents", { method: "GET" }),
+      ]);
 
-      try {
-        const [meResponse, documentsResponse] = await Promise.all([
-          apiFetch<MeResponse>("/me", { method: "GET" }),
-          apiFetch<DocumentsResponse>("/documents", { method: "GET" }),
-        ]);
-
-        if (!ignore) {
-          setUser(meResponse.data);
-          setDocuments(documentsResponse.data);
-        }
-      } catch (error) {
-        if (!ignore) {
-          setHandledError(error, "No se pudo cargar la seccion de documentos.");
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoadingUser(false);
-          setIsLoadingDocuments(false);
-        }
-      }
-    };
-
-    void loadPageData();
-
-    return () => {
-      ignore = true;
-    };
+      setUser(meResponse.data);
+      setDocuments(documentsResponse.data);
+    } catch (error) {
+      setHandledError(error, "No se pudo cargar la seccion de documentos.");
+    } finally {
+      setIsLoadingUser(false);
+      setIsLoadingDocuments(false);
+    }
   }, [setHandledError]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadPageData();
+    });
+  }, [loadPageData]);
 
   useEffect(() => {
     if (!successMessage) {
@@ -187,6 +178,7 @@ export default function DocumentsPage() {
   const isAdmin = isAdministrator(user);
   const isUserLeader = isLeader(user);
   const isUserNewHire = isNewHire(user);
+  const canModerateDocuments = isAdmin || isDepartmentLeader(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedDocuments = useMemo(
@@ -335,13 +327,43 @@ export default function DocumentsPage() {
     }
   }, []);
 
+  const handleSoftDeleteDocument = useCallback(async (document: DocumentItem) => {
+    if (!canModerateDocuments) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Marcar este documento para revision? Un administrador decidira si eliminarlo definitivamente desde la Papelera.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await apiFetch(`/documents/${document.id}`, {
+        method: "DELETE",
+      });
+      setSuccessMessage("Documento marcado para revision.");
+      await loadPageData();
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 403) {
+        setErrorMessage("No tienes permisos para marcar este documento.");
+        setIsPermissionError(true);
+      } else if (error instanceof ApiClientError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("No se pudo marcar el documento.");
+      }
+    }
+  }, [canModerateDocuments, loadPageData]);
+
   const renderDocumentCard = (document: DocumentItem) => (
     <article
       key={document.id}
       className="rounded-2xl border border-intra-border p-4 text-left transition hover:bg-intra-ligth/40"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="mb-2 inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">
             Origen: {getOriginLabel(document)}
           </p>
@@ -358,14 +380,26 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void handleDownloadDocument(document)}
-          disabled={isDownloadingDocumentId === document.id}
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-intra-primary px-4 text-sm font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isDownloadingDocumentId === document.id ? "Descargando..." : "Descargar"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleDownloadDocument(document)}
+            disabled={isDownloadingDocumentId === document.id}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-intra-primary px-4 text-sm font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isDownloadingDocumentId === document.id ? "Descargando..." : "Descargar"}
+          </button>
+          {canModerateDocuments ? (
+            <button
+              type="button"
+              onClick={() => void handleSoftDeleteDocument(document)}
+              title="Marcar para revision del administrador"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+            >
+              Marcar
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );
@@ -382,6 +416,8 @@ export default function DocumentsPage() {
           activeRoute="documents"
           statusMessage={isLoadingUser || isLoadingDocuments ? "Cargando documentos..." : errorMessage ? errorMessage : "Documentos sincronizados"}
         />
+
+        <HelpButton tourId="documents" variant="floating" />
 
         <section className="min-w-0 flex flex-1 flex-col px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
           <div className="mx-auto flex min-h-0 w-full max-w-360 flex-1 flex-col space-y-6">
@@ -406,7 +442,7 @@ export default function DocumentsPage() {
                 </span>
               </div>
 
-              <div className="mt-4">
+              <div data-tour-id="documents-search" className="mt-4">
                 <input
                   type="search"
                   value={searchTerm}
@@ -416,7 +452,7 @@ export default function DocumentsPage() {
                 />
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div data-tour-id="documents-filters" className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setViewMode("all")}
@@ -463,7 +499,7 @@ export default function DocumentsPage() {
                 </button>
               </div>
 
-              <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
+              <div data-tour-id="documents-list" className="mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
                 {isLoadingDocuments ? (
                   <p className="text-base text-intra-secondary/70">Cargando documentos...</p>
                 ) : null}

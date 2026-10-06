@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
@@ -557,6 +558,8 @@ export default function PublicationsPage() {
           statusMessage={isLoadingUser || isLoadingAnnouncements ? "Cargando publicaciones..." : errorMessage ? errorMessage : "Publicaciones sincronizadas"}
         />
 
+        <HelpButton tourId="publications" variant="floating" />
+
         <section className="min-w-0 flex-1 px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
           <div className="mx-auto w-full max-w-360 space-y-6">
             <header className="rounded-3xl border border-intra-border bg-white p-6 shadow-sm">
@@ -591,7 +594,7 @@ export default function PublicationsPage() {
 
             {canAccessPublications ? (
               <>
-                <section ref={formSectionRef} className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
+                <section ref={formSectionRef} data-tour-id="publications-form" className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-xl font-semibold text-intra-secondary">
                       {editingAnnouncementId ? "Editar publicacion" : "Nueva publicacion"}
@@ -851,7 +854,7 @@ export default function PublicationsPage() {
                   ) : null}
                 </section>
 
-                <section className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
+                <section data-tour-id="publications-list" className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-xl font-semibold text-intra-secondary">Feed</h3>
                     <span className="rounded-full bg-intra-ligth px-3 py-1 text-sm font-medium text-intra-secondary">

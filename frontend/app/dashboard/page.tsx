@@ -1,12 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowUpRight,
+  FileText,
+  Flame,
+  Megaphone,
+  MessageSquare,
+  Plus,
+  Send,
+  ShieldCheck,
+  ThumbsUp,
+} from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DashboardHeader } from "@/components/dashboard-header";
+import { HelpButton } from "@/components/help-button";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
 import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { cn } from "@/lib/cn";
+import { Reveal, StaggerGroup, StaggerItem } from "@/components/motion-primitives";
+import { Skeleton } from "@/components/skeleton";
 
 type MeResponse = {
   data: {
@@ -93,6 +109,12 @@ function getConversationTitle(conversation: Conversation, currentUserId?: number
   return `Conversacion ${conversation.id}`;
 }
 
+function greeting(now: Date, name?: string | null): string {
+  const hour = now.getHours();
+  const slot = hour < 12 ? "Buenos dias" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+  return name ? `${slot}, ${name.split(" ")[0]}` : slot;
+}
+
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
@@ -138,9 +160,12 @@ export default function DashboardPage() {
       setIsLoadingChats(true);
 
       try {
-        const conversationsResponse = await apiFetch<{ data: Conversation[] } | Conversation[]>("/conversations", {
-          method: "GET",
-        });
+        const conversationsResponse = await apiFetch<{ data: Conversation[] } | Conversation[]>(
+          "/conversations",
+          {
+            method: "GET",
+          },
+        );
 
         if (ignore) {
           return;
@@ -175,7 +200,10 @@ export default function DashboardPage() {
                 return [conversation.id, normalizedContent] as const;
               }
 
-              return [conversation.id, latest.type === "file" ? "Archivo adjunto" : "Mensaje sin texto"] as const;
+              return [
+                conversation.id,
+                latest.type === "file" ? "Archivo adjunto" : "Mensaje sin texto",
+              ] as const;
             } catch {
               return [conversation.id, "Sin mensajes todavia"] as const;
             }
@@ -233,190 +261,481 @@ export default function DashboardPage() {
   const isUserNewHire = isNewHire(user);
   const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
-  const departmentFeed = announcements
-    .slice()
-    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
-    .slice(0, 8)
-    .map((announcement) => ({
-      id: announcement.id,
-      department: announcement.department?.name ?? "General",
-      title: announcement.title,
-      body: announcement.content,
-      time: formatRelativeTime(announcement.created_at),
-      author: announcement.creator?.name ?? "Usuario",
-    }));
+  const departmentFeed = useMemo(
+    () =>
+      announcements
+        .slice()
+        .sort(
+          (left, right) =>
+            new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
+        )
+        .slice(0, 6)
+        .map((announcement) => ({
+          id: announcement.id,
+          department: announcement.department?.name ?? "General",
+          title: announcement.title,
+          body: announcement.content,
+          time: formatRelativeTime(announcement.created_at),
+          author: announcement.creator?.name ?? "Usuario",
+        })),
+    [announcements],
+  );
 
-  const chatContacts = conversations
-    .slice()
-    .sort((left, right) => new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime())
-    .slice(0, 6)
-    .map((conversation) => ({
-      id: conversation.id,
-      name: getConversationTitle(conversation, user?.id),
-      status: formatRelativeTime(conversation.updated_at),
-      lastMessage: conversationPreviews[conversation.id] ?? "Sin mensajes todavia",
-    }));
+  const chatContacts = useMemo(
+    () =>
+      conversations
+        .slice()
+        .sort(
+          (left, right) =>
+            new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime(),
+        )
+        .slice(0, 5)
+        .map((conversation) => ({
+          id: conversation.id,
+          name: getConversationTitle(conversation, user?.id),
+          status: formatRelativeTime(conversation.updated_at),
+          lastMessage: conversationPreviews[conversation.id] ?? "Sin mensajes todavia",
+        })),
+    [conversations, conversationPreviews, user?.id],
+  );
 
   return (
-    <div className="min-h-screen bg-intra-ligth">
-      <main className="flex min-h-screen w-full">
-        <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
-          canManageAnnouncements={canManageAnnouncements}
-          activeRoute="dashboard"
-          statusMessage={isLoading ? "Validando sesion..." : errorMessage ? errorMessage : "Sesion activa"}
-        />
+    <div className="flex min-h-[100dvh] w-full bg-[var(--background)]">
+      <DashboardSidebar
+        user={user ? { name: user.name, email: user.email } : null}
+        isAdmin={isAdmin}
+        isLeader={isUserLeader}
+        isNewHire={isUserNewHire}
+        canManageAnnouncements={canManageAnnouncements}
+        activeRoute="dashboard"
+        statusMessage={isLoading ? "Validando sesion..." : errorMessage ? errorMessage : "Sesion activa"}
+      />
 
-        <section className="min-w-0 flex-1 px-5 py-6 lg:px-6 xl:px-8">
-          <div className="grid min-h-[calc(100vh-3rem)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+      <HelpButton tourId="dashboard" variant="floating" />
+
+      <section className="flex min-w-0 flex-1 flex-col">
+        <DashboardHeader />
+
+        <div className="min-w-0 flex-1 px-5 py-6 lg:px-8 xl:px-10">
+          <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
+          <HeroCard
+            isLoading={isLoading}
+            errorMessage={errorMessage}
+            greeting={greeting(new Date(), user?.name)}
+          />
+
+          <div data-tour-id="dashboard-stats">
+          <StaggerGroup className="grid grid-cols-2 gap-4">
+            <StaggerItem>
+              <StatTile
+                icon={Megaphone}
+                label="Publicaciones"
+                value={departmentFeed.length}
+                tone="primary"
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <StatTile
+                icon={MessageSquare}
+                label="Conversaciones"
+                value={chatContacts.length}
+                tone="accent"
+              />
+            </StaggerItem>
+          </StaggerGroup>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="min-w-0 space-y-6">
-              <header className="rounded-3xl border border-intra-border bg-white p-6 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold tracking-[0.18em] text-intra-accent uppercase">Dashboard</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-intra-secondary">
-                      Feed de departamentos
-                    </h2>
-                    <p className="mt-2 max-w-2xl text-sm text-intra-secondary/70">
-                      Aqui apareceran las publicaciones de los departamentos a los que pertenece el usuario.
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-intra-border bg-intra-ligth px-4 py-2 text-sm text-intra-secondary">
-                    Estado API: {isLoading ? "validando" : errorMessage ? "error" : "conectado"}
-                  </div>
-                </div>
-              </header>
+              <Reveal>
+                <FeedCard data-tour-id="dashboard-feed">
+                  <FeedHeader
+                    title="Publicaciones de tu equipo"
+                    subtitle="Lo ultimo que compartieron tus departamentos."
+                    action={
+                      canManageAnnouncements ? (
+                        <Link
+                          href="/dashboard/publications"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Nueva publicacion
+                        </Link>
+                      ) : null
+                    }
+                  />
 
-              <section className="space-y-4">
-                {isLoading ? (
-                  <div className="rounded-3xl border border-intra-border bg-white p-6 text-sm text-intra-secondary/70 shadow-sm">
-                    Validando sesion con /me...
-                  </div>
-                ) : null}
-
-                {errorMessage ? (
-                  <div className="rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
-                    {errorMessage}
-                  </div>
-                ) : null}
-
-                {user ? (
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <article className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-                      <p className="text-xs tracking-[0.16em] text-intra-accent uppercase">Usuario</p>
-                      <p className="mt-2 text-lg font-semibold text-intra-secondary">{user.name}</p>
-                    </article>
-                    <article className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-                      <p className="text-xs tracking-[0.16em] text-intra-accent uppercase">Email</p>
-                      <p className="mt-2 text-lg font-semibold text-intra-secondary">{user.email}</p>
-                    </article>
-                    <article className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-                      <p className="text-xs tracking-[0.16em] text-intra-accent uppercase">Rol</p>
-                      <p className="mt-2 text-lg font-semibold text-intra-secondary">
-                        {user.roles?.length ? user.roles.map((role) => role.name).join(", ") : "Sin roles"}
-                      </p>
-                    </article>
-                  </div>
-                ) : null}
-
-                <div className="grid gap-4">
-                  {isLoadingAnnouncements ? (
-                    <article className="rounded-3xl border border-intra-border bg-white p-6 text-sm text-intra-secondary/70 shadow-sm">
-                      Cargando publicaciones...
-                    </article>
-                  ) : null}
+                  {isLoadingAnnouncements ? <FeedSkeleton /> : null}
 
                   {!isLoadingAnnouncements && departmentFeed.length === 0 ? (
-                    <article className="rounded-3xl border border-intra-border bg-white p-6 text-sm text-intra-secondary/70 shadow-sm">
-                      Aun no hay publicaciones para mostrar.
-                    </article>
+                    <EmptyState
+                      icon={Megaphone}
+                      title="Aun no hay publicaciones"
+                      body="Cuando tu equipo comparta novedades apareceran aqui."
+                    />
                   ) : null}
 
-                  {departmentFeed.map((post) => (
-                    <article key={post.id} className="rounded-3xl border border-intra-border bg-white p-6 shadow-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="rounded-full bg-intra-ligth px-3 py-1 text-xs font-semibold text-intra-secondary">
-                          {post.department}
-                        </p>
-                        <p className="text-xs text-intra-secondary/55">{post.time}</p>
-                      </div>
-                      <h3 className="mt-4 text-xl font-semibold text-intra-secondary">{post.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-intra-secondary/75">{post.body}</p>
-                      <p className="mt-3 text-xs text-intra-secondary/55">Publicado por {post.author}</p>
-                      <div className="mt-5 flex gap-3 text-sm">
-                        <button
-                          type="button"
-                          className="rounded-xl border border-intra-border px-4 py-2 text-intra-secondary transition hover:bg-intra-ligth"
-                        >
-                          Me gusta
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-xl border border-intra-border px-4 py-2 text-intra-secondary transition hover:bg-intra-ligth"
-                        >
-                          Comentar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-xl border border-intra-border px-4 py-2 text-intra-secondary transition hover:bg-intra-ligth"
-                        >
-                          Compartir
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
+                  <StaggerGroup className="space-y-3" stagger={0.06} inView={false}>
+                    {departmentFeed.map((post) => (
+                      <StaggerItem key={post.id}>
+                        <PostRow post={post} />
+                      </StaggerItem>
+                    ))}
+                  </StaggerGroup>
+                </FeedCard>
+              </Reveal>
+
+              <Reveal delay={0.05}>
+                <FeedCard>
+                  <FeedHeader
+                    title="Atajos"
+                    subtitle="Accede rapidamente a las areas mas usadas."
+                  />
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <QuickAction href="/dashboard/documents" icon={FileText} label="Documentos" />
+                    <QuickAction href="/dashboard/conversations" icon={MessageSquare} label="Mensajes" />
+                    <QuickAction href="/dashboard/publications" icon={Megaphone} label="Anuncios" />
+                  </div>
+                </FeedCard>
+              </Reveal>
             </div>
 
-            <aside className="sticky top-6 h-fit rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs tracking-[0.16em] text-intra-accent uppercase">Chats</p>
-                  <h3 className="mt-1 text-lg font-semibold text-intra-secondary">Mensajes</h3>
-                </div>
-                <span className="rounded-full bg-intra-ligth px-3 py-1 text-xs font-medium text-intra-secondary">
-                  Activos
-                </span>
-              </div>
+            <aside className="space-y-6">
+              <Reveal delay={0.05}>
+                <FeedCard data-tour-id="dashboard-chats">
+                  <FeedHeader
+                    title="Conversaciones"
+                    subtitle="Mensajes recientes"
+                    action={
+                      <Link
+                        href="/dashboard/conversations"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline"
+                      >
+                        Ver todas
+                        <ArrowUpRight className="h-3 w-3" />
+                      </Link>
+                    }
+                  />
 
-              <div className="mt-5 space-y-3">
-                {isLoadingChats ? (
-                  <article className="rounded-2xl border border-intra-border p-4 text-sm text-intra-secondary/70">
-                    Cargando conversaciones...
-                  </article>
-                ) : null}
+                  <div className="space-y-2.5">
+                    {isLoadingChats ? <ChatSkeleton /> : null}
 
-                {!isLoadingChats && chatContacts.length === 0 ? (
-                  <article className="rounded-2xl border border-intra-border p-4 text-sm text-intra-secondary/70">
-                    Aun no tienes conversaciones.
-                  </article>
-                ) : null}
+                    {!isLoadingChats && chatContacts.length === 0 ? (
+                      <EmptyState
+                        icon={MessageSquare}
+                        title="Sin conversaciones"
+                        body="Inicia una nueva conversacion desde la seccion de mensajes."
+                      />
+                    ) : null}
 
-                {chatContacts.map((contact) => (
+                    {chatContacts.map((contact) => (
+                      <Link
+                        key={contact.id}
+                        href="/dashboard/conversations"
+                        className="group block rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-soft)] text-xs font-semibold text-[var(--primary)]">
+                            {contact.name
+                              .split(" ")
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((part) => part[0]?.toUpperCase())
+                              .join("")}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+                                {contact.name}
+                              </p>
+                              <span className="shrink-0 text-[10px] text-[var(--muted)]">
+                                {contact.status}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-[var(--muted)]">
+                              {contact.lastMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+
                   <Link
-                    key={contact.id}
                     href="/dashboard/conversations"
-                    className="block rounded-2xl border border-intra-border p-4 transition hover:bg-intra-ligth/40"
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] py-2.5 text-xs font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-intra-secondary">{contact.name}</p>
-                        <p className="text-xs text-intra-secondary/55">{contact.status}</p>
-                      </div>
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    </div>
-                    <p className="mt-3 line-clamp-2 text-sm text-intra-secondary/75">{contact.lastMessage}</p>
+                    <Send className="h-3.5 w-3.5" />
+                    Abrir mensajes
                   </Link>
-                ))}
-              </div>
+                </FeedCard>
+              </Reveal>
             </aside>
           </div>
-        </section>
-      </main>
+          </div>
+        </div>
+      </section>
     </div>
+  );
+}
+
+type HeroCardProps = {
+  isLoading: boolean;
+  errorMessage: string | null;
+  greeting: string;
+};
+
+function HeroCard({ isLoading, errorMessage, greeting }: HeroCardProps) {
+  return (
+    <Reveal>
+      <div data-tour-id="dashboard-greeting" className="surface-card relative overflow-hidden p-6 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 -right-16 h-72 w-72 rounded-full bg-[var(--primary-soft)] blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-32 -left-12 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl"
+        />
+
+        <div className="relative grid gap-6 sm:grid-cols-[1.5fr_1fr] sm:items-end">
+          <div>
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-[var(--primary)] uppercase">
+              <Flame className="h-3 w-3" />
+              Tu centro de operaciones
+            </p>
+
+            {isLoading ? (
+              <Skeleton className="mt-4 h-8 w-72" rounded="md" />
+            ) : (
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[var(--foreground)] sm:text-4xl">
+                {errorMessage ? "Hola de nuevo" : greeting}
+              </h1>
+            )}
+
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
+              Aqui encontraras tus publicaciones, mensajes pendientes y los
+              ultimos movimientos de tu equipo.
+            </p>
+
+            {errorMessage ? (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 px-3 py-2 text-xs text-[color:var(--danger)]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {errorMessage}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+            <Link
+              href="/dashboard/conversations"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_18px_30px_-18px_var(--primary-glow)] transition hover:bg-[var(--primary-hover)] active:scale-[0.98]"
+            >
+              <Send className="h-4 w-4" />
+              Abrir mensajes
+            </Link>
+            <Link
+              href="/dashboard/publications"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
+            >
+              <Megaphone className="h-4 w-4" />
+              Publicaciones
+            </Link>
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+type StatTileProps = {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number | string;
+  tone?: "primary" | "accent" | "neutral" | "success";
+  suffix?: string;
+  text?: boolean;
+};
+
+function StatTile({ icon: Icon, label, value, tone = "primary", suffix, text }: StatTileProps) {
+  const toneClass = {
+    primary: "bg-[var(--primary-soft)] text-[var(--primary)]",
+    accent: "bg-[var(--accent-soft)] text-[var(--accent)]",
+    neutral: "bg-[var(--surface-muted)] text-[var(--muted)]",
+    success: "bg-[color:var(--success)]/10 text-[color:var(--success)]",
+  }[tone];
+
+  return (
+    <div className="surface-card flex flex-col gap-3 p-5">
+      <div className="flex items-center justify-between">
+        <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl", toneClass)}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <ArrowUpRight className="h-4 w-4 text-[var(--muted-soft)]" />
+      </div>
+      <div>
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "mt-1 font-semibold tracking-tight text-[var(--foreground)]",
+            text ? "text-2xl" : "text-3xl",
+          )}
+        >
+          {value}
+        </p>
+        {suffix ? (
+          <p className="mt-0.5 text-[11px] text-[var(--muted)]">{suffix}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function FeedCard({ children, className, ...rest }: { children: React.ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
+  return <section {...rest} className={cn("surface-card p-5 sm:p-6", className)}>{children}</section>;
+}
+
+function FeedHeader({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h2 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+          {title}
+        </h2>
+        {subtitle ? (
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{subtitle}</p>
+        ) : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+type PostRowProps = {
+  post: {
+    id: number;
+    department: string;
+    title: string;
+    body: string;
+    time: string;
+    author: string;
+  };
+};
+
+function PostRow({ post }: PostRowProps) {
+  return (
+    <article className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase">
+          {post.department}
+        </span>
+        <span className="text-[10px] text-[var(--muted)]">{post.time}</span>
+      </div>
+      <h3 className="mt-3 text-sm font-semibold leading-tight text-[var(--foreground)]">
+        {post.title}
+      </h3>
+      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--muted)]">{post.body}</p>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-[11px] text-[var(--muted)]">por {post.author}</p>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Me gusta"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          >
+            <ThumbsUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Responder"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FeedSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="rounded-2xl border border-[var(--border)] p-4">
+          <Skeleton className="h-3 w-20" rounded="md" />
+          <Skeleton className="mt-3 h-4 w-3/4" rounded="md" />
+          <Skeleton className="mt-2 h-3 w-full" rounded="md" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChatSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="flex items-center gap-3 rounded-xl border border-[var(--border)] p-3">
+          <Skeleton className="h-9 w-9" rounded="full" />
+          <div className="flex-1">
+            <Skeleton className="h-3 w-1/2" rounded="md" />
+            <Skeleton className="mt-2 h-3 w-3/4" rounded="md" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)]/40 px-4 py-6 text-center">
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)]">
+        <Icon className="h-4 w-4" />
+      </span>
+      <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{title}</p>
+      <p className="mt-1 text-xs text-[var(--muted)]">{body}</p>
+    </div>
+  );
+}
+
+function QuickAction({
+  href,
+  icon: Icon,
+  label,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:bg-[var(--surface-muted)]"
+    >
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] transition group-hover:bg-[var(--primary)] group-hover:text-white">
+        <Icon className="h-4 w-4" />
+      </span>
+      {label}
+    </Link>
   );
 }

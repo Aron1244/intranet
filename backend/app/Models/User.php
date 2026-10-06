@@ -75,4 +75,29 @@ class User extends Authenticatable
             ->whereIn('name', Role::ROLES_QUE_PUEDEN_ADMINISTRAR)
             ->exists();
     }
+
+    /**
+     * True if the user holds any role flagged with can_manage_department
+     * (i.e. is a leader of some department).
+     */
+    public function isDepartmentLeader(): bool
+    {
+        return $this->roles()
+            ->where('can_manage_department', true)
+            ->exists();
+    }
+
+    /**
+     * True if the user can moderate messages/documents of the given
+     * department's group conversation. Admins and department leaders
+     * (of any department) are allowed.
+     */
+    public function canModerateDepartment(?int $departmentId = null): bool
+    {
+        if ($this->isAdministrator()) {
+            return true;
+        }
+
+        return $this->isDepartmentLeader();
+    }
 }

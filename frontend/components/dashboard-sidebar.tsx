@@ -1,311 +1,253 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  BarChart3,
+  Building2,
+  FileText,
+  LayoutGrid,
+  Megaphone,
+  MessageSquare,
+  ShieldAlert,
+  Users,
+  UsersRound,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-type SidebarRoute = {
+import { BrandMark } from "@/components/brand-mark";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/cn";
+import { clearAccessToken } from "@/lib/auth-token";
+
+type SidebarUser = {
+  name: string;
+  email: string;
+} | null;
+
+type SidebarProps = {
+  user: SidebarUser;
+  isAdmin: boolean;
+  isLeader: boolean;
+  isNewHire: boolean;
+  canManageAnnouncements?: boolean;
+  activeRoute?: string;
+  statusMessage?: string;
+};
+
+type NavItem = {
+  key: string;
   label: string;
   href: string;
-  active?: boolean;
-  highlighted?: boolean;
+  icon: LucideIcon;
+  visible: (state: SidebarState) => boolean;
 };
 
-type DashboardSidebarProps = {
-  user: {
-    name: string;
-    email: string;
-  } | null;
+type SidebarState = {
   isAdmin: boolean;
-  isLeader?: boolean;
-  isNewHire?: boolean;
-  canManageAnnouncements?: boolean;
-  activeRoute: "dashboard" | "conversations" | "documents" | "publications" | "users" | "departments" | "tasks" | "onboarding";
-  statusMessage: string;
+  isLeader: boolean;
+  isNewHire: boolean;
+  canManageAnnouncements: boolean;
 };
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    key: "dashboard",
+    label: "Resumen",
+    href: "/dashboard",
+    icon: LayoutGrid,
+    visible: () => true,
+  },
+  {
+    key: "conversations",
+    label: "Conversaciones",
+    href: "/dashboard/conversations",
+    icon: MessageSquare,
+    visible: () => true,
+  },
+  {
+    key: "publications",
+    label: "Publicaciones",
+    href: "/dashboard/publications",
+    icon: Megaphone,
+    visible: () => true,
+  },
+  {
+    key: "documents",
+    label: "Documentos",
+    href: "/dashboard/documents",
+    icon: FileText,
+    visible: () => true,
+  },
+  {
+    key: "tasks",
+    label: "Tareas",
+    href: "/dashboard/tasks",
+    icon: BarChart3,
+    visible: () => true,
+  },
+  {
+    key: "departments",
+    label: "Departamentos",
+    href: "/dashboard/departments",
+    icon: Building2,
+    visible: (state) => state.isAdmin,
+  },
+  {
+    key: "users",
+    label: "Usuarios",
+    href: "/dashboard/users",
+    icon: Users,
+    visible: (state) => state.isAdmin,
+  },
+  {
+    key: "trash",
+    label: "Papelera",
+    href: "/dashboard/trash",
+    icon: ShieldAlert,
+    visible: (state) => state.isAdmin,
+  },
+  {
+    key: "leader",
+    label: "Equipo",
+    href: "/dashboard/conversations",
+    icon: UsersRound,
+    visible: (state) => state.isLeader && !state.isAdmin,
+  },
+];
 
 export function DashboardSidebar({
   user,
   isAdmin,
-  isLeader = false,
-  isNewHire = false,
-  canManageAnnouncements = false,
+  isLeader,
+  isNewHire,
+  canManageAnnouncements,
   activeRoute,
   statusMessage,
-}: DashboardSidebarProps) {
-  const [isStartingTour, setIsStartingTour] = useState(false);
-  const driverCssLinkId = "intra-driverjs-css";
+}: SidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const cleanupDriverArtifacts = () => {
-    document.body.classList.remove("driver-active", "driver-fade", "driver-simple", "intra-tour-running");
-
-    document
-      .querySelectorAll(".driver-active-element")
-      .forEach((node) => node.classList.remove("driver-active-element"));
-
-    document
-      .querySelectorAll(
-        ".driver-popover, .driver-overlay, .driver-stage, .driver-overlay-animated, .driver-overlay-svg, [class*='driver-'][role='dialog']",
-      )
-      .forEach((node) => node.remove());
+  const state: SidebarState = {
+    isAdmin,
+    isLeader,
+    isNewHire,
+    canManageAnnouncements: canManageAnnouncements ?? false,
   };
 
-  useEffect(() => {
-    // Ensure stale Driver.js artifacts never leak across routes.
-    cleanupDriverArtifacts();
+  const visibleItems = NAV_ITEMS.filter((item) => item.visible(state));
+  const initials = (user?.name ?? "Invitado")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "IN";
 
-    const staleLink = document.getElementById(driverCssLinkId);
-    if (staleLink) {
-      staleLink.remove();
-    }
+  const activeKey =
+    activeRoute ??
+    visibleItems.find((item) => pathname === item.href)?.key ??
+    "dashboard";
 
-    return () => {
-      cleanupDriverArtifacts();
-      const existingLink = document.getElementById(driverCssLinkId);
-      if (existingLink) {
-        existingLink.remove();
-      }
-    };
-  }, []);
-
-  const routes: SidebarRoute[] = [
-    { label: "Inicio", href: "/dashboard", active: activeRoute === "dashboard" },
-    {
-      label: "Conversaciones",
-      href: "/dashboard/conversations",
-      active: activeRoute === "conversations",
-    },
-    {
-      label: "Documentos",
-      href: "/dashboard/documents",
-      active: activeRoute === "documents",
-    },
-  ];
-
-  if (canManageAnnouncements) {
-    routes.push({
-      label: "Publicaciones",
-      href: "/dashboard/publications",
-      active: activeRoute === "publications",
-    });
-  }
-
-  if (isLeader && !isAdmin) {
-    routes.push({
-      label: "Tareas",
-      href: "/dashboard/tasks",
-      active: activeRoute === "tasks",
-    });
-  }
-
-  if (isAdmin) {
-    routes.push({
-      label: "Departamentos",
-      href: "/dashboard/departments",
-      active: activeRoute === "departments",
-    });
-    routes.push({
-      label: "Usuarios",
-      href: "/dashboard/users",
-      active: activeRoute === "users",
-    });
-  }
-
-  if (isNewHire) {
-    routes.push({
-      label: "Panel Novedades",
-      href: "/dashboard/onboarding",
-      active: activeRoute === "onboarding",
-      highlighted: true,
-    });
-  }
-
-  const secondaryItems = isAdmin
-    ? ["Usuarios"]
-    : ["Mi actividad", "Mi perfil"];
-
-  const handleStartOnboarding = async () => {
-    if (isStartingTour) {
-      return;
-    }
-
-    setIsStartingTour(true);
-
-    try {
-      // Defensive cleanup in case a previous tour was interrupted.
-      cleanupDriverArtifacts();
-
-      await new Promise<void>((resolve, reject) => {
-        const existingLink = document.getElementById(driverCssLinkId) as HTMLLinkElement | null;
-
-        if (existingLink) {
-          if (existingLink.dataset.loaded === "true") {
-            resolve();
-            return;
-          }
-
-          existingLink.addEventListener("load", () => resolve(), { once: true });
-          existingLink.addEventListener("error", () => reject(new Error("driver css load error")), {
-            once: true,
-          });
-          return;
-        }
-
-        const link = document.createElement("link");
-        link.id = driverCssLinkId;
-        link.rel = "stylesheet";
-        link.href = "https://cdn.jsdelivr.net/npm/driver.js@1.4.0/dist/driver.css";
-        link.onload = () => {
-          link.dataset.loaded = "true";
-          resolve();
-        };
-        link.onerror = () => reject(new Error("driver css load error"));
-        document.head.appendChild(link);
-      });
-
-      const { driver } = await import("driver.js");
-
-      document.body.classList.add("intra-tour-running");
-
-      const tour = driver({
-        showProgress: true,
-        allowClose: true,
-        popoverClass: "intra-driver-popover",
-        nextBtnText: "Siguiente",
-        prevBtnText: "Anterior",
-        doneBtnText: "Finalizar",
-        onDestroyed: () => {
-          cleanupDriverArtifacts();
-          const existingLink = document.getElementById(driverCssLinkId);
-          if (existingLink) {
-            existingLink.remove();
-          }
-        },
-        steps: [
-          {
-            element: '[data-onboarding="brand"]',
-            popover: {
-              title: "Panel interno",
-              description: "Desde aqui navegas por toda la intranet.",
-            },
-          },
-          {
-            element: '[data-onboarding="profile"]',
-            popover: {
-              title: "Perfil activo",
-              description: "Muestra tu sesion, correo y tipo de usuario.",
-            },
-          },
-          {
-            element: '[data-onboarding="routes"]',
-            popover: {
-              title: "Navegacion principal",
-              description: "Accede a conversaciones, documentos, departamentos y mas.",
-            },
-          },
-          {
-            element: '[data-onboarding="status"]',
-            popover: {
-              title: "Estado del modulo",
-              description: "Aqui veras mensajes de sincronizacion o advertencias.",
-            },
-          },
-          {
-            element: '[data-onboarding="help"]',
-            popover: {
-              title: "Ayuda guiada",
-              description: "Puedes volver a abrir este onboarding cuando quieras.",
-            },
-          },
-        ],
-      });
-
-      tour.drive();
-    } catch (error) {
-      cleanupDriverArtifacts();
-      console.error("No se pudo iniciar el onboarding", error);
-    } finally {
-      setIsStartingTour(false);
-    }
+  const handleLogout = () => {
+    clearAccessToken();
+    router.push("/");
   };
 
   return (
-    <aside className="sticky top-0 flex h-dvh w-72 shrink-0 flex-col overflow-y-auto border-r border-intra-border bg-intra-secondary px-5 py-6 text-white shadow-xl shadow-intra-secondary/20">
-      <div>
-        <p data-onboarding="brand" className="text-xs tracking-[0.2em] text-white/60 uppercase">Intranet</p>
-        <h1 className="mt-2 text-xl font-semibold">Panel interno</h1>
-
-        <div data-onboarding="profile" className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-white/60">Perfil activo</p>
-          <p className="mt-1 text-sm font-semibold">{user?.name ?? "Cargando..."}</p>
-          <p className="text-xs text-white/70">{user?.email ?? ""}</p>
-          <p className="mt-3 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide">
-            {isAdmin ? "Administrador" : isLeader ? "Líder" : isNewHire ? "Nuevo Ingreso" : "Colaborador"}
-          </p>
-        </div>
-
-        <nav data-onboarding="routes" className="mt-6 space-y-1.5">
-          {routes.map((route) => {
-            const baseClass = "flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm transition";
-            const toneClass = route.highlighted
-              ? "bg-intra-primary/20 text-white ring-1 ring-intra-primary/60 hover:bg-intra-primary/30"
-              : route.active
-                ? "bg-white/15 text-white"
-                : "text-white/85 hover:bg-white/10";
-
-            return (
-              <Link
-                key={route.href}
-                href={route.href}
-                className={`${baseClass} ${toneClass}`}
-              >
-                {route.highlighted ? (
-                  <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-amber-300" aria-hidden="true" />
-                ) : null}
-                {route.label}
-              </Link>
-            );
-          })}
-
-          <div className="pt-2">
-            <p className="px-3 text-[11px] font-semibold tracking-[0.16em] text-white/50 uppercase">
-              Secciones
-            </p>
-            <div className="mt-2 space-y-1">
-              {secondaryItems.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm text-white/70 transition hover:bg-white/10"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
+    <aside className="sticky top-0 z-30 hidden h-[100dvh] w-[260px] shrink-0 border-r border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md lg:flex lg:flex-col">
+      <div className="flex items-center justify-between px-5 py-5">
+        <BrandMark />
+        <span
+          aria-hidden="true"
+          className="inline-flex h-6 items-center rounded-full bg-[var(--primary-soft)] px-2 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase"
+        >
+          v3
+        </span>
       </div>
 
-      <div className="mt-auto space-y-3 pt-6">
-        <div data-onboarding="status" className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
-          {statusMessage}
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-1">
+        <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.18em] text-[var(--muted)] uppercase">
+          Navegacion
+        </p>
+
+        <ul className="space-y-1">
+          {visibleItems.map((item) => {
+            const isActive = item.key === activeKey;
+            const Icon = item.icon;
+            return (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                    isActive
+                      ? "bg-[var(--primary-soft)] text-[var(--primary)]"
+                      : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]",
+                  )}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {isActive ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-[var(--primary)]"
+                    />
+                  ) : null}
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 transition",
+                      isActive
+                        ? "text-[var(--primary)]"
+                        : "text-[var(--muted)] group-hover:text-[var(--foreground)]",
+                    )}
+                  />
+                  <span className="flex-1">{item.label}</span>
+                  {item.key === "conversations" ? (
+                    <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
+                      live
+                    </span>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <div className="border-t border-[var(--border)] px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-sm font-semibold text-white">
+            {initials}
+            <span
+              aria-hidden="true"
+              className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-[var(--surface)] bg-[var(--success)]"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+              {user?.name ?? "Invitado"}
+            </p>
+            <p className="truncate text-xs text-[var(--muted)]">
+              {user?.email ?? "Sin sesion"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)]"
+            aria-label="Cerrar sesion"
+          >
+            Salir
+          </button>
         </div>
-        <button
-          data-onboarding="help"
-          type="button"
-          onClick={() => {
-            void handleStartOnboarding();
-          }}
-          disabled={isStartingTour}
-          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isStartingTour ? "Abriendo ayuda..." : "Ayuda"}
-        </button>
-        <Link
-          href="/"
-          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-        >
-          Cerrar sesion
-        </Link>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] pulse-dot" />
+            {statusMessage ?? "Sesion activa"}
+          </span>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

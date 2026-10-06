@@ -1,11 +1,24 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Building2,
+  Check,
+  Edit2,
+  Loader2,
+  Megaphone,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Users,
+} from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
 import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { cn } from "@/lib/cn";
 
 type MeResponse = {
   data: {
@@ -79,20 +92,15 @@ export default function DepartmentsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [deptFormState, setDeptFormState] = useState<DepartmentFormState>(INITIAL_DEPT_FORM_STATE);
   const [roleFormState, setRoleFormState] = useState<RoleFormState>(INITIAL_ROLE_FORM_STATE);
+  const [deptSearchTerm, setDeptSearchTerm] = useState("");
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const deptFormSectionRef = useRef<HTMLDivElement>(null);
-  const roleFormSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (editingDepartmentId && deptFormSectionRef.current) {
       deptFormSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [editingDepartmentId]);
-
-  useEffect(() => {
-    if (editingRoleId && roleFormSectionRef.current) {
-      roleFormSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [editingRoleId]);
 
   const loadDepartments = useCallback(async () => {
     try {
@@ -191,9 +199,18 @@ export default function DepartmentsPage() {
   }, [loadDepartments]);
 
   const departments_sorted = departments.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const filteredDepartments = useMemo(() => {
+    const query = deptSearchTerm.trim().toLowerCase();
+    if (!query) {
+      return departments_sorted;
+    }
+    return departments_sorted.filter((dept) =>
+      dept.name.toLowerCase().includes(query) ||
+      (dept.description ?? "").toLowerCase().includes(query),
+    );
+  }, [departments_sorted, deptSearchTerm]);
   const selectedDepartment = departments.find((d) => d.id === selectedDepartmentId);
   const roles_sorted = roles.slice().sort((a, b) => a.name.localeCompare(b.name));
-  const selectedRole = roles_sorted.find((role) => role.id === selectedRoleId) ?? null;
 
   const resetDeptForm = () => {
     setDeptFormState(INITIAL_DEPT_FORM_STATE);
@@ -345,7 +362,26 @@ export default function DepartmentsPage() {
 
   const handleEditRole = (role: Role) => {
     populateRoleForm(role);
+    setIsRoleModalOpen(true);
   };
+
+  const openCreateRoleModal = useCallback(() => {
+    if (!selectedDepartmentId) {
+      return;
+    }
+    setSelectedRoleId(null);
+    resetRoleForm();
+    setIsRoleModalOpen(true);
+  }, [selectedDepartmentId]);
+
+  const closeRoleModal = useCallback(() => {
+    if (isSavingRole) {
+      return;
+    }
+    setIsRoleModalOpen(false);
+    setSelectedRoleId(null);
+    resetRoleForm();
+  }, [isSavingRole]);
 
   const handleDeleteDepartment = async (dept: Department) => {
     const confirmed = window.confirm(`Eliminar departamento "${dept.name}" y todos sus roles?`);
@@ -428,23 +464,6 @@ export default function DepartmentsPage() {
     resetRoleForm();
   };
 
-  const handleSelectRole = (roleId: number) => {
-    setSelectedRoleId(roleId);
-  };
-
-  const handleLoadSelectedRoleInForm = () => {
-    if (!selectedRole) {
-      return;
-    }
-
-    populateRoleForm(selectedRole);
-  };
-
-  const handleStartCreateRole = () => {
-    setSelectedRoleId(null);
-    resetRoleForm();
-  };
-
   return (
     <div className="min-h-screen bg-intra-ligth">
       <main className="flex min-h-screen w-full">
@@ -464,354 +483,762 @@ export default function DepartmentsPage() {
         />
 
         <section className="min-w-0 flex-1 px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
-          <div className="mx-auto w-full max-w-6xl space-y-6">
-            <header className="rounded-3xl border border-intra-border bg-white p-6 shadow-sm">
-              <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">
-                Administración
+          <div className="mx-auto w-full max-w-5xl space-y-8">
+            <header className="space-y-3">
+              <p className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
+                <ShieldCheck className="h-3 w-3" />
+                Administracion
               </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-intra-secondary">
-                Departamentos y Roles
-              </h2>
-              <p className="mt-2 max-w-3xl text-base text-intra-secondary/70">
-                Gestiona departamentos y crea roles específicos para cada uno.
-              </p>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                    Departamentos y Roles
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                    Crea y edita los departamentos de la organizacion, luego asigna roles especificos a cada uno.
+                  </p>
+                </div>
+              </div>
             </header>
 
             {errorMessage ? (
               <div
-                className={`rounded-3xl px-4 py-3 text-base shadow-sm ${isPermissionError ? "border border-amber-200 bg-amber-50 text-amber-800" : "border border-red-200 bg-red-50 text-red-700"}`}
+                className={cn(
+                  "rounded-2xl border px-4 py-3 text-sm shadow-sm",
+                  isPermissionError
+                    ? "border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 text-[color:var(--warning)]"
+                    : "border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 text-[color:var(--danger)]",
+                )}
               >
-                <p>{errorMessage}</p>
+                {errorMessage}
               </div>
             ) : null}
 
             {successMessage ? (
-              <div className="rounded-3xl border border-green-200 bg-green-50 px-4 py-3 text-base text-green-700 shadow-sm">
-                <p>{successMessage}</p>
+              <div className="flex items-center gap-2 rounded-2xl border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm text-[color:var(--success)] shadow-sm">
+                <ShieldCheck className="h-4 w-4" />
+                {successMessage}
               </div>
             ) : null}
 
             {canAccessDepartments ? (
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {/* Departamentos - Left Panel */}
-                <div className="lg:col-span-1">
-                  <div className="space-y-4">
-                    <div
-                      ref={deptFormSectionRef}
-                      className="space-y-4 rounded-3xl border border-intra-border bg-white p-6 shadow-sm"
-                    >
-                      <h3 className="text-lg font-semibold text-intra-secondary">
-                        {editingDepartmentId ? "Editar" : "Nuevo"} Departamento
+              <div className="space-y-10">
+                {/* ============== SECCION DEPARTAMENTOS ============== */}
+                <section className="space-y-4">
+                  <header className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary-soft)] text-[var(--primary)]">
+                      <Building2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+                        Departamentos
                       </h3>
-
-                      <form onSubmit={handleSubmitDepartment} className="space-y-3">
-                        <div>
-                          <label htmlFor="dept-name" className="block text-sm font-semibold text-intra-secondary">
-                            Nombre <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            id="dept-name"
-                            type="text"
-                            value={deptFormState.name}
-                            onChange={(e) => setDeptFormState({ ...deptFormState, name: e.target.value })}
-                            placeholder="Ej: Recursos Humanos"
-                            className="mt-1 w-full rounded-lg border border-intra-border bg-white px-3 py-2 text-sm text-intra-secondary placeholder-intra-secondary/50 transition focus:border-intra-accent focus:outline-none focus:ring-2 focus:ring-intra-accent/20"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="dept-description" className="block text-sm font-semibold text-intra-secondary">
-                            Descripción
-                          </label>
-                          <textarea
-                            id="dept-description"
-                            value={deptFormState.description}
-                            onChange={(e) => setDeptFormState({ ...deptFormState, description: e.target.value })}
-                            placeholder="Descripción opcional"
-                            rows={2}
-                            className="mt-1 w-full rounded-lg border border-intra-border bg-white px-3 py-2 text-sm text-intra-secondary placeholder-intra-secondary/50 transition focus:border-intra-accent focus:outline-none focus:ring-2 focus:ring-intra-accent/20"
-                          />
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                          <button
-                            type="submit"
-                            disabled={isSavingDepartment}
-                            className="flex-1 rounded-xl bg-intra-accent px-3 py-2 text-sm font-semibold text-white transition hover:bg-intra-accent/90 disabled:opacity-50"
-                          >
-                            {isSavingDepartment ? "Guardando..." : editingDepartmentId ? "Actualizar" : "Crear"}
-                          </button>
-
-                          {editingDepartmentId && (
-                            <button
-                              type="button"
-                              onClick={resetDeptForm}
-                              className="rounded-xl border border-intra-border px-3 py-2 text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth"
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      </form>
+                      <p className="text-xs text-[var(--muted)]">
+                        {departments_sorted.length} {departments_sorted.length === 1 ? "departamento" : "departamentos"} registrados
+                        {deptSearchTerm && filteredDepartments.length !== departments_sorted.length
+                          ? ` · ${filteredDepartments.length} visibles`
+                          : null}
+                      </p>
                     </div>
+                  </header>
 
-                    {isLoadingDepartments ? (
-                      <div className="rounded-3xl border border-intra-border bg-white p-4 text-center">
-                        <p className="text-sm text-intra-secondary/70">Cargando...</p>
-                      </div>
-                    ) : departments_sorted.length === 0 ? (
-                      <div className="rounded-3xl border border-intra-border bg-white p-4 text-center">
-                        <p className="text-sm text-intra-secondary/70">No hay departamentos</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 rounded-3xl border border-intra-border bg-white p-4 shadow-sm">
-                        {departments_sorted.map((dept) => (
-                          <div
-                            key={dept.id}
-                            className={`rounded-lg border p-3 transition cursor-pointer ${
-                              selectedDepartmentId === dept.id
-                                ? "border-intra-accent bg-intra-accent/10"
-                                : "border-transparent bg-intra-ligth hover:bg-intra-ligth/80"
-                            }`}
-                          >
-                            <div onClick={() => handleSelectDepartment(dept.id)}>
-                              <p className="font-semibold text-intra-secondary">{dept.name}</p>
-                              {dept.description && (
-                                <p className="text-xs text-intra-secondary/70">{dept.description}</p>
-                              )}
-                            </div>
+                  <div
+                    ref={deptFormSectionRef}
+                    className="surface-card p-5 sm:p-6"
+                  >
+                    <h4 className="text-sm font-semibold text-[var(--foreground)]">
+                      {editingDepartmentId ? "Editar departamento" : "Nuevo departamento"}
+                    </h4>
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      {editingDepartmentId
+                        ? "Modifica el nombre o la descripcion."
+                        : "Crea un nuevo departamento para la organizacion."}
+                    </p>
 
-                            <div className="mt-2 flex gap-1">
-                              <button
-                                onClick={() => handleEditDepartment(dept)}
-                                className="flex-1 rounded-lg bg-blue-500 px-2 py-1 text-xs font-semibold text-white transition hover:bg-blue-600 disabled:opacity-50"
-                                disabled={isSavingDepartment}
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => handleDeleteDepartment(dept)}
-                                disabled={isDeletingDepartmentId === dept.id}
-                                className="flex-1 rounded-lg bg-red-500 px-2 py-1 text-xs font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
-                              >
-                                {isDeletingDepartmentId === dept.id ? "..." : "Eliminar"}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                    <form onSubmit={handleSubmitDepartment} className="mt-5 space-y-4">
+                      <Field
+                        id="dept-name"
+                        label="Nombre"
+                        required
+                        placeholder="Ej: Recursos Humanos"
+                        value={deptFormState.name}
+                        onChange={(value) => setDeptFormState({ ...deptFormState, name: value })}
+                      />
+                      <Field
+                        id="dept-description"
+                        label="Descripcion"
+                        as="textarea"
+                        rows={2}
+                        placeholder="Descripcion opcional"
+                        value={deptFormState.description}
+                        onChange={(value) => setDeptFormState({ ...deptFormState, description: value })}
+                      />
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <PrimaryButton type="submit" disabled={isSavingDepartment}>
+                          {isSavingDepartment ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" /> Guardando...
+                            </>
+                          ) : editingDepartmentId ? (
+                            <>
+                              <Edit2 className="h-4 w-4" /> Actualizar
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4" /> Crear
+                            </>
+                          )}
+                        </PrimaryButton>
+
+                        {editingDepartmentId ? (
+                          <SecondaryButton type="button" onClick={resetDeptForm}>
+                            Cancelar
+                          </SecondaryButton>
+                        ) : null}
                       </div>
-                    )}
+                    </form>
                   </div>
-                </div>
 
-                {/* Roles - Right Panel */}
-                <div className="lg:col-span-2">
-                  <div className="space-y-4">
-                    {selectedDepartmentId ? (
-                      <>
-                        <div
-                          ref={roleFormSectionRef}
-                          className="space-y-4 rounded-3xl border border-intra-border bg-white p-6 shadow-sm"
-                        >
-                          <div className="space-y-3 rounded-2xl border border-intra-border bg-intra-ligth/40 p-4">
-                            <p className="text-sm font-semibold text-intra-secondary">Seleccion de rol</p>
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                              <select
-                                value={selectedRoleId ?? ""}
-                                onChange={(e) => handleSelectRole(Number(e.target.value))}
-                                className="w-full rounded-lg border border-intra-border bg-white px-3 py-2 text-sm text-intra-secondary focus:border-intra-accent focus:outline-none focus:ring-2 focus:ring-intra-accent/20"
-                              >
-                                <option value="">Selecciona un rol de {selectedDepartment?.name}</option>
-                                {roles_sorted.map((role) => (
-                                  <option key={role.id} value={role.id}>
-                                    {role.name} {role.can_post_announcements ? "- publica anuncios" : "- sin anuncios"}
-                                  </option>
-                                ))}
-                              </select>
+                  {isLoadingDepartments ? (
+                    <SkeletonBlock />
+                  ) : departments_sorted.length === 0 ? (
+                    <EmptyState
+                      icon={Building2}
+                      title="Aun no hay departamentos"
+                      body="Crea el primero con el formulario de arriba."
+                    />
+                  ) : (
+                    <div className="surface-card overflow-hidden">
+                      <div className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2">
+                        <Search className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+                        <input
+                          type="search"
+                          value={deptSearchTerm}
+                          onChange={(event) => setDeptSearchTerm(event.target.value)}
+                          placeholder="Buscar departamento por nombre o descripcion..."
+                          className="h-8 w-full border-0 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted-soft)]"
+                        />
+                        <span className="shrink-0 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted)] uppercase">
+                          {filteredDepartments.length}/{departments_sorted.length}
+                        </span>
+                      </div>
 
-                              <button
-                                type="button"
-                                onClick={handleLoadSelectedRoleInForm}
-                                disabled={!selectedRole}
-                                className="rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Cargar para editar
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={handleStartCreateRole}
-                                className="rounded-xl border border-intra-border px-4 py-2 text-sm font-semibold text-intra-secondary transition hover:bg-white"
-                              >
-                                Nuevo rol
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedRole) {
-                                    void handleDeleteRole(selectedRole);
-                                  }
-                                }}
-                                disabled={!selectedRole || isDeletingRoleId === selectedRole.id}
-                                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {selectedRole && isDeletingRoleId === selectedRole.id ? "Eliminando..." : "Eliminar seleccionado"}
-                              </button>
-                            </div>
-                            <p className="text-xs text-intra-secondary/70">
-                              Primero selecciona un rol, luego carga para editar o elimina directamente.
-                            </p>
-                          </div>
-
-                          <h3 className="text-lg font-semibold text-intra-secondary">
-                            {editingRoleId ? "Editar" : "Nuevo"} Rol en {selectedDepartment?.name}
-                          </h3>
-
-                          <form onSubmit={handleSubmitRole} className="space-y-3">
-                            <div>
-                              <label htmlFor="role-name" className="block text-sm font-semibold text-intra-secondary">
-                                Nombre <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                id="role-name"
-                                type="text"
-                                value={roleFormState.name}
-                                onChange={(e) => setRoleFormState({ ...roleFormState, name: e.target.value })}
-                                placeholder="Ej: Jefe de Área"
-                                className="mt-1 w-full rounded-lg border border-intra-border bg-white px-3 py-2 text-sm text-intra-secondary placeholder-intra-secondary/50 transition focus:border-intra-accent focus:outline-none focus:ring-2 focus:ring-intra-accent/20"
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <input
-                                id="role-announcements"
-                                type="checkbox"
-                                checked={roleFormState.can_post_announcements}
-                                onChange={(e) =>
-                                  setRoleFormState({
-                                    ...roleFormState,
-                                    can_post_announcements: e.target.checked,
-                                  })
-                                }
-                                className="rounded"
-                              />
-                              <label htmlFor="role-announcements" className="text-sm font-semibold text-intra-secondary">
-                                Puede publicar anuncios
-                              </label>
-                            </div>
-
-                            <div className="flex gap-2 pt-2">
-                              <button
-                                type="submit"
-                                disabled={isSavingRole}
-                                className="flex-1 rounded-xl bg-intra-accent px-3 py-2 text-sm font-semibold text-white transition hover:bg-intra-accent/90 disabled:opacity-50"
-                              >
-                                {isSavingRole ? "Guardando..." : editingRoleId ? "Actualizar" : "Crear"}
-                              </button>
-
-                              {editingRoleId && (
-                                <button
-                                  type="button"
-                                  onClick={resetRoleForm}
-                                  className="rounded-xl border border-intra-border px-3 py-2 text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth"
-                                >
-                                  Cancelar
-                                </button>
-                              )}
-                            </div>
-                          </form>
-                        </div>
-
-                        {isLoadingRoles ? (
-                          <div className="rounded-3xl border border-intra-border bg-white p-8 text-center shadow-sm">
-                            <p className="text-intra-secondary/70">Cargando roles...</p>
-                          </div>
-                        ) : roles_sorted.length === 0 ? (
-                          <div className="rounded-3xl border border-intra-border bg-white p-8 text-center shadow-sm">
-                            <p className="text-intra-secondary/70">No hay roles. Crea uno arriba.</p>
-                          </div>
-                        ) : (
-                          <div className="overflow-hidden rounded-3xl border border-intra-border bg-white shadow-sm">
-                            <table className="w-full border-collapse">
-                              <thead>
-                                <tr className="border-b border-intra-border bg-intra-ligth">
-                                  <th className="px-6 py-4 text-left text-sm font-semibold text-intra-secondary">
-                                    Nombre
-                                  </th>
-                                  <th className="px-6 py-4 text-center text-sm font-semibold text-intra-secondary">
-                                    Publicar
-                                  </th>
-                                  <th className="px-6 py-4 text-center text-sm font-semibold text-intra-secondary">
-                                    Seleccion
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-intra-border">
-                                {roles_sorted.map((role) => (
-                                  <tr
-                                    key={role.id}
-                                    className={`cursor-pointer transition ${selectedRoleId === role.id ? "bg-blue-50" : "hover:bg-intra-ligth/50"}`}
-                                    onClick={() => handleSelectRole(role.id)}
-                                  >
-                                    <td className="px-6 py-4 text-sm font-medium text-intra-secondary">{role.name}</td>
-                                    <td className="px-6 py-4 text-center">
-                                      <span
-                                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                                          role.can_post_announcements
-                                            ? "bg-green-100 text-green-800"
-                                            : "bg-gray-100 text-gray-800"
-                                        }`}
-                                      >
-                                        {role.can_post_announcements ? "Sí" : "No"}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditRole(role);
-                                        }}
-                                        className="rounded-lg border border-intra-border px-3 py-1.5 text-xs font-semibold text-intra-secondary transition hover:bg-white"
-                                      >
-                                        Cargar
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        <div className="rounded-3xl border border-intra-border bg-white p-6 shadow-sm">
-                          <p className="text-sm text-intra-secondary/70">
-                            <span className="font-semibold text-intra-secondary">{roles_sorted.length}</span> rol
-                            {roles_sorted.length !== 1 ? "es" : ""}
+                      {filteredDepartments.length === 0 ? (
+                        <div className="px-4 py-8 text-center">
+                          <p className="text-sm font-medium text-[var(--foreground)]">Sin coincidencias</p>
+                          <p className="mt-1 text-xs text-[var(--muted)]">
+                            No hay departamentos que coincidan con &ldquo;{deptSearchTerm}&rdquo;.
                           </p>
                         </div>
-                      </>
-                    ) : (
-                      <div className="rounded-3xl border border-intra-border bg-white p-8 text-center shadow-sm">
-                        <p className="text-intra-secondary/70">Selecciona un departamento para gestionar sus roles.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      ) : (
+                        <ul
+                          className="max-h-[420px] divide-y divide-[var(--border)] overflow-y-auto"
+                          aria-label="Lista de departamentos"
+                        >
+                          {filteredDepartments.map((dept) => {
+                            const isSelected = selectedDepartmentId === dept.id;
+                            return (
+                              <li
+                                key={dept.id}
+                                className={cn(
+                                  "group flex items-center gap-2 px-3 py-2 transition",
+                                  isSelected
+                                    ? "bg-[var(--primary-soft)]"
+                                    : "hover:bg-[var(--surface-muted)]",
+                                )}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectDepartment(dept.id)}
+                                  className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                                >
+                                  <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition",
+                                      isSelected
+                                        ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                                        : "border-[var(--border-strong)] bg-[var(--surface)]",
+                                    )}
+                                  >
+                                    {isSelected ? (
+                                      <Check className="h-3 w-3" strokeWidth={3} />
+                                    ) : null}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p
+                                      className={cn(
+                                        "truncate text-sm font-medium",
+                                        isSelected ? "text-[var(--primary)]" : "text-[var(--foreground)]",
+                                      )}
+                                    >
+                                      {dept.name}
+                                    </p>
+                                    {dept.description ? (
+                                      <p className="truncate text-xs text-[var(--muted)]">
+                                        {dept.description}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                </button>
+
+                                <div className="flex shrink-0 items-center gap-1">
+                                  <IconButton
+                                    label="Editar departamento"
+                                    onClick={() => handleEditDepartment(dept)}
+                                    tone="primary"
+                                    disabled={isSavingDepartment}
+                                  >
+                                    <Edit2 className="h-3.5 w-3.5" />
+                                  </IconButton>
+                                  <IconButton
+                                    label="Eliminar departamento"
+                                    onClick={() => void handleDeleteDepartment(dept)}
+                                    tone="danger"
+                                    disabled={isDeletingDepartmentId === dept.id}
+                                  >
+                                    {isDeletingDepartmentId === dept.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    )}
+                                  </IconButton>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* ============== SECCION ROLES ============== */}
+                <section className="space-y-4">
+                  <header className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                      <Users className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+                        Roles del departamento
+                      </h3>
+                      {selectedDepartment ? (
+                        <p className="text-xs text-[var(--muted)]">
+                          Gestionando: <span className="font-medium text-[var(--foreground)]">{selectedDepartment.name}</span>
+                          {" · "}
+                          {roles_sorted.length} {roles_sorted.length === 1 ? "rol" : "roles"}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[var(--muted)]">
+                          Selecciona un departamento para ver y editar sus roles.
+                        </p>
+                      )}
+                    </div>
+                    {selectedDepartmentId ? (
+                      <button
+                        type="button"
+                        onClick={openCreateRoleModal}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] active:scale-[0.98]"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Nuevo rol
+                      </button>
+                    ) : null}
+                  </header>
+
+                  {!selectedDepartmentId ? (
+                    <EmptyState
+                      icon={Users}
+                      title="Sin departamento seleccionado"
+                      body="Haz clic en 'Ver roles' en cualquier departamento de arriba."
+                    />
+                  ) : isLoadingRoles ? (
+                    <SkeletonBlock />
+                  ) : roles_sorted.length === 0 ? (
+                    <EmptyState
+                      icon={Users}
+                      title="Este departamento no tiene roles"
+                      body="Usa el boton 'Nuevo rol' arriba para crear el primero."
+                    />
+                  ) : (
+                    <div className="surface-card overflow-hidden">
+                      <ul className="divide-y divide-[var(--border)]">
+                        {roles_sorted.map((role) => (
+                          <li
+                            key={role.id}
+                            className="flex flex-wrap items-center gap-3 px-4 py-3 transition hover:bg-[var(--surface-muted)]"
+                          >
+                            <div className="flex min-w-0 flex-1 items-center gap-3">
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+                                <ShieldCheck className="h-4 w-4" />
+                              </span>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+                                      {role.name}
+                                    </p>
+                                    <p className="text-xs text-[var(--muted)]">
+                                      {role.can_post_announcements
+                                        ? "Puede publicar anuncios"
+                                        : "Sin permisos de publicacion"}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                    role.can_post_announcements
+                                      ? "bg-[color:var(--success)]/12 text-[color:var(--success)]"
+                                      : "bg-[var(--surface-muted)] text-[var(--muted)]",
+                                  )}
+                                >
+                                  <Megaphone className="h-3 w-3" />
+                                  {role.can_post_announcements ? "publica" : "sin anuncios"}
+                                </span>
+
+                                <div className="flex items-center gap-2">
+                                  <IconButton
+                                    label="Editar rol"
+                                    onClick={() => handleEditRole(role)}
+                                    tone="primary"
+                                    disabled={isSavingRole}
+                                  >
+                                    <Edit2 className="h-3.5 w-3.5" />
+                                  </IconButton>
+                                  <IconButton
+                                    label="Eliminar rol"
+                                    onClick={() => void handleDeleteRole(role)}
+                                    tone="danger"
+                                    disabled={isDeletingRoleId === role.id}
+                                  >
+                                    {isDeletingRoleId === role.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    )}
+                                  </IconButton>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                </section>
               </div>
             ) : isLoadingUser ? (
-              <div className="rounded-3xl border border-intra-border bg-white p-8 text-center shadow-sm">
-                <p className="text-intra-secondary/70">Cargando...</p>
+              <div className="surface-card p-8 text-center text-sm text-[var(--muted)]">
+                Validando permisos...
               </div>
             ) : (
-              <div className="rounded-3xl border border-intra-border bg-white p-8 text-center shadow-sm">
-                <p className="text-intra-secondary/70">{errorMessage || "No tienes acceso a esta sección."}</p>
+              <div className="surface-card p-8 text-center text-sm text-[var(--muted)]">
+                {errorMessage || "No tienes acceso a esta seccion."}
               </div>
             )}
           </div>
         </section>
       </main>
+
+      <RoleFormModal
+        open={isRoleModalOpen}
+        onClose={closeRoleModal}
+        editing={Boolean(editingRoleId)}
+        departmentName={selectedDepartment?.name ?? ""}
+        formState={roleFormState}
+        onChange={setRoleFormState}
+        onSubmit={handleSubmitRole}
+        isSaving={isSavingRole}
+      />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Local UI helpers                                                    */
+/* ------------------------------------------------------------------ */
+
+type FieldProps = {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  as?: "input" | "textarea";
+  rows?: number;
+};
+
+function Field({ id, label, value, onChange, placeholder, required, as = "input", rows }: FieldProps) {
+  const sharedClasses =
+    "mt-1 w-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-soft)] transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] focus:outline-none rounded-lg";
+
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-[var(--foreground)]">
+        {label}
+        {required ? <span className="ml-0.5 text-[color:var(--danger)]">*</span> : null}
+      </label>
+      {as === "textarea" ? (
+        <textarea
+          id={id}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          rows={rows ?? 2}
+          className={sharedClasses}
+        />
+      ) : (
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={sharedClasses}
+        />
+      )}
+    </div>
+  );
+}
+
+type CheckboxFieldProps = {
+  id: string;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+};
+
+function CheckboxField({ id, label, description, checked, onChange }: CheckboxFieldProps) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 transition hover:border-[var(--primary)]"
+    >
+      <span className="relative inline-flex shrink-0 pt-0.5">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="peer sr-only"
+        />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "h-4 w-4 rounded border transition",
+            checked
+              ? "border-[var(--primary)] bg-[var(--primary)]"
+              : "border-[var(--border-strong)] bg-[var(--surface)]",
+          )}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            className={cn(
+              "absolute inset-0 m-auto h-3 w-3 text-white transition",
+              checked ? "scale-100 opacity-100" : "scale-50 opacity-0",
+            )}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="3 8.5 6.5 12 13 4.5" />
+          </svg>
+        </span>
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-[var(--foreground)]">{label}</span>
+        {description ? (
+          <span className="mt-0.5 block text-xs text-[var(--muted)]">{description}</span>
+        ) : null}
+      </span>
+    </label>
+  );
+}
+
+function PrimaryButton({
+  children,
+  disabled,
+  type = "button",
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  type?: "button" | "submit";
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-16px_var(--primary-glow)] transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function SecondaryButton({
+  children,
+  disabled,
+  type = "button",
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  type?: "button" | "submit";
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {children}
+    </button>
+  );
+}
+
+function IconButton({
+  children,
+  label,
+  onClick,
+  tone,
+  disabled,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  tone: "primary" | "danger";
+  disabled?: boolean;
+}) {
+  const toneClasses =
+    tone === "primary"
+      ? "border-[var(--border)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
+      : "border-[var(--border)] text-[var(--muted)] hover:border-[color:var(--danger)] hover:text-[color:var(--danger)]";
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-[var(--surface)] transition active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60",
+        toneClasses,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)]/40 px-4 py-8 text-center">
+      <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)]">
+        <Icon className="h-4 w-4" />
+      </span>
+      <p className="mt-3 text-sm font-semibold text-[var(--foreground)]">{title}</p>
+      <p className="mt-1 text-xs text-[var(--muted)]">{body}</p>
+    </div>
+  );
+}
+
+function SkeletonBlock() {
+  return (
+    <div className="surface-card p-5">
+      <div className="skeleton-shimmer h-4 w-1/3 rounded-md" />
+      <div className="skeleton-shimmer mt-3 h-3 w-2/3 rounded-md" />
+      <div className="skeleton-shimmer mt-5 h-9 w-full rounded-md" />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Modal                                                               */
+/* ------------------------------------------------------------------ */
+
+import { AnimatePresence, motion } from "framer-motion";
+import { X as XIcon } from "lucide-react";
+
+type ModalProps = {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+};
+
+function Modal({ open, onClose, title, description, icon: Icon, children }: ModalProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.button
+            type="button"
+            aria-label="Cerrar modal"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)]"
+          >
+            <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+              <div className="flex min-w-0 items-start gap-3">
+                {Icon ? (
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                ) : null}
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+                    {title}
+                  </h3>
+                  {description ? (
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">{description}</p>
+                  ) : null}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Cerrar"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </header>
+            <div className="px-5 py-5">{children}</div>
+          </motion.div>
+        </div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Role form modal                                                     */
+/* ------------------------------------------------------------------ */
+
+type RoleFormModalProps = {
+  open: boolean;
+  onClose: () => void;
+  editing: boolean;
+  departmentName: string;
+  formState: RoleFormState;
+  onChange: React.Dispatch<React.SetStateAction<RoleFormState>>;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  isSaving: boolean;
+};
+
+function RoleFormModal({
+  open,
+  onClose,
+  editing,
+  departmentName,
+  formState,
+  onChange,
+  onSubmit,
+  isSaving,
+}: RoleFormModalProps) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      icon={ShieldCheck}
+      title={editing ? "Editar rol" : "Nuevo rol"}
+      description={
+        editing
+          ? "Modifica el nombre o el permiso de publicacion."
+          : `Crea un rol dentro de ${departmentName || "este departamento"}.`
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <Field
+          id="role-name"
+          label="Nombre del rol"
+          required
+          placeholder="Ej: Jefe de Area"
+          value={formState.name}
+          onChange={(value) => onChange({ ...formState, name: value })}
+        />
+
+        <CheckboxField
+          id="role-announcements"
+          label="Puede publicar anuncios"
+          description="Permite que los miembros con este rol creen publicaciones visibles."
+          checked={formState.can_post_announcements}
+          onChange={(checked) =>
+            onChange({ ...formState, can_post_announcements: checked })
+          }
+        />
+
+        <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] pt-4">
+          <SecondaryButton type="button" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </SecondaryButton>
+          <PrimaryButton type="submit" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Guardando...
+              </>
+            ) : editing ? (
+              <>
+                <Edit2 className="h-4 w-4" /> Actualizar
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" /> Crear rol
+              </>
+            )}
+          </PrimaryButton>
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DepartmentFolderController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\TrashController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserRoleController;
 use Illuminate\Http\Request;
@@ -126,5 +127,19 @@ Route::middleware('auth:sanctum')->group(function () {
         '/conversations/{conversation}/read',
         [ConversationController::class, 'markAsRead']
     );
+
+    Route::patch(
+        '/conversations/{conversation}',
+        [ConversationController::class, 'update']
+    );
+
+    // Soft-delete review queue (papelera).
+    Route::middleware('admin')->prefix('trash')->group(function (): void {
+        Route::get('/', [TrashController::class, 'index']);
+        Route::delete('/messages/{id}', [TrashController::class, 'destroyMessage']);
+        Route::post('/messages/{id}/restore', [TrashController::class, 'restoreMessage']);
+        Route::delete('/documents/{id}', [TrashController::class, 'destroyDocument']);
+        Route::post('/documents/{id}/restore', [TrashController::class, 'restoreDocument']);
+    });
 
 });

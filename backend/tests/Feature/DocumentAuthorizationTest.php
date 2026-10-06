@@ -47,19 +47,20 @@ class DocumentAuthorizationTest extends TestCase
         ]);
     }
 
-    public function test_owner_can_delete_own_document(): void
+    public function test_owner_can_soft_delete_own_document(): void
     {
         $owner = $this->makeUserWithRole('Colaborador');
         $document = $this->makeDocument($owner);
 
         $this->actingAs($owner, 'sanctum')
             ->deleteJson("/api/documents/{$document->id}")
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonPath('message', 'Documento marcado para revision.');
 
-        $this->assertDatabaseMissing('documents', ['id' => $document->id]);
+        $this->assertSoftDeleted('documents', ['id' => $document->id]);
     }
 
-    public function test_admin_can_delete_any_document(): void
+    public function test_admin_can_soft_delete_any_document(): void
     {
         $owner = $this->makeUserWithRole('Colaborador');
         $admin = $this->makeUserWithRole('admin');
@@ -67,7 +68,10 @@ class DocumentAuthorizationTest extends TestCase
 
         $this->actingAs($admin, 'sanctum')
             ->deleteJson("/api/documents/{$document->id}")
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonPath('message', 'Documento marcado para revision.');
+
+        $this->assertSoftDeleted('documents', ['id' => $document->id]);
     }
 
     public function test_non_owner_non_admin_cannot_delete_document(): void

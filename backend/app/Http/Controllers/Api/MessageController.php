@@ -121,11 +121,28 @@ class MessageController extends Controller
 
     public function destroy(Message $message): JsonResponse
     {
-        $this->ensureAdmin();
+        $user = auth()->user();
+        abort_unless($user, 401);
 
+        abort_unless(
+            $message->conversation?->users()->whereKey($user->id)->exists(),
+            403,
+            'No participas en la conversacion.'
+        );
+
+        $isOwner = (int) $message->sender_id === (int) $user->id;
+
+        abort_unless(
+            $user->isAdministrator() || $user->isDepartmentLeader() || $isOwner,
+            403,
+            'Solo administradores, lideres o el autor pueden marcar el mensaje.'
+        );
+
+        $message->deleted_by = $user->id;
+        $message->save();
         $message->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Mensaje marcado para revision.'], 200);
     }
 
     private function ensureAdmin(): void
