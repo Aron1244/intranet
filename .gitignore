@@ -1,4 +1,7 @@
-graphify-out/
-gen_graph.py
-gen_structure.bat
-graphify-out/*.md
+# Graphify artifacts (consultable shared with team)
+# Local-only files (machine-specific paths, AST cache) stay untracked.
+graphify-out/cache/
+graphify-out/.graphify_root
+graphify-out/.graphify_analysis.json
+graphify-out/.graphify_labels.json
+graphify-out/.graphify_labels.json.sig
