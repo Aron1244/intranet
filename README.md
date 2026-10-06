@@ -1,6 +1,6 @@
 <div align="center">
 
-# PR Intra
+# Coherev
 
 **Intranet corporativa** con autenticación, mensajería en tiempo real, gestión documental y control de acceso por roles.
 
