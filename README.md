@@ -130,6 +130,75 @@ Las instrucciones detalladas (comandos, variables de entorno, seeders, etc.) se 
 
 ---
 
+## Knowledge Graph del Proyecto
+
+El proyecto se analiza automáticamente con **[Graphify](https://github.com/Graphify-Labs/graphify)** (CLI de [Graphify Labs](https://graphify.com)) para generar un **grafo de conocimiento** consultable del código + docs + SQL + configs.
+
+### Lo que produce
+
+`graphify-out/` queda **gitignored** y contiene (regenerable con `graphify .`):
+
+| Archivo | Descripción |
+|---|---|
+| `graph.html` | Visualización clickeable, filtrable y buscable en cualquier navegador |
+| `GRAPH_REPORT.md` | Highlights: god nodes, conexiones sorprendentes, comunidades Leiden |
+| `graph.json` | Grafo completo (≈ 1080 nodos, 2364 aristas, 96 comunidades) |
+| `architecture.md` | Vista arquitectónica |
+| `backend.md` / `frontend.md` | Vistas por capa |
+| `backend-routes.md` / `backend-classes.md` | Rutas y modelos Eloquent |
+| `manifest.json` | Metadata portable con `schema_version` y `graphify_version` |
+
+Cada arista lleva etiqueta de origen: **EXTRACTED** (en el código) o **INFERRED** (resuelta por graphify).
+
+### Cómo regenerar el grafo
+
+```bash
+# Solo code (rápido, sin API key)
+uv tool run --from graphifyy graphify .  --code-only
+
+# Code + docs + papers (necesita API key)
+export GEMINI_API_KEY=...
+uv tool run --from graphifyy graphify .
+
+# Re-extraer solo archivos modificados (incremental, sin API cost)
+uv tool run --from graphifyy graphify update .
+
+# Re-clustering y reporte (sin re-extraer AST)
+uv tool run --from graphifyy graphify cluster-only .
+```
+
+### Consultar el grafo desde la terminal
+
+```bash
+uv tool run --from graphifyy graphify explain "TrashController"
+uv tool run --from graphifyy graphify path "Message" "Document"
+uv tool run --from graphifyy graphify query "what connects trash to the conversations controller?"
+```
+
+### Auto-rebuild en commits
+
+```bash
+uv tool run --from graphifyy graphify hook install
+```
+
+Instala hooks de git que regeneran el grafo después de cada `git commit` y `git checkout` (background, sin interrumpir el flujo). Después de cada `git pull`, ejecuta `graphify update .`.
+
+### Explorar visualmente
+
+Abre `graphify-out/graph.html` en cualquier navegador. Click en un nodo para ver detalles, filtra por comunidad en la leyenda, usa el buscador para saltar a cualquier símbolo.
+
+### Configuración de `.gitignore`
+
+```gitignore
+graphify-out/
+gen_graph.py
+gen_structure.bat
+```
+
+`graphify-out/` no se commitea por defecto (es local). Para compartirlo con un equipo, fuerza-add solo los artefactos consultables (`graph.json`, `GRAPH_REPORT.md` y opcionalmente `wiki/` u `obsidian/`).
+
+---
+
 ## Roadmap / Ideas
 
 - Notificaciones push para anuncios y mensajes.
