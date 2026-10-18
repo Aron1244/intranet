@@ -2,7 +2,7 @@
 
 import { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Pencil, X } from "lucide-react";
+import { MessageSquare, Pencil, Trash2, X } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { HelpButton } from "@/components/help-button";
@@ -137,6 +137,45 @@ function writeStoredConversationId(id: number | null): void {
   } catch {
     // ignore quota / private mode errors
   }
+}
+
+const CONVERSATION_TYPE_LABEL: Record<string, string> = {
+  private: "Privada",
+  group: "Grupo",
+  department: "Departamento",
+};
+
+/**
+ * Los chats privados llegan con `name: null` desde el backend. Mostrar el ID crudo
+ * ("Conversacion 51") no le dice nada al usuario; se resuelve con el nombre del
+ * otro participante, igual que hace el resumen del dashboard.
+ */
+function conversationTitle(
+  conversation: Conversation,
+  currentUserId?: number,
+): string {
+  if (conversation.name) {
+    return conversation.name;
+  }
+
+  const others = (conversation.users ?? []).filter((user) => user.id !== currentUserId);
+  if (others.length > 0) {
+    return others.map((user) => user.name).join(", ");
+  }
+
+  return `Conversacion ${conversation.id}`;
+}
+
+/** `type` viene del backend en ingles ("private", "group"). */
+function conversationTypeLabel(type?: string | null): string {
+  if (!type) {
+    return "Conversacion";
+  }
+  return CONVERSATION_TYPE_LABEL[type.toLowerCase()] ?? "Conversacion";
+}
+
+function participantLabel(count: number): string {
+  return `${count} ${count === 1 ? "participante" : "participantes"}`;
 }
 
 export default function ConversationsPage() {
@@ -1550,7 +1589,7 @@ export default function ConversationsPage() {
   };
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-intra-ligth">
+    <div className="h-[100dvh] overflow-hidden bg-[var(--background)]">
       <main className="flex h-[100dvh] w-full overflow-hidden">
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
@@ -1567,9 +1606,9 @@ export default function ConversationsPage() {
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
           <div className="mx-auto flex min-h-0 w-full max-w-360 flex-1 flex-col space-y-6 overflow-hidden">
             {errorMessage ? (
-              <div className={`rounded-3xl px-4 py-3 text-base shadow-sm ${isPermissionError ? "border border-amber-200 bg-amber-50 text-amber-800" : "border border-red-200 bg-red-50 text-red-700"}`}>
+              <div className={`rounded-[var(--radius-md)] px-4 py-3 text-sm shadow-sm ${isPermissionError ? "border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 text-[color:var(--warning)]" : "border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 text-[color:var(--danger)]"}`}>
                 {isPermissionError ? (
-                  <p className="mb-1 inline-flex rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase">
+                  <p className="mb-1 inline-flex rounded-full border border-[color:var(--warning)]/40 bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase">
                     Permisos
                   </p>
                 ) : null}
@@ -1578,27 +1617,29 @@ export default function ConversationsPage() {
             ) : null}
 
             {successMessage ? (
-              <div className="pointer-events-none fixed top-4 right-4 z-50 rounded-2xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-base font-medium text-emerald-700 shadow-lg backdrop-blur-sm">
+              <div className="pointer-events-none fixed top-4 right-4 z-50 rounded-[var(--radius-md)] border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm font-medium text-[color:var(--success)] shadow-[var(--shadow-lg)] backdrop-blur-sm">
                 {successMessage}
               </div>
             ) : null}
 
             <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] lg:items-stretch">
-              <section data-tour-id="conversations-list" className="flex h-144 flex-col rounded-3xl border border-intra-border bg-white p-5 shadow-sm lg:h-full lg:min-h-0">
+              <section data-tour-id="conversations-list" className="flex h-144 flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm lg:h-full lg:min-h-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-intra-secondary">Conversaciones</h3>
-                  <span className="rounded-full bg-intra-ligth px-3 py-1 text-sm font-medium text-intra-secondary">
+                  <h3 className="text-lg font-semibold text-[var(--foreground)]">Conversaciones</h3>
+                  <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
                     {conversations.length}
                   </span>
                 </div>
 
                 <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
                   {isLoadingConversations ? (
-                    <p className="text-base text-intra-secondary/70">Cargando lista...</p>
+                    <p className="text-sm text-[var(--muted)]">Cargando lista...</p>
                   ) : null}
 
                   {!isLoadingConversations && conversations.length === 0 ? (
-                    <p className="text-base text-intra-secondary/70">No hay conversaciones para mostrar.</p>
+                    <p className="text-sm text-[var(--muted)]">
+                      No hay conversaciones para mostrar.
+                    </p>
                   ) : null}
 
                   {uniqueConversations.map((conversation) => {
@@ -1608,7 +1649,7 @@ export default function ConversationsPage() {
                     return (
                       <article
                         key={conversation.id}
-                        className={`w-full rounded-2xl border p-4 text-left transition-all duration-500 ${isSelected ? "border-intra-primary bg-intra-ligth/45" : "border-intra-border hover:bg-intra-ligth/40"} ${isRecentlyBumped ? "border-red-500 bg-red-100 shadow-lg ring-1 ring-red-300" : ""}`}
+                        className={`group w-full rounded-[var(--radius-md)] border p-4 text-left transition-all duration-500 ${isSelected ? "border-[var(--primary)] bg-[var(--primary-soft)]/45" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"} ${isRecentlyBumped ? "border-[color:var(--danger)]/60 bg-[color:var(--danger)]/10 shadow-[var(--shadow-md)] ring-1 ring-[color:var(--danger)]/30" : ""}`}
                       >
                         <button
                           type="button"
@@ -1617,15 +1658,15 @@ export default function ConversationsPage() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="truncate font-semibold text-intra-secondary">
-                                {conversation.name ?? `Conversacion ${conversation.id}`}
+                              <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+                                {conversationTitle(conversation, user?.id)}
                               </p>
-                              <p className="text-sm text-intra-secondary/55 capitalize">
-                                {conversation.type}
+                              <p className="text-xs text-[var(--muted)]">
+                                {conversationTypeLabel(conversation.type)}
                               </p>
                             </div>
                             {unreadByConversation[conversation.id] ? (
-                              <span className="shrink-0 rounded-full bg-red-600 px-2 py-1 text-[11px] font-semibold text-white">
+                              <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--danger)] px-1.5 text-[11px] font-semibold text-white">
                                 {formatUnreadCount(unreadByConversation[conversation.id])}
                               </span>
                             ) : null}
@@ -1633,13 +1674,15 @@ export default function ConversationsPage() {
                         </button>
 
                         {canDeleteConversation ? (
-                          <div className="mt-4 flex justify-end">
+                          <div className="mt-3 flex justify-end">
                             <button
                               type="button"
                               onClick={() => void handleDeleteConversation(conversation)}
-                              className="rounded-xl border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                              aria-label={`Eliminar ${conversationTitle(conversation, user?.id)}`}
+                              title="Eliminar conversacion"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted-soft)] transition hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
                             >
-                              Eliminar
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         ) : null}
@@ -1648,17 +1691,17 @@ export default function ConversationsPage() {
                   })}
                 </div>
 
-                <div className="mt-4 rounded-3xl border border-intra-border bg-intra-ligth/35 p-4">
+                <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-muted)]/50 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">
+                        <p className="text-xs font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
                           {isUserCollaborator ? "Solo lectura" : isAdmin ? "Admin" : "Chat"}
                         </p>
-                        <h4 className="mt-1 text-lg font-semibold tracking-tight text-intra-secondary">
+                        <h4 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
                           {isUserCollaborator ? "Tu buzon" : "Iniciar chat nuevo"}
                         </h4>
                       </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-sm font-medium text-intra-secondary">
+                      <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-xs font-medium text-[var(--muted)]">
                         {availableUsers.length}
                       </span>
                     </div>
@@ -1667,23 +1710,25 @@ export default function ConversationsPage() {
                       type="button"
                       onClick={() => void openCreateChatModal()}
                       disabled={!canCreateConversation || (!isAdmin && currentUserDepartmentId === null)}
-                      className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl bg-intra-primary px-4 text-base font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isUserCollaborator ? "Acceso solo lectura" : "Nuevo chat"}
                     </button>
                     {!isAdmin && currentUserDepartmentId === null ? (
-                      <p className="mt-2 text-xs text-intra-secondary/70">
+                      <p className="mt-2 text-xs text-[var(--muted)]">
                         Necesitas tener un departamento asignado para iniciar chats.
                       </p>
                     ) : null}
                   </div>
               </section>
 
-              <section data-tour-id="conversations-messages" className="flex h-144 flex-col overflow-hidden rounded-3xl border border-intra-border bg-white p-6 shadow-sm lg:h-full lg:min-h-0">
+              <section data-tour-id="conversations-messages" className="flex h-144 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm lg:h-full lg:min-h-0">
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h3 className="truncate text-2xl font-semibold tracking-tight text-intra-secondary">
-                      {selectedConversation ? selectedConversation.name ?? `Conversacion ${selectedConversation.id}` : "Panel de conversacion"}
+                    <h3 className="truncate text-xl font-semibold tracking-tight text-[var(--foreground)]">
+                      {selectedConversation
+                        ? conversationTitle(selectedConversation, user?.id)
+                        : "Panel de conversacion"}
                     </h3>
                     {selectedConversation && canRenameConversation ? (
                       <button
@@ -1691,7 +1736,7 @@ export default function ConversationsPage() {
                         onClick={openRenameModal}
                         aria-label="Renombrar conversacion"
                         title="Renombrar conversacion"
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-intra-border bg-white text-intra-secondary transition hover:border-intra-primary hover:text-intra-primary active:scale-[0.96]"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] active:scale-[0.96]"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -1711,14 +1756,14 @@ export default function ConversationsPage() {
                           }
                         }}
                         placeholder="Buscar mensaje..."
-                        className="h-9 w-56 rounded-xl border border-intra-border bg-white px-3 text-sm text-intra-secondary outline-none transition focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                        className="h-9 w-56 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                       />
 
                       <button
                         type="button"
                         onClick={handleGoToPreviousMatch}
                         disabled={matchedMessageIds.length === 0}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-intra-border bg-white text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label="Coincidencia anterior"
                       >
                         ↑
@@ -1728,13 +1773,13 @@ export default function ConversationsPage() {
                         type="button"
                         onClick={handleGoToNextMatch}
                         disabled={matchedMessageIds.length === 0}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-intra-border bg-white text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label="Coincidencia siguiente"
                       >
                         ↓
                       </button>
 
-                      <span className="min-w-14 text-right text-xs font-semibold text-intra-secondary/70">
+                      <span className="min-w-14 text-right text-xs font-semibold text-[var(--muted)]">
                         {matchedMessageIds.length > 0
                           ? `${activeSearchMatchIndex + 1}/${matchedMessageIds.length}`
                           : "0/0"}
@@ -1743,18 +1788,18 @@ export default function ConversationsPage() {
                   ) : null}
                 </div>
 
-                <p className="mt-2 max-w-2xl text-base text-intra-secondary/70">
+                <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
                   {selectedConversation
-                    ? `Conversacion ${selectedConversation.type} con ${selectedConversation.users.length} participante(s).`
+                    ? `${conversationTypeLabel(selectedConversation.type)} · ${participantLabel(selectedConversation.users.length)}`
                     : "Selecciona una conversacion para ver el hilo y enviar mensajes."}
                 </p>
                 {incomingMessageNotice ? (
                   <button
                     type="button"
                     onClick={openNoticeConversation}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-red-400 bg-red-100 px-3 py-1 text-sm font-semibold text-red-800 transition hover:bg-red-200"
+                    className="mt-3 inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-3 py-1.5 text-sm font-semibold text-[color:var(--danger)] transition hover:bg-[color:var(--danger)]/15"
                   >
-                    <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-[color:var(--danger)]" />
                     {incomingMessageNotice.text}
                   </button>
                 ) : null}
@@ -1765,7 +1810,7 @@ export default function ConversationsPage() {
                       <div
                         ref={messagesContainerRef}
                         onScroll={handleMessagesScroll}
-                        className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain rounded-3xl border border-intra-border bg-intra-ligth/20 p-4"
+                        className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)]/40 p-4"
                       >
                         {selectedConversationMessages.map((message) => {
                           const isOwnMessage = message.sender_id === user?.id;
@@ -1779,32 +1824,43 @@ export default function ConversationsPage() {
                               id={`message-${message.id}`}
                               className={`w-full rounded-xl px-2 py-1.5 transition ${
                                 shouldHighlightRow
-                                  ? "border border-amber-300 bg-amber-100/75"
+                                  ? "border border-[color:var(--warning)]/50 bg-[color:var(--warning)]/15"
                                   : "border border-transparent"
                               }`}
                             >
                               <div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"}`}>
                                 <div
-                                  className={`max-w-[80%] rounded-2xl px-4 py-3 text-base shadow-sm transition ${isOwnMessage ? "bg-intra-primary text-white" : "bg-white text-intra-secondary"}`}
+                                  className={`max-w-[80%] rounded-[var(--radius-md)] px-3.5 py-2.5 text-sm shadow-sm transition ${isOwnMessage ? "bg-[var(--primary)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"}`}
                                 >
-                                <div className="flex items-center justify-between gap-3 text-sm opacity-80">
+                                <div className="flex items-center justify-between gap-3 text-xs opacity-80">
                                   <span className="font-semibold">{message.sender_name}</span>
                                   <div className="flex items-center gap-2">
-                                    <span>{new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                                    <span>
+                                      {new Date(message.created_at).toLocaleTimeString("es", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                      })}
+                                    </span>
                                     {canModerateMessages ? (
                                       <button
                                         type="button"
                                         onClick={() => void handleDeleteMessage(message)}
                                         title="Marcar para revision"
-                                        className={`rounded-full border px-2 py-0.5 text-xs font-semibold transition ${isOwnMessage ? "border-white/30 text-white hover:bg-white/10" : "border-red-200 text-red-700 hover:bg-red-50"}`}
+                                        aria-label={`Marcar para revision el mensaje de ${message.sender_name}`}
+                                        className={`inline-flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border transition ${
+                                          isOwnMessage
+                                            ? "border-white/30 text-white/80 hover:bg-white/15 hover:text-white"
+                                            : "border-[var(--border)] text-[var(--muted-soft)] hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
+                                        }`}
                                       >
-                                        Borrar
+                                        <Trash2 className="h-3 w-3" />
                                       </button>
                                     ) : null}
                                   </div>
                                 </div>
                                 {message.content ? (
-                                  <p className="mt-2 leading-relaxed">{message.content}</p>
+                                  <p className="mt-1.5 leading-relaxed">{message.content}</p>
                                 ) : null}
 
                                 {message.document ? (
@@ -1814,7 +1870,7 @@ export default function ConversationsPage() {
                                       event.preventDefault();
                                       void handleDownloadAttachment(message.document as DocumentAttachment);
                                     }}
-                                    className={`mt-2 inline-flex max-w-full items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${isOwnMessage ? "border-white/35 bg-white/10 text-white hover:bg-white/20" : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}
+                                    className={`mt-2 inline-flex max-w-full items-center gap-2 rounded-[var(--radius-sm)] border px-3 py-2 text-sm font-medium transition ${isOwnMessage ? "border-white/35 bg-white/10 text-white hover:bg-white/20" : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]/70"}`}
                                   >
                                     <svg
                                       viewBox="0 0 20 20"
@@ -1848,7 +1904,7 @@ export default function ConversationsPage() {
                               scrollMessagesToBottom("smooth");
                               setShowJumpToLatest(false);
                             }}
-                            className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200"
+                            className="pointer-events-auto inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-sm font-semibold text-[var(--foreground)] shadow-sm transition hover:bg-[var(--border)]"
                           >
                             <svg
                               viewBox="0 0 20 20"
@@ -1868,7 +1924,7 @@ export default function ConversationsPage() {
                       ) : null}
                     </div>
 
-                    <form onSubmit={handleSendMessage} className="rounded-3xl border border-intra-border bg-intra-ligth/35 p-3">
+                    <form onSubmit={handleSendMessage} className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-muted)]/60 p-3">
                       <label htmlFor="message" className="sr-only">
                         Mensaje
                       </label>
@@ -1881,12 +1937,12 @@ export default function ConversationsPage() {
                           placeholder="Escribe un mensaje..."
                           rows={1}
                           onKeyDown={handleComposerKeyDown}
-                          className="w-full resize-none overflow-y-auto rounded-2xl border border-intra-border bg-white px-3 py-2 text-sm text-intra-secondary outline-none transition focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                          className="w-full resize-none overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                         />
                         <label
                           title="Adjuntar archivo"
                           aria-label="Adjuntar archivo"
-                          className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+                          className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
                         >
                           <input
                             ref={fileInputRef}
@@ -1907,13 +1963,13 @@ export default function ConversationsPage() {
                         <button
                           type="submit"
                           disabled={isSendingMessage}
-                          className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl bg-intra-primary px-4 text-sm font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {isSendingMessage ? "..." : "Enviar"}
                         </button>
 
                         {attachedFile ? (
-                          <span className="inline-flex max-w-[16rem] items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700">
+                          <span className="inline-flex max-w-[16rem] items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--muted)]">
                             <span className="max-w-40 truncate">{attachedFile.name}</span>
                             <button
                               type="button"
@@ -1925,7 +1981,7 @@ export default function ConversationsPage() {
                                   fileInputRef.current.value = "";
                                 }
                               }}
-                              className="rounded-md px-1 py-0.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                              className="rounded-[var(--radius-sm)] px-1 py-0.5 text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]"
                             >
                               Quitar
                             </button>
@@ -1935,10 +1991,15 @@ export default function ConversationsPage() {
                     </form>
                   </div>
                 ) : (
-                  <div className="mt-6 rounded-3xl border border-dashed border-intra-border bg-intra-ligth/35 p-6">
-                    <p className="text-base font-medium text-intra-secondary">Selecciona una conversacion</p>
-                    <p className="mt-2 text-base text-intra-secondary/70">
-                      Por ahora esta es una vista base para validar la ruta y la carga de datos desde el backend.
+                  <div className="mt-6 rounded-[var(--radius-md)] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)]/40 px-4 py-10 text-center">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)]">
+                      <MessageSquare className="h-4 w-4" />
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-[var(--foreground)]">
+                      Selecciona una conversacion
+                    </p>
+                    <p className="mx-auto mt-1 max-w-xs text-xs text-[var(--muted)]">
+                      Elige un hilo de la lista para leerlo y responder.
                     </p>
                   </div>
                 )}
@@ -1948,7 +2009,7 @@ export default function ConversationsPage() {
 
             {isCreateChatModalOpen ? (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-                <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-3xl border border-intra-border bg-white p-5 shadow-2xl">
+                <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-xl)]">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">{isUserCollaborator ? "Solo lectura" : isAdmin ? "Admin" : "Chat"}</p>
@@ -1957,7 +2018,7 @@ export default function ConversationsPage() {
                     <button
                       type="button"
                       onClick={closeCreateChatModal}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-intra-border text-intra-secondary transition hover:bg-intra-ligth"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)]"
                       aria-label="Cerrar modal"
                     >
                       ×
@@ -1972,7 +2033,7 @@ export default function ConversationsPage() {
                           <select
                             value={chatDepartmentFilter}
                             onChange={(event) => setChatDepartmentFilter(event.target.value)}
-                            className="mt-1 h-10 w-full rounded-xl border border-intra-border bg-white px-3 text-sm text-intra-secondary outline-none focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                            className="mt-1 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                           >
                             <option value="all">Todos</option>
                             <option value="unassigned">Sin departamento</option>
@@ -1992,7 +2053,7 @@ export default function ConversationsPage() {
                           <select
                             value={chatRoleFilter}
                             onChange={(event) => setChatRoleFilter(event.target.value)}
-                            className="mt-1 h-10 w-full rounded-xl border border-intra-border bg-white px-3 text-sm text-intra-secondary outline-none focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                            className="mt-1 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                           >
                             <option value="all">Todos</option>
                             {rolesCatalog
@@ -2013,7 +2074,7 @@ export default function ConversationsPage() {
                             value={chatNameSearch}
                             onChange={(event) => setChatNameSearch(event.target.value)}
                             placeholder="Ej: Juan"
-                            className="mt-1 h-10 w-full rounded-xl border border-intra-border bg-white px-3 text-sm text-intra-secondary outline-none focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                            className="mt-1 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                           />
                         </div>
                       </div>
@@ -2026,16 +2087,16 @@ export default function ConversationsPage() {
                             value={chatNameSearch}
                             onChange={(event) => setChatNameSearch(event.target.value)}
                             placeholder="Buscar compañero"
-                            className="mt-1 h-10 w-full rounded-xl border border-intra-border bg-white px-3 text-sm text-intra-secondary outline-none focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                            className="mt-1 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                           />
                         </div>
-                        <p className="text-xs text-intra-secondary/70">
+                        <p className="text-xs text-[var(--muted)]">
                           Solo usuarios de tu departamento
                         </p>
                       </div>
                     )}
 
-                    <div className="mt-4 flex min-h-0 flex-1 flex-col rounded-2xl border border-intra-border bg-intra-ligth/30 p-3">
+                    <div className="mt-4 flex min-h-0 flex-1 flex-col rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)]/50 p-3">
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-intra-secondary">Usuarios disponibles</p>
                         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-intra-secondary">
@@ -2045,11 +2106,11 @@ export default function ConversationsPage() {
 
                       <div className="min-h-0 flex-1 space-y-2 overflow-auto pr-1">
                         {isLoadingUsers || isLoadingChatModalData ? (
-                          <p className="text-sm text-intra-secondary/70">Cargando datos del modal...</p>
+                          <p className="text-sm text-[var(--muted)]">Cargando datos del modal...</p>
                         ) : null}
 
                         {!isLoadingUsers && !isLoadingChatModalData && filteredAvailableUsers.length === 0 ? (
-                          <p className="text-sm text-intra-secondary/70">No hay usuarios con esos filtros.</p>
+                          <p className="text-sm text-[var(--muted)]">No hay usuarios con esos filtros.</p>
                         ) : null}
 
                         {filteredAvailableUsers.map((candidate) => {
@@ -2059,12 +2120,12 @@ export default function ConversationsPage() {
                           return (
                             <label
                               key={candidate.id}
-                              className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-3 py-2 transition ${selected ? "border-intra-primary bg-white" : "border-intra-border bg-white/70 hover:bg-white"}`}
+                              className={`flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-md)] border px-3 py-2 text-left transition ${selected ? "border-[var(--primary)] bg-[var(--primary-soft)]/40" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]"}`}
                             >
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-intra-secondary">{candidate.name}</p>
-                                <p className="truncate text-xs text-intra-secondary/70">{candidate.email}</p>
-                                <p className="truncate text-xs text-intra-secondary/60">
+                                <p className="truncate text-xs text-[var(--muted)]">{candidate.email}</p>
+                                <p className="truncate text-xs text-[var(--muted)]">
                                   {candidate.department_id
                                     ? departments.find((department) => department.id === candidate.department_id)?.name ?? "Departamento"
                                     : "Sin departamento"}
@@ -2077,7 +2138,7 @@ export default function ConversationsPage() {
                                 type="checkbox"
                                 checked={selected}
                                 onChange={() => handleToggleUser(candidate.id)}
-                                className="h-4 w-4 shrink-0 rounded border-intra-border text-intra-primary focus:ring-intra-primary"
+                                className="h-4 w-4 shrink-0 rounded border-[var(--border-strong)] accent-[var(--primary)]"
                               />
                             </label>
                           );
@@ -2089,14 +2150,14 @@ export default function ConversationsPage() {
                       <button
                         type="button"
                         onClick={closeCreateChatModal}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-intra-border px-4 text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth"
+                        className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-4 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-muted)]"
                       >
                         Cancelar
                       </button>
                       <button
                         type="submit"
                         disabled={isCreatingConversation || selectedUserIds.length === 0}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-intra-primary px-4 text-sm font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {isCreatingConversation ? "Creando..." : "Iniciar chat"}
                       </button>

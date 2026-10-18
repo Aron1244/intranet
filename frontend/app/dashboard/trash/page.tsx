@@ -19,7 +19,7 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { HelpButton } from "@/components/help-button";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
-import { isAdministrator } from "@/lib/roles";
+import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type MeResponse = {
@@ -27,6 +27,10 @@ type MeResponse = {
     id: number;
     name: string;
     email: string;
+    department_id?: number | null;
+    es_lider?: boolean;
+    onboarding_pendiente?: boolean;
+    can_manage_announcements?: boolean;
     roles?: Array<{ id: number; name: string }>;
   };
 };
@@ -221,16 +225,12 @@ export default function TrashPage() {
       <DashboardSidebar
         user={user ? { name: user.name, email: user.email } : null}
         isAdmin={isAdmin}
-        isLeader={false}
-        isNewHire={false}
-        canManageAnnouncements={false}
+        isLeader={isLeader(user)}
+        isNewHire={isNewHire(user)}
+        canManageAnnouncements={Boolean(user?.can_manage_announcements)}
         activeRoute="trash"
         statusMessage={
-          isLoading
-            ? "Cargando papelera..."
-            : errorMessage
-              ? errorMessage
-              : `${totalCount} ${totalCount === 1 ? "elemento" : "elementos"} marcados`
+          isLoading ? "Cargando papelera..." : (errorMessage ?? (totalCount > 0 ? `${totalCount} por revisar` : "Listo"))
         }
       />
 
@@ -252,7 +252,7 @@ export default function TrashPage() {
                   <ShieldAlert className="h-3 w-3" />
                   Papelera
                 </p>
-                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                <h1 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                   Revision de elementos marcados
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
@@ -264,32 +264,40 @@ export default function TrashPage() {
           </header>
 
           {errorMessage ? (
-            <div className="rounded-2xl border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-4 py-3 text-sm text-[color:var(--danger)]">
+            <div className="rounded-[var(--radius-md)] border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-4 py-3 text-sm text-[color:var(--danger)]">
               {errorMessage}
             </div>
           ) : null}
 
           {successMessage ? (
-            <div className="rounded-2xl border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm text-[color:var(--success)]">
+            <div className="rounded-[var(--radius-md)] border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm text-[color:var(--success)]">
               {successMessage}
             </div>
           ) : null}
 
-          <div data-tour-id="trash-filters" className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
-              <Filter className="h-3 w-3" />
-              Filtrar
-            </span>
-            <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
-              Todo ({totalCount})
-            </FilterChip>
-            <FilterChip active={filter === "messages"} onClick={() => setFilter("messages")}>
-              Mensajes ({items.messages.length})
-            </FilterChip>
-            <FilterChip active={filter === "documents"} onClick={() => setFilter("documents")}>
-              Documentos ({items.documents.length})
-            </FilterChip>
-          </div>
+          {/* Con la papelera vacia no hay nada que filtrar, asi que se oculta la
+              fila completa. El tour (help-tours.ts) apunta a este data-tour-id y
+              driver.js omite el paso si el ancla no existe. */}
+          {totalCount > 0 ? (
+            <div data-tour-id="trash-filters" className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+                <Filter className="h-3 w-3" />
+                Filtrar
+              </span>
+              <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
+                Todo ({totalCount})
+              </FilterChip>
+              <FilterChip active={filter === "messages"} onClick={() => setFilter("messages")}>
+                Mensajes ({items.messages.length})
+              </FilterChip>
+              <FilterChip
+                active={filter === "documents"}
+                onClick={() => setFilter("documents")}
+              >
+                Documentos ({items.documents.length})
+              </FilterChip>
+            </div>
+          ) : null}
 
           {isLoading ? (
             <TrashSkeleton />
@@ -387,8 +395,9 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "rounded-full px-3 py-1 text-xs font-semibold transition",
+        "rounded-[var(--radius-sm)] px-3 py-1 text-xs font-semibold transition",
         active
           ? "bg-[var(--primary)] text-white"
           : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]",
@@ -418,7 +427,7 @@ function TrashItem({
 }) {
   return (
     <article className="surface-card flex flex-wrap items-start gap-4 p-4">
-      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--muted)]">
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--surface-muted)] text-[var(--muted)]">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
@@ -431,7 +440,7 @@ function TrashItem({
           type="button"
           onClick={onRestore}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <RotateCcw className="h-3.5 w-3.5" />
           Restaurar
@@ -440,7 +449,7 @@ function TrashItem({
           type="button"
           onClick={onDestroy}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-3 py-1.5 text-xs font-semibold text-[color:var(--danger)] transition hover:bg-[color:var(--danger)]/20 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-3 py-1.5 text-xs font-semibold text-[color:var(--danger)] transition hover:bg-[color:var(--danger)]/20 disabled:opacity-60"
         >
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -459,9 +468,9 @@ function TrashSkeleton() {
     <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, index) => (
         <div key={index} className="surface-card p-4">
-          <div className="skeleton-shimmer h-4 w-2/3 rounded-md" />
-          <div className="skeleton-shimmer mt-3 h-3 w-1/2 rounded-md" />
-          <div className="skeleton-shimmer mt-3 h-3 w-1/3 rounded-md" />
+          <div className="skeleton-shimmer h-4 w-2/3 rounded-[var(--radius-sm)]" />
+          <div className="skeleton-shimmer mt-3 h-3 w-1/2 rounded-[var(--radius-sm)]" />
+          <div className="skeleton-shimmer mt-3 h-3 w-1/3 rounded-[var(--radius-sm)]" />
         </div>
       ))}
     </div>
@@ -474,15 +483,13 @@ function EmptyTrash() {
       <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--muted)]">
         <Archive className="h-5 w-5" />
       </span>
-      <p className="text-base font-semibold text-[var(--foreground)]">
-        La papelera esta vacia
-      </p>
+      <p className="text-sm font-semibold text-[var(--foreground)]">La papelera esta vacia</p>
       <p className="max-w-md text-sm text-[var(--muted)]">
         No hay elementos marcados para revision. Los lideres de departamento pueden enviarte contenido para decidir aqui.
       </p>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+        className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
       >
         <Eye className="h-3.5 w-3.5" />
         Volver al resumen

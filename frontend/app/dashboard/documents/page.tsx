@@ -1,14 +1,82 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Download, Flag, Folder } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { isAdministrator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
+import { cn } from "@/lib/cn";
 
 type DocumentsViewMode = "all" | "chat" | "department" | "other";
+
+type DocumentGroupTone = "primary" | "accent" | "neutral";
+
+const GROUP_TONE_CLASSES: Record<DocumentGroupTone, { wrap: string; title: string; badge: string }> = {
+  primary: {
+    wrap: "border-[var(--primary)]/20 bg-[var(--primary-soft)]/45",
+    title: "text-[var(--primary)]",
+    badge: "bg-[var(--surface)] text-[var(--primary)]",
+  },
+  accent: {
+    wrap: "border-[color:var(--accent)]/25 bg-[var(--accent-soft)]/45",
+    title: "text-[var(--accent)]",
+    badge: "bg-[var(--surface)] text-[var(--accent)]",
+  },
+  neutral: {
+    wrap: "border-[var(--border)] bg-[var(--surface-muted)]/60",
+    title: "text-[var(--foreground)]",
+    badge: "bg-[var(--surface)] text-[var(--muted)]",
+  },
+};
+
+/**
+ * Agrupa documentos por origen (chat / departamento / otros). Antes estos tres
+ * bloques estaban duplicados literal en el JSX, cada uno con sus colores
+ * hardcodeados; ahora comparten el mismo marcado y tono.
+ */
+function DocumentGroup({
+  title,
+  count,
+  tone,
+  groups,
+  renderCard,
+}: {
+  title: string;
+  count: number;
+  tone: DocumentGroupTone;
+  groups: Array<[string, DocumentItem[]]>;
+  renderCard: (document: DocumentItem) => React.ReactNode;
+}) {
+  const toneClasses = GROUP_TONE_CLASSES[tone];
+
+  return (
+    <section className={cn("space-y-3 rounded-[var(--radius-lg)] border p-3", toneClasses.wrap)}>
+      <div className="flex items-center justify-between gap-2">
+        <h4 className={cn("text-sm font-semibold", toneClasses.title)}>{title}</h4>
+        <span
+          className={cn(
+            "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+            toneClasses.badge,
+          )}
+        >
+          {count}
+        </span>
+      </div>
+
+      {groups.map(([groupLabel, groupDocuments]) => (
+        <div key={groupLabel} className="space-y-2">
+          {groupLabel ? (
+            <p className="px-0.5 text-xs font-semibold text-[var(--muted)]">{groupLabel}</p>
+          ) : null}
+          <div className="space-y-2">{groupDocuments.map(renderCard)}</div>
+        </div>
+      ))}
+    </section>
+  );
+}
 
 type MeResponse = {
   data: {
@@ -360,52 +428,65 @@ export default function DocumentsPage() {
   const renderDocumentCard = (document: DocumentItem) => (
     <article
       key={document.id}
-      className="rounded-2xl border border-intra-border p-4 text-left transition hover:bg-intra-ligth/40"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] p-3.5 transition hover:border-[var(--border-strong)]"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="mb-2 inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">
-            Origen: {getOriginLabel(document)}
-          </p>
-          <p className="font-semibold text-intra-secondary">
-            {document.original_name ?? document.title}
-          </p>
-          <p className="text-sm text-intra-secondary/60">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+          {document.original_name ?? document.title}
+        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-xs text-[var(--muted)]">
             {document.mime_type ?? "Archivo"}
             {formatFileSize(document.size_bytes) ? ` • ${formatFileSize(document.size_bytes)}` : ""}
-          </p>
-          <p className="mt-1 text-xs text-intra-secondary/55">
-            Visibilidad: {getVisibilityLabel(document.visibility)}
-            {document.folder?.name ? ` • Carpeta: ${document.folder.name}` : ""}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void handleDownloadDocument(document)}
-            disabled={isDownloadingDocumentId === document.id}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-intra-primary px-4 text-sm font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
+          </span>
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+              document.visibility === "public"
+                ? "bg-[color:var(--success)]/10 text-[color:var(--success)]"
+                : document.visibility === "department"
+                  ? "bg-[var(--primary-soft)] text-[var(--primary)]"
+                  : "bg-[var(--surface-muted)] text-[var(--muted)]",
+            )}
           >
-            {isDownloadingDocumentId === document.id ? "Descargando..." : "Descargar"}
-          </button>
-          {canModerateDocuments ? (
-            <button
-              type="button"
-              onClick={() => void handleSoftDeleteDocument(document)}
-              title="Marcar para revision del administrador"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50"
-            >
-              Marcar
-            </button>
+            {getVisibilityLabel(document.visibility)}
+          </span>
+          {document.folder?.name ? (
+            <span className="inline-flex items-center gap-1 truncate text-[11px] text-[var(--muted)]">
+              <Folder className="h-3 w-3 shrink-0" />
+              {document.folder.name}
+            </span>
           ) : null}
         </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void handleDownloadDocument(document)}
+          disabled={isDownloadingDocumentId === document.id}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--primary)] px-3.5 text-xs font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Download className="h-3.5 w-3.5" />
+          {isDownloadingDocumentId === document.id ? "Descargando..." : "Descargar"}
+        </button>
+        {canModerateDocuments ? (
+          <button
+            type="button"
+            onClick={() => void handleSoftDeleteDocument(document)}
+            title="Marcar para revision del administrador"
+            aria-label={`Marcar ${document.original_name ?? document.title} para revision`}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted-soft)] transition hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
+          >
+            <Flag className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
       </div>
     </article>
   );
 
   return (
-    <div className="min-h-screen bg-intra-ligth">
+    <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
@@ -423,139 +504,121 @@ export default function DocumentsPage() {
           <div className="mx-auto flex min-h-0 w-full max-w-360 flex-1 flex-col space-y-6">
 
             {errorMessage ? (
-              <div className={`rounded-3xl px-4 py-3 text-base shadow-sm ${isPermissionError ? "border border-amber-200 bg-amber-50 text-amber-800" : "border border-red-200 bg-red-50 text-red-700"}`}>
+              <div className={`rounded-[var(--radius-md)] px-4 py-3 text-sm shadow-sm ${isPermissionError ? "border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 text-[color:var(--warning)]" : "border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 text-[color:var(--danger)]"}`}>
                 <p>{errorMessage}</p>
               </div>
             ) : null}
 
             {successMessage ? (
-              <div className="pointer-events-none fixed top-4 right-4 z-50 rounded-2xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-base font-medium text-emerald-700 shadow-lg backdrop-blur-sm">
+              <div className="pointer-events-none fixed top-4 right-4 z-50 rounded-[var(--radius-md)] border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm font-medium text-[color:var(--success)] shadow-[var(--shadow-lg)] backdrop-blur-sm">
                 {successMessage}
               </div>
             ) : null}
 
-            <section className="flex min-h-0 flex-1 flex-col rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
+            <section className="flex min-h-0 flex-1 flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-semibold text-intra-secondary">Archivos</h3>
-                <span className="rounded-full bg-intra-ligth px-3 py-1 text-sm font-medium text-intra-secondary">
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">Archivos</h3>
+                <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
                   {visibleDocuments.length}
                 </span>
               </div>
 
               <div data-tour-id="documents-search" className="mt-4">
+                <label htmlFor="documents-search-input" className="sr-only">
+                  Buscar documentos
+                </label>
                 <input
+                  id="documents-search-input"
                   type="search"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="Buscar por nombre, tipo u origen..."
-                  className="w-full rounded-2xl border border-intra-border bg-white px-4 py-2.5 text-base text-intra-secondary outline-none transition focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
+                  className="h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                 />
               </div>
 
               <div data-tour-id="documents-filters" className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("all")}
-                  className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
-                    viewMode === "all"
-                      ? "bg-intra-primary text-white"
-                      : "border border-intra-border bg-white text-intra-secondary hover:bg-intra-ligth"
-                  }`}
-                >
-                  Todos ({filteredDocuments.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("chat")}
-                  className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
-                    viewMode === "chat"
-                      ? "bg-intra-primary text-white"
-                      : "border border-intra-border bg-white text-intra-secondary hover:bg-intra-ligth"
-                  }`}
-                >
-                  Chat ({countsByCategory.chat})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("department")}
-                  className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
-                    viewMode === "department"
-                      ? "bg-intra-primary text-white"
-                      : "border border-intra-border bg-white text-intra-secondary hover:bg-intra-ligth"
-                  }`}
-                >
-                  Departamento ({countsByCategory.department})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("other")}
-                  className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
-                    viewMode === "other"
-                      ? "bg-intra-primary text-white"
-                      : "border border-intra-border bg-white text-intra-secondary hover:bg-intra-ligth"
-                  }`}
-                >
-                  Otros ({countsByCategory.other})
-                </button>
+                {[
+                  { key: "all" as const, label: "Todos", count: filteredDocuments.length },
+                  { key: "chat" as const, label: "Chat", count: countsByCategory.chat },
+                  {
+                    key: "department" as const,
+                    label: "Departamento",
+                    count: countsByCategory.department,
+                  },
+                  { key: "other" as const, label: "Otros", count: countsByCategory.other },
+                ].map((filter) => (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => setViewMode(filter.key)}
+                    aria-pressed={viewMode === filter.key}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] px-3 text-xs font-semibold transition",
+                      viewMode === filter.key
+                        ? "bg-[var(--primary)] text-white"
+                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border-strong)] hover:text-[var(--foreground)]",
+                    )}
+                  >
+                    {filter.label}
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 text-[11px]",
+                        viewMode === filter.key ? "bg-white/20" : "bg-[var(--surface-muted)]",
+                      )}
+                    >
+                      {filter.count}
+                    </span>
+                  </button>
+                ))}
               </div>
 
-              <div data-tour-id="documents-list" className="mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
+              <div
+                data-tour-id="documents-list"
+                className="mt-4 min-h-0 flex-1 space-y-4 overflow-auto pr-1"
+              >
                 {isLoadingDocuments ? (
-                  <p className="text-base text-intra-secondary/70">Cargando documentos...</p>
+                  <p className="text-sm text-[var(--muted)]">Cargando documentos...</p>
                 ) : null}
 
                 {!isLoadingDocuments && sortedDocuments.length === 0 ? (
-                  <p className="text-base text-intra-secondary/70">No hay documentos disponibles.</p>
+                  <p className="text-sm text-[var(--muted)]">No hay documentos disponibles.</p>
                 ) : null}
 
                 {!isLoadingDocuments && sortedDocuments.length > 0 && visibleDocuments.length === 0 ? (
-                  <p className="text-base text-intra-secondary/70">No se encontraron archivos con esa busqueda.</p>
+                  <p className="text-sm text-[var(--muted)]">
+                    No se encontraron archivos con esa busqueda.
+                  </p>
                 ) : null}
 
                 {documentsByChat.length > 0 ? (
-                  <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/30 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-blue-900">Archivos de chat</h4>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-blue-800">
-                        {countsByCategory.chat}
-                      </span>
-                    </div>
-                    {documentsByChat.map(([groupLabel, groupDocuments]) => (
-                      <div key={groupLabel} className="space-y-2">
-                        <p className="text-xs font-semibold text-blue-900/80">{groupLabel}</p>
-                        <div className="space-y-2">{groupDocuments.map(renderDocumentCard)}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <DocumentGroup
+                    title="Archivos de chat"
+                    count={countsByCategory.chat}
+                    tone="primary"
+                    groups={documentsByChat}
+                    renderCard={renderDocumentCard}
+                  />
                 ) : null}
 
                 {documentsByDepartment.length > 0 ? (
-                  <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-emerald-900">Archivos de departamento</h4>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                        {countsByCategory.department}
-                      </span>
-                    </div>
-                    {documentsByDepartment.map(([groupLabel, groupDocuments]) => (
-                      <div key={groupLabel} className="space-y-2">
-                        <p className="text-xs font-semibold text-emerald-900/80">{groupLabel}</p>
-                        <div className="space-y-2">{groupDocuments.map(renderDocumentCard)}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <DocumentGroup
+                    title="Archivos de departamento"
+                    count={countsByCategory.department}
+                    tone="accent"
+                    groups={documentsByDepartment}
+                    renderCard={renderDocumentCard}
+                  />
                 ) : null}
 
                 {otherDocuments.length > 0 ? (
-                  <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/40 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-slate-800">Otros archivos</h4>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        {countsByCategory.other}
-                      </span>
-                    </div>
-                    <div className="space-y-2">{otherDocuments.map(renderDocumentCard)}</div>
-                  </div>
+                  <DocumentGroup
+                    title="Otros archivos"
+                    count={countsByCategory.other}
+                    tone="neutral"
+                    groups={[["", otherDocuments]]}
+                    renderCard={renderDocumentCard}
+                  />
                 ) : null}
               </div>
             </section>

@@ -465,7 +465,7 @@ export default function DepartmentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-intra-ligth">
+    <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
@@ -474,11 +474,7 @@ export default function DepartmentsPage() {
           isNewHire={isNewHire(user)}
           activeRoute="departments"
           statusMessage={
-            isLoadingDepartments
-              ? "Cargando departamentos..."
-              : errorMessage
-                ? errorMessage
-                : "Departamentos y roles sincronizados"
+            isLoadingDepartments ? "Cargando departamentos..." : errorMessage ?? "Listo"
           }
         />
 
@@ -504,7 +500,7 @@ export default function DepartmentsPage() {
             {errorMessage ? (
               <div
                 className={cn(
-                  "rounded-2xl border px-4 py-3 text-sm shadow-sm",
+                  "rounded-[var(--radius-md)] border px-4 py-3 text-sm shadow-sm",
                   isPermissionError
                     ? "border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 text-[color:var(--warning)]"
                     : "border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 text-[color:var(--danger)]",
@@ -515,7 +511,7 @@ export default function DepartmentsPage() {
             ) : null}
 
             {successMessage ? (
-              <div className="flex items-center gap-2 rounded-2xl border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm text-[color:var(--success)] shadow-sm">
+              <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm text-[color:var(--success)] shadow-sm">
                 <ShieldCheck className="h-4 w-4" />
                 {successMessage}
               </div>
@@ -526,7 +522,7 @@ export default function DepartmentsPage() {
                 {/* ============== SECCION DEPARTAMENTOS ============== */}
                 <section className="space-y-4">
                   <header className="flex items-center gap-3">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary-soft)] text-[var(--primary)]">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary-soft)] text-[var(--primary)]">
                       <Building2 className="h-4 w-4" />
                     </span>
                     <div>
@@ -651,12 +647,13 @@ export default function DepartmentsPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleSelectDepartment(dept.id)}
-                                  className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                                  aria-pressed={isSelected}
+                                  className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[var(--radius-sm)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
                                 >
                                   <span
                                     aria-hidden="true"
                                     className={cn(
-                                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition",
+                                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border transition",
                                       isSelected
                                         ? "border-[var(--primary)] bg-[var(--primary)] text-white"
                                         : "border-[var(--border-strong)] bg-[var(--surface)]",
@@ -717,7 +714,7 @@ export default function DepartmentsPage() {
                 {/* ============== SECCION ROLES ============== */}
                 <section className="space-y-4">
                   <header className="flex items-center gap-3">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent-soft)] text-[var(--accent)]">
                       <Users className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -740,7 +737,7 @@ export default function DepartmentsPage() {
                       <button
                         type="button"
                         onClick={openCreateRoleModal}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] active:scale-[0.98]"
+                        className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
                         Nuevo rol
@@ -771,7 +768,7 @@ export default function DepartmentsPage() {
                             className="flex flex-wrap items-center gap-3 px-4 py-3 transition hover:bg-[var(--surface-muted)]"
                           >
                             <div className="flex min-w-0 flex-1 items-center gap-3">
-                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent-soft)] text-[var(--accent)]">
                                 <ShieldCheck className="h-4 w-4" />
                               </span>
                               <div className="min-w-0">
@@ -871,7 +868,7 @@ type FieldProps = {
 
 function Field({ id, label, value, onChange, placeholder, required, as = "input", rows }: FieldProps) {
   const sharedClasses =
-    "mt-1 w-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-soft)] transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] focus:outline-none rounded-lg";
+    "mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-soft)] transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] focus:outline-none";
 
   return (
     <div>
@@ -914,7 +911,7 @@ function CheckboxField({ id, label, description, checked, onChange }: CheckboxFi
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 transition hover:border-[var(--primary)]"
+      className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 transition hover:border-[var(--primary)]"
     >
       <span className="relative inline-flex shrink-0 pt-0.5">
         <input
@@ -927,7 +924,8 @@ function CheckboxField({ id, label, description, checked, onChange }: CheckboxFi
         <span
           aria-hidden="true"
           className={cn(
-            "h-4 w-4 rounded border transition",
+            "h-4 w-4 rounded-[var(--radius-sm)] border transition",
+            "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--primary)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--surface)]",
             checked
               ? "border-[var(--primary)] bg-[var(--primary)]"
               : "border-[var(--border-strong)] bg-[var(--surface)]",
@@ -975,7 +973,7 @@ function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-16px_var(--primary-glow)] transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+      className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--primary)] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-16px_var(--primary-glow)] transition hover:bg-[var(--primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
     >
       {children}
     </button>
@@ -998,7 +996,7 @@ function SecondaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -1031,7 +1029,7 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-[var(--surface)] transition active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border bg-[var(--surface)] transition active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60",
         toneClasses,
       )}
     >
@@ -1050,7 +1048,7 @@ function EmptyState({
   body: string;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)]/40 px-4 py-8 text-center">
+    <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)]/40 px-4 py-8 text-center">
       <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)]">
         <Icon className="h-4 w-4" />
       </span>
@@ -1063,9 +1061,9 @@ function EmptyState({
 function SkeletonBlock() {
   return (
     <div className="surface-card p-5">
-      <div className="skeleton-shimmer h-4 w-1/3 rounded-md" />
-      <div className="skeleton-shimmer mt-3 h-3 w-2/3 rounded-md" />
-      <div className="skeleton-shimmer mt-5 h-9 w-full rounded-md" />
+      <div className="skeleton-shimmer h-4 w-1/3 rounded-[var(--radius-sm)]" />
+      <div className="skeleton-shimmer mt-3 h-3 w-2/3 rounded-[var(--radius-sm)]" />
+      <div className="skeleton-shimmer mt-5 h-9 w-full rounded-[var(--radius-sm)]" />
     </div>
   );
 }
@@ -1126,12 +1124,12 @@ function Modal({ open, onClose, title, description, icon: Icon, children }: Moda
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)]"
+            className="relative z-10 w-full max-w-md overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)]"
           >
             <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
               <div className="flex min-w-0 items-start gap-3">
                 {Icon ? (
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent-soft)] text-[var(--accent)]">
                     <Icon className="h-4 w-4" />
                   </span>
                 ) : null}
@@ -1148,7 +1146,7 @@ function Modal({ open, onClose, title, description, icon: Icon, children }: Moda
                 type="button"
                 onClick={onClose}
                 aria-label="Cerrar"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
               >
                 <XIcon className="h-4 w-4" />
               </button>

@@ -12,6 +12,20 @@
  * specificity than Tailwind utilities so they win.
  */
 
+/*
+ * `bg-white` aparece ~55 veces en esas paginas legacy siempre como fondo de
+ * tarjeta o de input. Sin esto queda en blanco puro (#fff) mientras el resto de
+ * la app usa `--surface`, y el esquema pastel se rompe a mitad de proyecto.
+ *
+ * Va SIN capa a proposito: en Tailwind v4 las utilidades viven en
+ * `@layer utilities`, y una regla sin capa gana siempre a una con capa.
+ * Solo afecta a `.bg-white`; las variantes con alfa (`bg-white/10`) son clases
+ * distintas y no quedan tocadas.
+ */
+.bg-white {
+  background-color: var(--surface);
+}
+
 .dark body,
 .dark .bg-white {
   background-color: var(--surface);
@@ -384,41 +398,52 @@
 }
 
 :root {
-  --background: #f5f7fb;
-  --foreground: #0f1f38;
+  --background: #e8edf8;
+  --foreground: #16233c;
 
-  --surface: #ffffff;
-  --surface-muted: #f1f5fb;
-  --surface-elevated: #ffffff;
+  --surface: #f7f9fd;
+  --surface-muted: #eef2fa;
+  --surface-elevated: #fbfcfe;
 
-  --border: #d4dfef;
-  --border-strong: #b9c6dc;
+  --border: #d6dfef;
+  --border-strong: #bdc9e0;
 
   --primary: #1c4fa3;
   --primary-hover: #173d7d;
-  --primary-soft: rgba(28, 79, 163, 0.12);
+  --primary-soft: rgba(28, 79, 163, 0.1);
   --primary-glow: rgba(28, 79, 163, 0.35);
 
   --accent: #2f8f6f;
   --accent-soft: rgba(47, 143, 111, 0.12);
 
-  --muted: #64748b;
-  --muted-soft: #94a3b8;
+  --muted: #5b6b80;
+  --muted-soft: #8b9cb5;
 
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
 
-  --shadow-sm: 0 1px 2px rgba(15, 31, 56, 0.04), 0 1px 1px rgba(15, 31, 56, 0.03);
-  --shadow-md: 0 4px 12px rgba(15, 31, 56, 0.06), 0 2px 4px rgba(15, 31, 56, 0.04);
-  --shadow-lg: 0 18px 40px -16px rgba(15, 31, 56, 0.18), 0 8px 18px -10px rgba(15, 31, 56, 0.1);
-  --shadow-xl: 0 32px 64px -24px rgba(15, 31, 56, 0.28), 0 12px 28px -12px rgba(15, 31, 56, 0.14);
+  /* Sombras mas difusas: el esquema pastel no tolera bordes de sombra duros. */
+  --shadow-sm: 0 1px 2px rgba(22, 35, 60, 0.04), 0 1px 1px rgba(22, 35, 60, 0.03);
+  --shadow-md: 0 4px 14px rgba(22, 35, 60, 0.06), 0 2px 4px rgba(22, 35, 60, 0.04);
+  --shadow-lg: 0 16px 36px -18px rgba(22, 35, 60, 0.14), 0 8px 16px -10px rgba(22, 35, 60, 0.08);
+  --shadow-xl: 0 28px 60px -26px rgba(22, 35, 60, 0.2), 0 12px 26px -12px rgba(22, 35, 60, 0.1);
 
   --radius-sm: 0.5rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.25rem;
   --radius-xl: 1.75rem;
   --radius-2xl: 2.25rem;
+
+  /*
+   * Fondo del panel de marca (login). Deliberadamente NO usa `--primary`:
+   * en tema oscuro `--primary` pasa a un azul claro y el texto blanco del
+   * panel quedaria ilegible. Estos dos tonos se mantienen oscuros en ambos
+   * temas, asi el lockup y los textos blancos mantienen >= 10:1 de contraste.
+   */
+  --panel-from: #16283d;
+  --panel-to: #0c1725;
+  --panel-glow: rgba(47, 143, 111, 0.3);
 }
 
 .dark {
@@ -451,6 +476,12 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 18px 40px -16px rgba(0, 0, 0, 0.6), 0 8px 18px -10px rgba(0, 0, 0, 0.4);
   --shadow-xl: 0 32px 64px -24px rgba(0, 0, 0, 0.7), 0 12px 28px -12px rgba(0, 0, 0, 0.5);
+
+  /* El panel se mantiene oscuro tambien en tema oscuro: es la superficie
+     que aloja el lockup blanco y los textos en blanco. */
+  --panel-from: #101f31;
+  --panel-to: #070f1a;
+  --panel-glow: rgba(79, 214, 166, 0.26);
 }
 
 @theme inline {
@@ -472,6 +503,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-panel-from: var(--panel-from);
+  --color-panel-to: var(--panel-to);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -485,8 +518,17 @@
   --color-intra-border: var(--border);
 }
 
-* {
-  border-color: var(--border);
+@layer base {
+  /*
+   * Color de borde por defecto para elementos que solo declaran `border`.
+   * Va en `@layer base` a proposito: en Tailwind v4 las utilidades viven en
+   * `@layer utilities`, y una regla sin capa gana siempre a una con capa.
+   * Sin esto, este `*` pisaba utilities como `border-white/15` en el panel
+   * de marca del login o `border-[var(--border-strong)]` en el checkbox.
+   */
+  * {
+    border-color: var(--border);
+  }
 }
 
 html,
@@ -551,6 +593,23 @@ body {
 .surface-card:hover {
   box-shadow: var(--shadow-lg);
   border-color: var(--border-strong);
+}
+
+/*
+ * Quita la flecha nativa del `<select>` y la sustituye por una que usa el token
+ * de texto secundario, para que el control no desentone del resto del formulario.
+ */
+.select-chevron {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%235b6b80' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 12px 8px;
+  padding-right: 2.25rem;
+}
+
+.dark .select-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%238b9cb5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 @keyframes shimmer {
