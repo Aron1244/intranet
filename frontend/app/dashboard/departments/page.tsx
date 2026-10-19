@@ -17,6 +17,10 @@ import {
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
+import {
+  DEFAULT_DEPARTMENT_COLORS,
+  resolveDepartmentColor,
+} from "@/lib/department-color";
 import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
@@ -40,6 +44,7 @@ type Department = {
   id: number;
   name: string;
   description?: string | null;
+  color?: string | null;
 };
 
 type Role = {
@@ -54,6 +59,7 @@ type Role = {
 type DepartmentFormState = {
   name: string;
   description: string;
+  color: string;
 };
 
 type RoleFormState = {
@@ -64,6 +70,7 @@ type RoleFormState = {
 const INITIAL_DEPT_FORM_STATE: DepartmentFormState = {
   name: "",
   description: "",
+  color: DEFAULT_DEPARTMENT_COLORS[0],
 };
 
 const INITIAL_ROLE_FORM_STATE: RoleFormState = {
@@ -255,6 +262,7 @@ export default function DepartmentsPage() {
       const payload = {
         name: normalizedName,
         description: normalizedDescription || null,
+        color: deptFormState.color,
       };
 
       if (editingDepartmentId) {
@@ -356,6 +364,10 @@ export default function DepartmentsPage() {
     setDeptFormState({
       name: dept.name,
       description: dept.description ?? "",
+      // Si el departamento todavia no tiene color propio, se ofrece el que
+      // la interfaz ya le muestra en la lista, para que editar no cambie el
+      // circulo visible sin que el administrador lo haya pedido.
+      color: resolveDepartmentColor(dept),
     });
     setEditingDepartmentId(dept.id);
   };
@@ -569,6 +581,12 @@ export default function DepartmentsPage() {
                         value={deptFormState.description}
                         onChange={(value) => setDeptFormState({ ...deptFormState, description: value })}
                       />
+                      <ColorField
+                        id="dept-color"
+                        label="Color"
+                        value={deptFormState.color}
+                        onChange={(value) => setDeptFormState({ ...deptFormState, color: value })}
+                      />
 
                       <div className="flex flex-wrap gap-2 pt-1">
                         <PrimaryButton type="submit" disabled={isSavingDepartment}>
@@ -666,11 +684,16 @@ export default function DepartmentsPage() {
                                   <div className="min-w-0 flex-1">
                                     <p
                                       className={cn(
-                                        "truncate text-sm font-medium",
+                                        "flex items-center gap-2 truncate text-sm font-medium",
                                         isSelected ? "text-[var(--primary)]" : "text-[var(--foreground)]",
                                       )}
                                     >
-                                      {dept.name}
+                                      <span
+                                        aria-hidden="true"
+                                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                        style={{ backgroundColor: resolveDepartmentColor(dept) }}
+                                      />
+                                      <span className="truncate">{dept.name}</span>
                                     </p>
                                     {dept.description ? (
                                       <p className="truncate text-xs text-[var(--muted)]">
@@ -895,6 +918,64 @@ function Field({ id, label, value, onChange, placeholder, required, as = "input"
           className={sharedClasses}
         />
       )}
+    </div>
+  );
+}
+
+type ColorFieldProps = {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+};
+
+/**
+ * Selector de color del departamento. Es una seccion secundaria: el color es
+ * una ayuda visual para distinguir departamentos, no un dato obligatorio, asi
+ * que se presenta en una sola linea con la paleta rapida y el selector nativo
+ * para un color a medida.
+ */
+function ColorField({ id, label, value, onChange }: ColorFieldProps) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-[var(--foreground)]">
+        {label}
+      </label>
+
+      <div className="mt-1 flex flex-wrap items-center gap-2.5">
+        <input
+          id={id}
+          type="color"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-8 w-11 cursor-pointer rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-0.5 transition hover:border-[var(--border-strong)]"
+        />
+
+        <span className="font-mono text-xs text-[var(--muted)] uppercase">{value}</span>
+
+        <span className="h-4 w-px bg-[var(--border)]" aria-hidden="true" />
+
+        {DEFAULT_DEPARTMENT_COLORS.map((paletteColor) => (
+          <button
+            key={paletteColor}
+            type="button"
+            onClick={() => onChange(paletteColor)}
+            aria-label={`Usar el color ${paletteColor}`}
+            aria-pressed={value.toLowerCase() === paletteColor.toLowerCase()}
+            className={cn(
+              "h-5 w-5 rounded-full border-2 transition",
+              value.toLowerCase() === paletteColor.toLowerCase()
+                ? "border-[var(--foreground)]"
+                : "border-transparent hover:scale-110",
+            )}
+            style={{ backgroundColor: paletteColor }}
+          />
+        ))}
+      </div>
+
+      <p className="mt-1 text-[11px] text-[var(--muted)]">
+        Identifica visualmente el departamento en listas, filtros y selectores.
+      </p>
     </div>
   );
 }

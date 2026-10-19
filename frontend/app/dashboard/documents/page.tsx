@@ -1,7 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Flag, Folder } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  Flag,
+  Folder,
+} from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { HelpButton } from "@/components/help-button";
@@ -13,6 +21,15 @@ import { cn } from "@/lib/cn";
 type DocumentsViewMode = "all" | "chat" | "department" | "other";
 
 type DocumentGroupTone = "primary" | "accent" | "neutral";
+
+/*
+ * `GET /documents` devuelve la coleccion completa sin paginar
+ * (DocumentController::index hace ->get()). Con cientos de adjuntos eso pintaba
+ * todas las tarjetas en el DOM de una vez. Aqui se pagina en cliente, igual que
+ * en /dashboard/users: el buscador y los filtros de origen ya operaban sobre el
+ * conjunto completo, asi que solo hay que recortar la vista.
+ */
+const DOCUMENTS_PER_PAGE = 12;
 
 const GROUP_TONE_CLASSES: Record<DocumentGroupTone, { wrap: string; title: string; badge: string }> = {
   primary: {
@@ -174,8 +191,22 @@ export default function DocumentsPage() {
   const [isPermissionError, setIsPermissionError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<DocumentsViewMode>("all");
+  const [page, setPage] = useState(1);
   const [user, setUser] = useState<MeResponse["data"] | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Cambiar buscador o filtro acorta la lista: se vuelve a la pagina 1 desde el
+  // handler en vez de un efecto, para no desincronizar un setState en un efecto.
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  }, []);
+
+  const handleViewModeChange = useCallback((mode: DocumentsViewMode) => {
+    setViewMode(mode);
+    setPage(1);
+  }, []);
 
   const setHandledError = useCallback((error: unknown, fallbackMessage: string) => {
     if (error instanceof ApiClientError) {
@@ -301,10 +332,32 @@ export default function DocumentsPage() {
     return filteredDocuments.filter((document) => getDocumentCategory(document) === viewMode);
   }, [filteredDocuments, getDocumentCategory, viewMode]);
 
+  const totalPages = Math.max(1, Math.ceil(visibleDocuments.length / DOCUMENTS_PER_PAGE));
+  // `page` puede quedar fuera de rango si la lista se acorta (borrado, filtro),
+  // asi que la vista se recorta contra un numero ya acotado en lugar de
+  // obligar a un efecto que lo corrija.
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const pagedDocuments = useMemo(
+    () =>
+      visibleDocuments.slice(
+        (currentPage - 1) * DOCUMENTS_PER_PAGE,
+        currentPage * DOCUMENTS_PER_PAGE,
+      ),
+    [currentPage, visibleDocuments],
+  );
+  const firstShown = visibleDocuments.length === 0 ? 0 : (currentPage - 1) * DOCUMENTS_PER_PAGE + 1;
+  const lastShown = Math.min(currentPage * DOCUMENTS_PER_PAGE, visibleDocuments.length);
+
+  // Al cambiar de pagina el listado se reconstruye entero arriba; sin esto se
+  // hereda el scroll anterior y la pagina nueva aparece a media altura.
+  useEffect(() => {
+    listContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
   const documentsByChat = useMemo(() => {
     const grouped = new Map<string, DocumentItem[]>();
 
-    for (const document of visibleDocuments) {
+    for (const document of pagedDocuments) {
       if (getDocumentCategory(document) !== "chat") {
         continue;
       }
@@ -314,12 +367,12 @@ export default function DocumentsPage() {
     }
 
     return Array.from(grouped.entries());
-  }, [getDocumentCategory, visibleDocuments]);
+  }, [getDocumentCategory, pagedDocuments]);
 
   const documentsByDepartment = useMemo(() => {
     const grouped = new Map<string, DocumentItem[]>();
 
-    for (const document of visibleDocuments) {
+    for (const document of pagedDocuments) {
       if (getDocumentCategory(document) !== "department") {
         continue;
       }
@@ -329,12 +382,28 @@ export default function DocumentsPage() {
     }
 
     return Array.from(grouped.entries());
-  }, [getDocumentCategory, visibleDocuments]);
+  }, [getDocumentCategory, pagedDocuments]);
 
   const otherDocuments = useMemo(
-    () => visibleDocuments.filter((document) => getDocumentCategory(document) === "other"),
-    [getDocumentCategory, visibleDocuments],
+    () => pagedDocuments.filter((document) => getDocumentCategory(document) === "other"),
+    [getDocumentCategory, pagedDocuments],
   );
+
+  // Los grupos se arman sobre la pagina actual, asi que su contador debe
+  // contar lo que realmente se pinta debajo del encabezado.
+  const pagedCountsByCategory = useMemo(() => {
+    const counts: Record<Exclude<DocumentsViewMode, "all">, number> = {
+      chat: 0,
+      department: 0,
+      other: 0,
+    };
+
+    for (const document of pagedDocuments) {
+      counts[getDocumentCategory(document)] += 1;
+    }
+
+    return counts;
+  }, [getDocumentCategory, pagedDocuments]);
 
   const countsByCategory = useMemo(() => {
     const counts: Record<Exclude<DocumentsViewMode, "all">, number> = {
@@ -531,7 +600,7 @@ export default function DocumentsPage() {
                   id="documents-search-input"
                   type="search"
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Buscar por nombre, tipo u origen..."
                   className="h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                 />
@@ -551,7 +620,7 @@ export default function DocumentsPage() {
                   <button
                     key={filter.key}
                     type="button"
-                    onClick={() => setViewMode(filter.key)}
+                    onClick={() => handleViewModeChange(filter.key)}
                     aria-pressed={viewMode === filter.key}
                     className={cn(
                       "inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] px-3 text-xs font-semibold transition",
@@ -575,6 +644,7 @@ export default function DocumentsPage() {
 
               <div
                 data-tour-id="documents-list"
+                ref={listContainerRef}
                 className="mt-4 min-h-0 flex-1 space-y-4 overflow-auto pr-1"
               >
                 {isLoadingDocuments ? (
@@ -594,7 +664,7 @@ export default function DocumentsPage() {
                 {documentsByChat.length > 0 ? (
                   <DocumentGroup
                     title="Archivos de chat"
-                    count={countsByCategory.chat}
+                    count={pagedCountsByCategory.chat}
                     tone="primary"
                     groups={documentsByChat}
                     renderCard={renderDocumentCard}
@@ -604,7 +674,7 @@ export default function DocumentsPage() {
                 {documentsByDepartment.length > 0 ? (
                   <DocumentGroup
                     title="Archivos de departamento"
-                    count={countsByCategory.department}
+                    count={pagedCountsByCategory.department}
                     tone="accent"
                     groups={documentsByDepartment}
                     renderCard={renderDocumentCard}
@@ -614,13 +684,74 @@ export default function DocumentsPage() {
                 {otherDocuments.length > 0 ? (
                   <DocumentGroup
                     title="Otros archivos"
-                    count={countsByCategory.other}
+                    count={pagedCountsByCategory.other}
                     tone="neutral"
                     groups={[["", otherDocuments]]}
                     renderCard={renderDocumentCard}
                   />
                 ) : null}
               </div>
+
+              {totalPages > 1 ? (
+                <nav
+                  aria-label="Paginacion de documentos"
+                  className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-3"
+                >
+                  <p className="text-xs text-[var(--muted)]">
+                    Mostrando {firstShown}-{lastShown} de {visibleDocuments.length}
+                  </p>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPage(1)}
+                      disabled={currentPage === 1}
+                      aria-label="Ir a la primera pagina"
+                      title="Primera pagina"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      disabled={currentPage === 1}
+                      aria-label="Pagina anterior"
+                      title="Pagina anterior"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <span className="px-2 text-xs font-semibold text-[var(--muted)]">
+                      {currentPage} / {totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                      disabled={currentPage === totalPages}
+                      aria-label="Pagina siguiente"
+                      title="Pagina siguiente"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      aria-label="Ir a la ultima pagina"
+                      title="Ultima pagina"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </nav>
+              ) : null}
             </section>
           </div>
         </section>

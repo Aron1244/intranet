@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS departments (
     id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name          VARCHAR(255)    NOT NULL,
     description   VARCHAR(255)    NULL,
+    color         VARCHAR(7)      NULL,
     created_at    TIMESTAMP       NULL,
     updated_at    TIMESTAMP       NULL,
     PRIMARY KEY (id)

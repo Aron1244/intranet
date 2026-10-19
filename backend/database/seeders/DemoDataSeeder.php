@@ -103,21 +103,21 @@ class DemoDataSeeder extends Seeder
     private function seedDepartments(): array
     {
         $seeds = [
-            ['Tecnologia', 'Equipo de desarrollo e infraestructura'],
-            ['Recursos Humanos', 'Gestion de personas y talento'],
-            ['Marketing', 'Comunicacion y marca'],
-            ['Ventas', 'Equipo comercial'],
-            ['Operaciones', 'Logistica y operaciones internas'],
-            ['Finanzas', 'Contabilidad y control financiero'],
-            ['Diseno', 'Producto y diseno visual'],
-            ['Legal', 'Asesoria juridica'],
+            ['Tecnologia', 'Equipo de desarrollo e infraestructura', '#2563eb'],
+            ['Recursos Humanos', 'Gestion de personas y talento', '#059669'],
+            ['Marketing', 'Comunicacion y marca', '#db2777'],
+            ['Ventas', 'Equipo comercial', '#d97706'],
+            ['Operaciones', 'Logistica y operaciones internas', '#0891b2'],
+            ['Finanzas', 'Contabilidad y control financiero', '#7c3aed'],
+            ['Diseno', 'Producto y diseno visual', '#65a30d'],
+            ['Legal', 'Asesoria juridica', '#dc2626'],
         ];
 
         $departments = [];
-        foreach ($seeds as [$name, $description]) {
+        foreach ($seeds as [$name, $description, $color]) {
             $departments[] = Department::query()->firstOrCreate(
                 ['name' => $name],
-                ['description' => $description],
+                ['description' => $description, 'color' => $color],
             );
         }
 

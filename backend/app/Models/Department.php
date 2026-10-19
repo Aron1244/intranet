@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'description'])]
+#[Fillable(['name', 'description', 'color'])]
 class Department extends Model
 {
     public function users(): HasMany

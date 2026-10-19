@@ -5,9 +5,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquare, Pencil, Trash2, X } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DepartmentSelect } from "@/components/department-select";
+import type { DepartmentSelectOption } from "@/components/department-select";
 import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import { resolveDepartmentColor } from "@/lib/department-color";
 import { getConversationChannelName, getEcho } from "@/lib/echo-client";
 import { isAdministrator, isCollaborator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
 
@@ -50,6 +53,7 @@ type AppUser = {
 type Department = {
   id: number;
   name: string;
+  color?: string | null;
 };
 
 type RoleSummary = {
@@ -176,6 +180,41 @@ function conversationTypeLabel(type?: string | null): string {
 
 function participantLabel(count: number): string {
   return `${count} ${count === 1 ? "participante" : "participantes"}`;
+}
+
+/**
+ * Marca de tiempo de la ultima actividad de una conversacion, en el mismo
+ * formato relativo que usa el feed de publicaciones ("hace 5 min"). `updated_at`
+ * es lo mas cercano a "ultimo movimiento" que expone el backend: los mensajes
+ * refrescan la conversacion al insertarse.
+ */
+function formatRelativeTime(isoDate?: string | null): string {
+  if (!isoDate) {
+    return "";
+  }
+
+  const timestamp = new Date(isoDate).getTime();
+  if (Number.isNaN(timestamp)) {
+    return "";
+  }
+
+  const deltaSeconds = Math.max(1, Math.floor((Date.now() - timestamp) / 1000));
+
+  if (deltaSeconds < 60) {
+    return "hace unos segundos";
+  }
+
+  const deltaMinutes = Math.floor(deltaSeconds / 60);
+  if (deltaMinutes < 60) {
+    return `hace ${deltaMinutes} min`;
+  }
+
+  const deltaHours = Math.floor(deltaMinutes / 60);
+  if (deltaHours < 24) {
+    return `hace ${deltaHours} h`;
+  }
+
+  return `hace ${Math.floor(deltaHours / 24)} d`;
 }
 
 export default function ConversationsPage() {
@@ -336,6 +375,25 @@ export default function ConversationsPage() {
     () => users.find((candidate) => candidate.id === user?.id)?.department_id ?? null,
     [user?.id, users],
   );
+
+  // Opciones del desplegable de departamento del modal de nuevo chat. El color
+  // viaja con la opcion para que se vea al desplegar la lista.
+  const chatDepartmentOptions = useMemo<DepartmentSelectOption[]>(
+    () => [
+      { value: "all", label: "Todos" },
+      { value: "unassigned", label: "Sin departamento" },
+      ...departments
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((department) => ({
+          value: String(department.id),
+          label: department.name,
+          color: resolveDepartmentColor(department),
+        })),
+    ],
+    [departments],
+  );
+
   const availableUsers = useMemo(
     () =>
       users.filter((candidate) => {
@@ -754,6 +812,14 @@ export default function ConversationsPage() {
 
     return String(count);
   }, []);
+
+  // SeCalcula una vez por conversacion y no en el JSX: la tarjeta llama a este
+  // helper dos veces y `Date.now()` dentro del render daria dos lecturas por
+  //montaje, que pueden caer en distinto minuto en el limite de "hace 1 min".
+  const conversationLastActivity = useCallback(
+    (conversation: Conversation): string => formatRelativeTime(conversation.updated_at),
+    [],
+  );
   const refetchConversationUnreadCounts = useCallback(async () => {
     try {
       const response = await apiFetch<{ data: Conversation[] }>(
@@ -1649,43 +1715,45 @@ export default function ConversationsPage() {
                     return (
                       <article
                         key={conversation.id}
-                        className={`group w-full rounded-[var(--radius-md)] border p-4 text-left transition-all duration-500 ${isSelected ? "border-[var(--primary)] bg-[var(--primary-soft)]/45" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"} ${isRecentlyBumped ? "border-[color:var(--danger)]/60 bg-[color:var(--danger)]/10 shadow-[var(--shadow-md)] ring-1 ring-[color:var(--danger)]/30" : ""}`}
+                        className={`group w-full rounded-[var(--radius-md)] border p-3 text-left transition-all duration-500 ${isSelected ? "border-[var(--primary)] bg-[var(--primary-soft)]/45" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"} ${isRecentlyBumped ? "border-[color:var(--danger)]/60 bg-[color:var(--danger)]/10 shadow-[var(--shadow-md)] ring-1 ring-[color:var(--danger)]/30" : ""}`}
                       >
-                        <button
-                          type="button"
-                          onClick={() => handleSelectConversation(conversation.id)}
-                          className="w-full text-left"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-[var(--foreground)]">
-                                {conversationTitle(conversation, user?.id)}
-                              </p>
-                              <p className="text-xs text-[var(--muted)]">
-                                {conversationTypeLabel(conversation.type)}
-                              </p>
-                            </div>
-                            {unreadByConversation[conversation.id] ? (
-                              <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--danger)] px-1.5 text-[11px] font-semibold text-white">
-                                {formatUnreadCount(unreadByConversation[conversation.id])}
-                              </span>
-                            ) : null}
-                          </div>
-                        </button>
+                        <div className="flex items-start gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSelectConversation(conversation.id)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+                              {conversationTitle(conversation, user?.id)}
+                            </p>
+                            <p className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
+                              {conversationTypeLabel(conversation.type)}
+                              {" · "}
+                              {participantLabel(conversation.users.length)}
+                              {conversationLastActivity(conversation)
+                                ? ` · ${conversationLastActivity(conversation)}`
+                                : ""}
+                            </p>
+                          </button>
 
-                        {canDeleteConversation ? (
-                          <div className="mt-3 flex justify-end">
+                          {unreadByConversation[conversation.id] ? (
+                            <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--danger)] px-1.5 text-[11px] font-semibold text-white">
+                              {formatUnreadCount(unreadByConversation[conversation.id])}
+                            </span>
+                          ) : null}
+
+                          {canDeleteConversation ? (
                             <button
                               type="button"
                               onClick={() => void handleDeleteConversation(conversation)}
                               aria-label={`Eliminar ${conversationTitle(conversation, user?.id)}`}
                               title="Eliminar conversacion"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted-soft)] transition hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
+                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted-soft)] transition hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
-                          </div>
-                        ) : null}
+                          ) : null}
+                        </div>
                       </article>
                     );
                   })}
@@ -2030,22 +2098,14 @@ export default function ConversationsPage() {
                       <div className="grid gap-3 md:grid-cols-3">
                         <div>
                           <label className="text-sm font-semibold text-intra-secondary">Departamento</label>
-                          <select
+                          <DepartmentSelect
+                            className="mt-1"
                             value={chatDepartmentFilter}
-                            onChange={(event) => setChatDepartmentFilter(event.target.value)}
-                            className="mt-1 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                          >
-                            <option value="all">Todos</option>
-                            <option value="unassigned">Sin departamento</option>
-                            {departments
-                              .slice()
-                              .sort((a, b) => a.name.localeCompare(b.name))
-                              .map((department) => (
-                                <option key={department.id} value={department.id}>
-                                  {department.name}
-                                </option>
-                              ))}
-                          </select>
+                            onChange={setChatDepartmentFilter}
+                            options={chatDepartmentOptions}
+                            placeholder="Todos"
+                            ariaLabel="Filtrar por departamento"
+                          />
                         </div>
 
                         <div>

@@ -74,10 +74,10 @@ const CONVERSATIONS_TOUR: TourStep[] = [
 
 const PUBLICATIONS_TOUR: TourStep[] = [
   {
-    selector: "[data-tour-id='publications-form']",
+    selector: "[data-tour-id='publications-form-trigger']",
     title: "Crear publicacion",
     description:
-      "Desde aqui puedes crear una nueva publicacion visible para tu departamento o toda la empresa.",
+      "Este boton abre el formulario para redactar una nueva publicacion, adjuntar archivos y elegir si queda visible o como borrador.",
     side: "bottom",
     align: "start",
   },

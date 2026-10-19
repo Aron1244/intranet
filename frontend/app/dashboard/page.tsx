@@ -12,7 +12,6 @@ import {
   Plus,
   Send,
   ShieldCheck,
-  ThumbsUp,
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -954,13 +953,6 @@ function PostRow({ post }: PostRowProps) {
       <div className="mt-3 flex items-center justify-between gap-2">
         <p className="text-[11px] text-[var(--muted)]">por {post.author}</p>
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            aria-label={`Me gusta: ${post.title}`}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          >
-            <ThumbsUp className="h-3.5 w-3.5" />
-          </button>
           <button
             type="button"
             aria-label={`Responder: ${post.title}`}

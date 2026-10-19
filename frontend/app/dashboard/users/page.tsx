@@ -1,15 +1,26 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Edit2, Loader2, Trash2 } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Edit2,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DepartmentSelect } from "@/components/department-select";
+import type { DepartmentSelectOption } from "@/components/department-select";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
+import { resolveDepartmentColor } from "@/lib/department-color";
 import { cn } from "@/lib/cn";
 import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
 
-const USERS_PER_PAGE = 25;
+const USERS_PER_PAGE = 15;
 
 type MeResponse = {
   data: {
@@ -30,6 +41,7 @@ type MeResponse = {
 type Department = {
   id: number;
   name: string;
+  color?: string | null;
 };
 
 type User = {
@@ -93,6 +105,7 @@ export default function UsersPage() {
   const [isLoadingRoles, setIsLoadingRoles] = useState(false);
   const [page, setPage] = useState(1);
   const formSectionRef = useRef<HTMLDivElement>(null);
+  const usersListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (editingUserId && formSectionRef.current) {
@@ -215,6 +228,20 @@ export default function UsersPage() {
   const users_sorted = users.slice().sort((a, b) => a.name.localeCompare(b.name));
   const departments_sorted = departments.slice().sort((a, b) => a.name.localeCompare(b.name));
 
+  // Opciones del desplegable de departamento del formulario de alta de usuario.
+  // El color viaja con la opcion para que se vea al desplegar la lista.
+  const departmentSelectOptions = useMemo<DepartmentSelectOption[]>(
+    () => [
+      { value: "", label: "Sin asignar" },
+      ...departments_sorted.map((dept) => ({
+        value: String(dept.id),
+        label: dept.name,
+        color: resolveDepartmentColor(dept),
+      })),
+    ],
+    [departments_sorted],
+  );
+
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
   const filteredUsers = users_sorted.filter((u) => {
@@ -252,6 +279,12 @@ export default function UsersPage() {
   );
   const firstShown = filteredUsers.length === 0 ? 0 : (currentPage - 1) * USERS_PER_PAGE + 1;
   const lastShown = Math.min(currentPage * USERS_PER_PAGE, filteredUsers.length);
+
+  // Al cambiar de pagina el listado se reconstruye entero arriba; sin esto se
+  // hereda el scroll anterior y la pagina nueva aparece a media altura.
+  useEffect(() => {
+    usersListRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
 
   const currentFilterLabel =
     selectedDepartmentFilter === "all"
@@ -521,23 +554,20 @@ export default function UsersPage() {
                       <label htmlFor="user-department" className="text-sm font-medium text-[var(--foreground)]">
                         Departamento
                       </label>
-                      <select
+                      <DepartmentSelect
                         id="user-department"
+                        className="mt-1"
                         value={formState.department_id}
-                        onChange={(event) => setFormState((current) => ({
-                          ...current,
-                          department_id: event.target.value,
-                          role_ids: [],
-                        }))}
-                        className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      >
-                        <option value="">Sin asignar</option>
-                        {departments_sorted.map((dept) => (
-                          <option key={dept.id} value={dept.id}>
-                            {dept.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) =>
+                          setFormState((current) => ({
+                            ...current,
+                            department_id: value,
+                            role_ids: [],
+                          }))
+                        }
+                        options={departmentSelectOptions}
+                        placeholder="Selecciona un departamento"
+                      />
                     </div>
 
                     {formState.department_id ? (
@@ -669,14 +699,23 @@ export default function UsersPage() {
                     <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)]/50 p-3">
                       <p className="text-sm font-semibold text-[var(--foreground)]">Buscar por departamento</p>
                       <div className="mt-3 flex flex-wrap gap-2">
+                        {/*
+                         * "Todos" no es un departamento mas: es la vista completa.
+                         * Por eso lleva tono primario (azul) en vez del accent
+                         * que comparten los filtros concretos, y se mantiene
+                         * distinguible tambien en reposo, con borde y fondo
+                         * suaves en vez del gris neutro de los chips.
+                         */}
                         <button
                           type="button"
                           onClick={() => handleFilterChange("all")}
-                          className={`rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition ${
+                          aria-pressed={selectedDepartmentFilter === "all"}
+                          className={cn(
+                            "rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition",
                             selectedDepartmentFilter === "all"
-                              ? "bg-[var(--accent)] text-white"
-                              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
-                          }`}
+                              ? "bg-[var(--primary)] text-white"
+                              : "border border-[var(--primary)]/40 bg-[var(--primary-soft)] text-[var(--primary)] hover:border-[var(--primary)]/60",
+                          )}
                         >
                           Todos ({users_sorted.length})
                         </button>
@@ -686,12 +725,19 @@ export default function UsersPage() {
                             key={dept.id}
                             type="button"
                             onClick={() => handleFilterChange(String(dept.id))}
-                            className={`rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition ${
+                            aria-pressed={selectedDepartmentFilter === String(dept.id)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition",
                               selectedDepartmentFilter === String(dept.id)
-                                ? "bg-[var(--accent)] text-white"
-                                : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
-                            }`}
+                                ? "border border-[var(--foreground)]/25 bg-[var(--foreground)]/10 text-[var(--foreground)] backdrop-blur-sm"
+                                : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]",
+                            )}
                           >
+                            <span
+                              aria-hidden="true"
+                              className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
+                              style={{ backgroundColor: resolveDepartmentColor(dept) }}
+                            />
                             {dept.name} ({getDepartmentUsersCount(dept.id)})
                           </button>
                         ))}
@@ -699,11 +745,13 @@ export default function UsersPage() {
                         <button
                           type="button"
                           onClick={() => handleFilterChange("unassigned")}
-                          className={`rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition ${
+                          aria-pressed={selectedDepartmentFilter === "unassigned"}
+                          className={cn(
+                            "rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition",
                             selectedDepartmentFilter === "unassigned"
-                              ? "bg-[var(--accent)] text-white"
-                              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
-                          }`}
+                              ? "border border-[var(--foreground)]/25 bg-[var(--foreground)]/10 text-[var(--foreground)] backdrop-blur-sm"
+                              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]",
+                          )}
                         >
                           Sin departamento ({usersWithoutDepartmentCount})
                         </button>
@@ -725,7 +773,7 @@ export default function UsersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
+                  <div ref={usersListRef} className="mt-4 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
                     {isLoadingUsers ? (
                       <p className="text-sm text-[var(--muted)]">Cargando usuarios...</p>
                     ) : null}
@@ -782,46 +830,70 @@ export default function UsersPage() {
                         </div>
                       </article>
                     ))}
-
-                    {totalPages > 1 ? (
-                      <nav
-                        aria-label="Paginacion de usuarios"
-                        className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-3"
-                      >
-                        <p className="text-xs text-[var(--muted)]">
-                          Mostrando {firstShown}-{lastShown} de {filteredUsers.length}
-                        </p>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setPage((current) => Math.max(1, current - 1))}
-                            disabled={currentPage === 1}
-                            aria-label="Pagina anterior"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </button>
-
-                          <span className="px-2 text-xs font-semibold text-[var(--muted)]">
-                            {currentPage} / {totalPages}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPage((current) => Math.min(totalPages, current + 1))
-                            }
-                            disabled={currentPage === totalPages}
-                            aria-label="Pagina siguiente"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </nav>
-                    ) : null}
                   </div>
+
+                  {totalPages > 1 ? (
+                    <nav
+                      aria-label="Paginacion de usuarios"
+                      className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-3"
+                    >
+                      <p className="text-xs text-[var(--muted)]">
+                        Mostrando {firstShown}-{lastShown} de {filteredUsers.length}
+                      </p>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setPage(1)}
+                          disabled={currentPage === 1}
+                          aria-label="Ir a la primera pagina"
+                          title="Primera pagina"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <ChevronsLeft className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPage((current) => Math.max(1, current - 1))}
+                          disabled={currentPage === 1}
+                          aria-label="Pagina anterior"
+                          title="Pagina anterior"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <span className="px-2 text-xs font-semibold text-[var(--muted)]">
+                          {currentPage} / {totalPages}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPage((current) => Math.min(totalPages, current + 1))
+                          }
+                          disabled={currentPage === totalPages}
+                          aria-label="Pagina siguiente"
+                          title="Pagina siguiente"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          aria-label="Ir a la ultima pagina"
+                          title="Ultima pagina"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <ChevronsRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </nav>
+                  ) : null}
                 </section>
               </div>
             ) : null}

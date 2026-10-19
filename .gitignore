@@ -5,3 +5,4 @@ graphify-out/.graphify_root
 graphify-out/.graphify_analysis.json
 graphify-out/.graphify_labels.json
 graphify-out/.graphify_labels.json.sig
+graphify-out/.graphify_labels.pending.json
