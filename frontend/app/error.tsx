@@ -15,13 +15,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
       <section className="relative mx-auto flex min-h-[75vh] w-full max-w-3xl flex-col items-center justify-center rounded-3xl border border-intra-border bg-white p-8 text-center shadow-lg shadow-intra-secondary/10 sm:p-12">
         <p className="rounded-full border border-intra-border bg-intra-ligth px-4 py-1 text-xs font-semibold tracking-[0.18em] text-intra-secondary uppercase">
-          Error de aplicacion
+          Error de aplicación
         </p>
         <h1 className="mt-5 text-4xl font-semibold tracking-tight text-intra-secondary sm:text-5xl">
-          Algo salio mal
+          Algo salió mal
         </h1>
         <p className="mt-4 max-w-lg text-sm leading-relaxed text-intra-secondary/75 sm:text-base">
-          Ocurrio un error inesperado al cargar la vista. Puedes intentar
+          Ocurió un error inesperado al cargar la vista. Puedes intentar
           nuevamente o volver al inicio.
         </p>
 

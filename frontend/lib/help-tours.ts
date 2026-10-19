@@ -15,7 +15,7 @@ const DASHBOARD_TOUR: TourStep[] = [
     selector: "[data-tour-id='dashboard-greeting']",
     title: "Tu resumen diario",
     description:
-      "Aqui veras un saludo personalizado y los accesos rapidos a mensajes y publicaciones.",
+      "Aquí verás un saludo personalizado y los accesos rápidos a mensajes y publicaciones.",
     side: "bottom",
     align: "start",
   },
@@ -23,7 +23,7 @@ const DASHBOARD_TOUR: TourStep[] = [
     selector: "[data-tour-id='dashboard-stats']",
     title: "Indicadores clave",
     description:
-      "Vista rapida de publicaciones, conversaciones y estado de tu sesion.",
+      "Vista rápida de publicaciones, conversaciones y estado de tu sesión.",
     side: "bottom",
     align: "center",
   },
@@ -31,7 +31,7 @@ const DASHBOARD_TOUR: TourStep[] = [
     selector: "[data-tour-id='dashboard-feed']",
     title: "Publicaciones de tu equipo",
     description:
-      "Aqui apareceran las novedades de tus departamentos. Puedes reaccionar o comentar.",
+      "Aquí aparecerán las novedades de tus departamentos. Puedes reaccionar o comentar.",
     side: "right",
     align: "start",
   },
@@ -39,7 +39,7 @@ const DASHBOARD_TOUR: TourStep[] = [
     selector: "[data-tour-id='dashboard-chats']",
     title: "Conversaciones recientes",
     description:
-      "Accede rapido a tus chats activos sin salir del resumen.",
+      "Accede rápido a tus chats activos sin salir del resumen.",
     side: "left",
     align: "center",
   },
@@ -50,7 +50,7 @@ const CONVERSATIONS_TOUR: TourStep[] = [
     selector: "[data-tour-id='conversations-list']",
     title: "Lista de conversaciones",
     description:
-      "Aqui ves todas tus conversaciones. Selecciona una para abrirla en el panel de la derecha.",
+      "Aquí ves todas tus conversaciones. Selecciona una para abrirla en el panel de la derecha.",
     side: "right",
     align: "start",
   },
@@ -58,7 +58,7 @@ const CONVERSATIONS_TOUR: TourStep[] = [
     selector: "[data-tour-id='conversations-messages']",
     title: "Mensajes",
     description:
-      "Aqui se cargan y envian los mensajes de la conversacion seleccionada.",
+      "Aquí se cargan y envían los mensajes de la conversación seleccionada.",
     side: "left",
     align: "start",
   },
@@ -66,7 +66,7 @@ const CONVERSATIONS_TOUR: TourStep[] = [
     selector: "[data-tour-id='conversations-composer']",
     title: "Escribir mensaje",
     description:
-      "Escribe y envia mensajes. Tambien puedes adjuntar archivos.",
+      "Escribe y envía mensajes. También puedes adjuntar archivos.",
     side: "top",
     align: "end",
   },
@@ -75,9 +75,9 @@ const CONVERSATIONS_TOUR: TourStep[] = [
 const PUBLICATIONS_TOUR: TourStep[] = [
   {
     selector: "[data-tour-id='publications-form-trigger']",
-    title: "Crear publicacion",
+    title: "Crear publicación",
     description:
-      "Este boton abre el formulario para redactar una nueva publicacion, adjuntar archivos y elegir si queda visible o como borrador.",
+      "Este botón abre el formulario para redactar una nueva publicación, adjuntar archivos y elegir si queda visible o cómo borrador.",
     side: "bottom",
     align: "start",
   },
@@ -85,7 +85,7 @@ const PUBLICATIONS_TOUR: TourStep[] = [
     selector: "[data-tour-id='publications-list']",
     title: "Listado de publicaciones",
     description:
-      "Aqui veras todas las publicaciones. Puedes editarlas o eliminarlas si tienes permisos.",
+      "Aquí verás todas las publicaciones. Puedes editarlas o eliminarlas si tienes permisos.",
     side: "top",
     align: "start",
   },
@@ -96,13 +96,13 @@ const DOCUMENTS_TOUR: TourStep[] = [
     selector: "[data-tour-id='documents-search']",
     title: "Buscar documentos",
     description:
-      "Filtra por nombre, tipo u origen para encontrar un documento especifico.",
+      "Filtra por nombre, tipo u origen para encontrar un documento específico.",
     side: "bottom",
     align: "start",
   },
   {
     selector: "[data-tour-id='documents-filters']",
-    title: "Filtros rapidos",
+    title: "Filtros rápidos",
     description:
       "Cambia entre Todos, Chat, Departamento u Otros para acotar la lista.",
     side: "bottom",
@@ -112,7 +112,7 @@ const DOCUMENTS_TOUR: TourStep[] = [
     selector: "[data-tour-id='documents-list']",
     title: "Lista de archivos",
     description:
-      "Aqui aparecen los archivos. Usa el boton Descargar de cada tarjeta para obtenerlos.",
+      "Aquí aparecen los archivos. Usa el botón Descargar de cada tarjeta para obtenerlos.",
     side: "top",
     align: "start",
   },
@@ -122,7 +122,7 @@ const TRASH_TOUR: TourStep[] = [
   {
     selector: "[data-tour-id='trash-filters']",
     title: "Filtros",
-    description: "Cambia entre Todo, Mensajes o Documentos segun lo que necesites revisar.",
+    description: "Cambia entre Todo, Mensajes o Documentos según lo que necesites revisar.",
     side: "bottom",
     align: "start",
   },
@@ -130,7 +130,7 @@ const TRASH_TOUR: TourStep[] = [
     selector: "[data-tour-id='trash-list']",
     title: "Elementos marcados",
     description:
-      "Aqui ves los mensajes y documentos que los lideres marcaron para revision.",
+      "Aquí ves los mensajes y documentos que los líderes marcaron para revisión.",
     side: "top",
     align: "start",
   },

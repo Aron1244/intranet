@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     default: "Intranet Corporativa",
     template: "%s · Intranet",
   },
-  description: "Portal interno de gestion, comunicacion y herramientas del equipo.",
+  description: "Portal interno de gestión, comunicación y herramientas del equipo.",
   applicationName: "Intranet",
   authors: [{ name: "Equipo Intranet" }],
 };

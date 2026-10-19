@@ -28,12 +28,12 @@ type DepartmentSelectProps = {
  * Desplegable de departamento con punto de color.
  *
  * El <select> nativo no sirve para esto: la lista abierta la dibuja el sistema
- * operativo, fuera del DOM, asi que ningun CSS alcanza a las opciones. Para
+ * operativo, fuera del DOM, así que ningún CSS alcanza a las opciones. Para
  * mostrar el color del departamento hay que sustituir el control por uno propio.
  *
- * Sustituye al <select> sin añadir libreria extra: la navegacion por teclado, el
- * patron ARIA combobox/listbox y el cierre al hacer clic fuera estan
- * implementados aqui.
+ * Sustituye al <select> sin añadir librería extra: la navegación por teclado, el
+ * patrón ARIA combobox/listbox y el cierre al hacer clic fuera están
+ * implementados aquí.
  */
 export function DepartmentSelect({
   id,
@@ -105,7 +105,7 @@ export function DepartmentSelect({
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [isOpen]);
 
-  // Mantiene visible la opcion activa mientras se navega con el teclado.
+  // Mantiene visible la opción activa mientras se navega con el teclado.
   useEffect(() => {
     if (!isOpen) {
       return;

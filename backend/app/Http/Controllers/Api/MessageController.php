@@ -127,7 +127,7 @@ class MessageController extends Controller
         abort_unless(
             $message->conversation?->users()->whereKey($user->id)->exists(),
             403,
-            'No participas en la conversacion.'
+            'No participas en la conversación.'
         );
 
         $isOwner = (int) $message->sender_id === (int) $user->id;
@@ -142,7 +142,7 @@ class MessageController extends Controller
         $message->save();
         $message->delete();
 
-        return response()->json(['message' => 'Mensaje marcado para revision.'], 200);
+        return response()->json(['message' => 'Mensaje marcado para revisión.'], 200);
     }
 
     private function ensureAdmin(): void

@@ -151,7 +151,7 @@ const CONVERSATION_TYPE_LABEL: Record<string, string> = {
 
 /**
  * Los chats privados llegan con `name: null` desde el backend. Mostrar el ID crudo
- * ("Conversacion 51") no le dice nada al usuario; se resuelve con el nombre del
+ * ("Conversación 51") no le dice nada al usuario; se resuelve con el nombre del
  * otro participante, igual que hace el resumen del dashboard.
  */
 function conversationTitle(
@@ -167,15 +167,15 @@ function conversationTitle(
     return others.map((user) => user.name).join(", ");
   }
 
-  return `Conversacion ${conversation.id}`;
+  return `Conversación ${conversation.id}`;
 }
 
 /** `type` viene del backend en ingles ("private", "group"). */
 function conversationTypeLabel(type?: string | null): string {
   if (!type) {
-    return "Conversacion";
+    return "Conversación";
   }
-  return CONVERSATION_TYPE_LABEL[type.toLowerCase()] ?? "Conversacion";
+  return CONVERSATION_TYPE_LABEL[type.toLowerCase()] ?? "Conversación";
 }
 
 function participantLabel(count: number): string {
@@ -183,10 +183,10 @@ function participantLabel(count: number): string {
 }
 
 /**
- * Marca de tiempo de la ultima actividad de una conversacion, en el mismo
+ * Marca de tiempo de la última actividad de una conversación, en el mismo
  * formato relativo que usa el feed de publicaciones ("hace 5 min"). `updated_at`
- * es lo mas cercano a "ultimo movimiento" que expone el backend: los mensajes
- * refrescan la conversacion al insertarse.
+ * es lo más cercano a "último movimiento" que expone el backend: los mensajes
+ * refrescan la conversación al insertarse.
  */
 function formatRelativeTime(isoDate?: string | null): string {
   if (!isoDate) {
@@ -284,7 +284,7 @@ export default function ConversationsPage() {
     if (error instanceof ApiClientError) {
       if (error.status === 403) {
         setIsPermissionError(true);
-        setErrorMessage("No tienes permisos para realizar esta accion.");
+        setErrorMessage("No tienes permisos para realizar esta acción.");
         return;
       }
 
@@ -339,7 +339,7 @@ export default function ConversationsPage() {
       } catch (error) {
         if (!ignore) {
           if (error instanceof ApiClientError && error.status === 401) {
-            setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+            setErrorMessage("No autenticado. Inicia sesión nuevamente.");
             setIsPermissionError(false);
             clearAccessToken();
           } else {
@@ -377,7 +377,7 @@ export default function ConversationsPage() {
   );
 
   // Opciones del desplegable de departamento del modal de nuevo chat. El color
-  // viaja con la opcion para que se vea al desplegar la lista.
+  // viaja con la opción para que se vea al desplegar la lista.
   const chatDepartmentOptions = useMemo<DepartmentSelectOption[]>(
     () => [
       { value: "all", label: "Todos" },
@@ -813,9 +813,9 @@ export default function ConversationsPage() {
     return String(count);
   }, []);
 
-  // SeCalcula una vez por conversacion y no en el JSX: la tarjeta llama a este
+  // SeCalcula una vez por conversación y no en el JSX: la tarjeta llama a este
   // helper dos veces y `Date.now()` dentro del render daria dos lecturas por
-  //montaje, que pueden caer en distinto minuto en el limite de "hace 1 min".
+  //montaje, que pueden caer en distinto minuto en el límite de "hace 1 min".
   const conversationLastActivity = useCallback(
     (conversation: Conversation): string => formatRelativeTime(conversation.updated_at),
     [],
@@ -934,7 +934,7 @@ export default function ConversationsPage() {
       }));
 
       showIncomingMessageNotice({
-        text: `Nuevo mensaje de ${incomingMessage.sender_name} en otra conversacion`,
+        text: `Nuevo mensaje de ${incomingMessage.sender_name} en otra conversación`,
         conversationId: incomingMessage.conversation_id,
         messageId: incomingMessage.id,
       });
@@ -1033,7 +1033,7 @@ export default function ConversationsPage() {
           continue;
         }
 
-        setHandledError(error, "No se pudo cargar el hilo de la conversacion.");
+        setHandledError(error, "No se pudo cargar el hilo de la conversación.");
         return;
       }
     }
@@ -1333,7 +1333,7 @@ export default function ConversationsPage() {
 
       if (existingConversation) {
         setSelectedConversationId(existingConversation.id);
-        setSuccessMessage("Ya existe una conversacion con esos usuarios. La hemos reutilizado en la lista.");
+        setSuccessMessage("Ya existe una conversación con esos usuarios. La hemos reutilizado en la lista.");
         setSelectedUserIds([]);
         closeCreateChatModal();
         return;
@@ -1362,7 +1362,7 @@ export default function ConversationsPage() {
         conversation: createdConversation,
       } satisfies ChatSyncEvent);
     } catch (error) {
-      setHandledError(error, "No se pudo crear la conversacion.");
+      setHandledError(error, "No se pudo crear la conversación.");
     } finally {
       setIsCreatingConversation(false);
     }
@@ -1370,7 +1370,7 @@ export default function ConversationsPage() {
 
   const submitDraftMessage = async () => {
     if (!selectedConversation) {
-      setErrorMessage("Selecciona una conversacion antes de enviar un mensaje.");
+      setErrorMessage("Selecciona una conversación antes de enviar un mensaje.");
       setIsPermissionError(false);
       return;
     }
@@ -1383,7 +1383,7 @@ export default function ConversationsPage() {
     }
 
     if (attachedFile && attachedFile.size > MAX_ATTACHMENT_SIZE_BYTES) {
-      setErrorMessage("El archivo supera el limite de 20 MB.");
+      setErrorMessage("El archivo supera el límite de 20 MB.");
       setIsPermissionError(false);
       return;
     }
@@ -1490,7 +1490,7 @@ export default function ConversationsPage() {
 
     if (nextFile && nextFile.size > MAX_ATTACHMENT_SIZE_BYTES) {
       setAttachedFile(null);
-      setErrorMessage("El archivo supera el limite de 20 MB.");
+      setErrorMessage("El archivo supera el límite de 20 MB.");
       setIsPermissionError(false);
 
       if (fileInputRef.current) {
@@ -1510,7 +1510,7 @@ export default function ConversationsPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Eliminar la conversacion "${conversation.name ?? `Conversacion ${conversation.id}`}"?`);
+    const confirmed = window.confirm(`Eliminar la conversación "${conversation.name ?? `Conversación ${conversation.id}`}"?`);
     if (!confirmed) {
       return;
     }
@@ -1525,14 +1525,14 @@ export default function ConversationsPage() {
       });
 
       removeConversationFromState(conversation.id);
-      setSuccessMessage("Conversacion eliminada correctamente.");
+      setSuccessMessage("Conversación eliminada correctamente.");
 
       chatBroadcastRef.current?.postMessage({
         type: "conversation-deleted",
         conversationId: conversation.id,
       } satisfies ChatSyncEvent);
     } catch (error) {
-      setHandledError(error, "No se pudo eliminar la conversacion.");
+      setHandledError(error, "No se pudo eliminar la conversación.");
     }
   };
 
@@ -1559,7 +1559,7 @@ export default function ConversationsPage() {
 
     const trimmed = renameName.trim();
     if (!trimmed) {
-      setErrorMessage("El nombre no puede estar vacio.");
+      setErrorMessage("El nombre no puede estar vacío.");
       setIsPermissionError(false);
       return;
     }
@@ -1588,10 +1588,10 @@ export default function ConversationsPage() {
         ),
       );
 
-      setSuccessMessage("Conversacion renombrada.");
+      setSuccessMessage("Conversación renombrada.");
       closeRenameModal();
     } catch (error) {
-      setHandledError(error, "No se pudo renombrar la conversacion.");
+      setHandledError(error, "No se pudo renombrar la conversación.");
     } finally {
       setIsRenaming(false);
     }
@@ -1603,7 +1603,7 @@ export default function ConversationsPage() {
     }
 
     const confirmed = window.confirm(
-      "Marcar este mensaje para revision? Un administrador decidira si eliminarlo definitivamente desde la Papelera.",
+      "Marcar este mensaje para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
     );
     if (!confirmed) {
       return;
@@ -1626,7 +1626,7 @@ export default function ConversationsPage() {
         };
       });
 
-      setSuccessMessage("Mensaje marcado para revision del administrador.");
+      setSuccessMessage("Mensaje marcado para revisión del administrador.");
 
       chatBroadcastRef.current?.postMessage({
         type: "message-deleted",
@@ -1747,7 +1747,7 @@ export default function ConversationsPage() {
                               type="button"
                               onClick={() => void handleDeleteConversation(conversation)}
                               aria-label={`Eliminar ${conversationTitle(conversation, user?.id)}`}
-                              title="Eliminar conversacion"
+                              title="Eliminar conversación"
                               className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted-soft)] transition hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1766,7 +1766,7 @@ export default function ConversationsPage() {
                           {isUserCollaborator ? "Solo lectura" : isAdmin ? "Admin" : "Chat"}
                         </p>
                         <h4 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
-                          {isUserCollaborator ? "Tu buzon" : "Iniciar chat nuevo"}
+                          {isUserCollaborator ? "Tu buzón" : "Iniciar chat nuevo"}
                         </h4>
                       </div>
                       <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-xs font-medium text-[var(--muted)]">
@@ -1796,14 +1796,14 @@ export default function ConversationsPage() {
                     <h3 className="truncate text-xl font-semibold tracking-tight text-[var(--foreground)]">
                       {selectedConversation
                         ? conversationTitle(selectedConversation, user?.id)
-                        : "Panel de conversacion"}
+                        : "Panel de conversación"}
                     </h3>
                     {selectedConversation && canRenameConversation ? (
                       <button
                         type="button"
                         onClick={openRenameModal}
-                        aria-label="Renombrar conversacion"
-                        title="Renombrar conversacion"
+                        aria-label="Renombrar conversación"
+                        title="Renombrar conversación"
                         className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)] active:scale-[0.96]"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -1859,7 +1859,7 @@ export default function ConversationsPage() {
                 <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
                   {selectedConversation
                     ? `${conversationTypeLabel(selectedConversation.type)} · ${participantLabel(selectedConversation.users.length)}`
-                    : "Selecciona una conversacion para ver el hilo y enviar mensajes."}
+                    : "Selecciona una conversación para ver el hilo y enviar mensajes."}
                 </p>
                 {incomingMessageNotice ? (
                   <button
@@ -1914,8 +1914,8 @@ export default function ConversationsPage() {
                                       <button
                                         type="button"
                                         onClick={() => void handleDeleteMessage(message)}
-                                        title="Marcar para revision"
-                                        aria-label={`Marcar para revision el mensaje de ${message.sender_name}`}
+                                        title="Marcar para revisión"
+                                        aria-label={`Marcar para revisión el mensaje de ${message.sender_name}`}
                                         className={`inline-flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border transition ${
                                           isOwnMessage
                                             ? "border-white/30 text-white/80 hover:bg-white/15 hover:text-white"
@@ -1986,7 +1986,7 @@ export default function ConversationsPage() {
                                 clipRule="evenodd"
                               />
                             </svg>
-                            Ir al ultimo mensaje
+                            Ir al último mensaje
                           </button>
                         </div>
                       ) : null}
@@ -2064,7 +2064,7 @@ export default function ConversationsPage() {
                       <MessageSquare className="h-4 w-4" />
                     </span>
                     <p className="mt-3 text-sm font-semibold text-[var(--foreground)]">
-                      Selecciona una conversacion
+                      Selecciona una conversación
                     </p>
                     <p className="mx-auto mt-1 max-w-xs text-xs text-[var(--muted)]">
                       Elige un hilo de la lista para leerlo y responder.
@@ -2297,7 +2297,7 @@ function RenameConversationModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Renombrar conversacion"
+            aria-label="Renombrar conversación"
             initial={{ opacity: 0, y: 12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
@@ -2307,10 +2307,10 @@ function RenameConversationModal({
             <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
               <div>
                 <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
-                  Renombrar conversacion
+                  Renombrar conversación
                 </h3>
                 <p className="mt-1 text-xs text-[var(--muted)]">
-                  Cambia el nombre visible de la conversacion.
+                  Cambia el nombre visible de la conversación.
                 </p>
               </div>
               <button

@@ -59,7 +59,7 @@ class DocumentController extends Controller
 
                 $origin = [
                     'type' => 'chat',
-                    'label' => 'Chat: '.($conversation->name ?: ('Conversacion '.$conversation->id)),
+                    'label' => 'Chat: '.($conversation->name ?: ('Conversación '.$conversation->id)),
                     'conversation_id' => (int) $conversation->id,
                 ];
             } elseif ($document->folder) {
@@ -190,7 +190,7 @@ class DocumentController extends Controller
         $document->save();
         $document->delete();
 
-        return response()->json(['message' => 'Documento marcado para revision.'], 200);
+        return response()->json(['message' => 'Documento marcado para revisión.'], 200);
     }
 
     public function storeDepartmentDocument(

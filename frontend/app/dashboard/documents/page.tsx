@@ -23,11 +23,11 @@ type DocumentsViewMode = "all" | "chat" | "department" | "other";
 type DocumentGroupTone = "primary" | "accent" | "neutral";
 
 /*
- * `GET /documents` devuelve la coleccion completa sin paginar
+ * `GET /documents` devuelve la colección completa sin paginar
  * (DocumentController::index hace ->get()). Con cientos de adjuntos eso pintaba
- * todas las tarjetas en el DOM de una vez. Aqui se pagina en cliente, igual que
+ * todas las tarjetas en el DOM de una vez. Aquí se pagina en cliente, igual que
  * en /dashboard/users: el buscador y los filtros de origen ya operaban sobre el
- * conjunto completo, asi que solo hay que recortar la vista.
+ * conjunto completo, así que solo hay que recortar la vista.
  */
 const DOCUMENTS_PER_PAGE = 12;
 
@@ -160,7 +160,7 @@ function formatFileSize(sizeInBytes?: number | null): string {
 
 function getVisibilityLabel(visibility: DocumentItem["visibility"]): string {
   if (visibility === "public") {
-    return "Publico";
+    return "Público";
   }
 
   if (visibility === "department") {
@@ -196,7 +196,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Cambiar buscador o filtro acorta la lista: se vuelve a la pagina 1 desde el
+  // Cambiar buscador o filtro acorta la lista: se vuelve a la página 1 desde el
   // handler en vez de un efecto, para no desincronizar un setState en un efecto.
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
@@ -211,14 +211,14 @@ export default function DocumentsPage() {
   const setHandledError = useCallback((error: unknown, fallbackMessage: string) => {
     if (error instanceof ApiClientError) {
       if (error.status === 401) {
-        setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+        setErrorMessage("No autenticado. Inicia sesión nuevamente.");
         setIsPermissionError(false);
         clearAccessToken();
         return;
       }
 
       if (error.status === 403) {
-        setErrorMessage("No tienes permisos para realizar esta accion.");
+        setErrorMessage("No tienes permisos para realizar esta acción.");
         setIsPermissionError(true);
         return;
       }
@@ -247,7 +247,7 @@ export default function DocumentsPage() {
       setUser(meResponse.data);
       setDocuments(documentsResponse.data);
     } catch (error) {
-      setHandledError(error, "No se pudo cargar la seccion de documentos.");
+      setHandledError(error, "No se pudo cargar la sección de documentos.");
     } finally {
       setIsLoadingUser(false);
       setIsLoadingDocuments(false);
@@ -334,7 +334,7 @@ export default function DocumentsPage() {
 
   const totalPages = Math.max(1, Math.ceil(visibleDocuments.length / DOCUMENTS_PER_PAGE));
   // `page` puede quedar fuera de rango si la lista se acorta (borrado, filtro),
-  // asi que la vista se recorta contra un numero ya acotado en lugar de
+  // así que la vista se recorta contra un número ya acotado en lugar de
   // obligar a un efecto que lo corrija.
   const currentPage = Math.min(Math.max(1, page), totalPages);
   const pagedDocuments = useMemo(
@@ -348,8 +348,8 @@ export default function DocumentsPage() {
   const firstShown = visibleDocuments.length === 0 ? 0 : (currentPage - 1) * DOCUMENTS_PER_PAGE + 1;
   const lastShown = Math.min(currentPage * DOCUMENTS_PER_PAGE, visibleDocuments.length);
 
-  // Al cambiar de pagina el listado se reconstruye entero arriba; sin esto se
-  // hereda el scroll anterior y la pagina nueva aparece a media altura.
+  // Al cambiar de página el listado se reconstruye entero arriba; sin esto se
+  // hereda el scroll anterior y la página nueva aparece a media altura.
   useEffect(() => {
     listContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
@@ -389,7 +389,7 @@ export default function DocumentsPage() {
     [getDocumentCategory, pagedDocuments],
   );
 
-  // Los grupos se arman sobre la pagina actual, asi que su contador debe
+  // Los grupos se arman sobre la página actual, así que su contador debe
   // contar lo que realmente se pinta debajo del encabezado.
   const pagedCountsByCategory = useMemo(() => {
     const counts: Record<Exclude<DocumentsViewMode, "all">, number> = {
@@ -423,7 +423,7 @@ export default function DocumentsPage() {
     const token = getAccessToken();
 
     if (!token) {
-      setErrorMessage("Sesion expirada. Inicia sesion nuevamente.");
+      setErrorMessage("Sesión expirada. Inicia sesión nuevamente.");
       setIsPermissionError(false);
       return;
     }
@@ -470,7 +470,7 @@ export default function DocumentsPage() {
     }
 
     const confirmed = window.confirm(
-      "Marcar este documento para revision? Un administrador decidira si eliminarlo definitivamente desde la Papelera.",
+      "Marcar este documento para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
     );
     if (!confirmed) {
       return;
@@ -480,7 +480,7 @@ export default function DocumentsPage() {
       await apiFetch(`/documents/${document.id}`, {
         method: "DELETE",
       });
-      setSuccessMessage("Documento marcado para revision.");
+      setSuccessMessage("Documento marcado para revisión.");
       await loadPageData();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 403) {
@@ -543,8 +543,8 @@ export default function DocumentsPage() {
           <button
             type="button"
             onClick={() => void handleSoftDeleteDocument(document)}
-            title="Marcar para revision del administrador"
-            aria-label={`Marcar ${document.original_name ?? document.title} para revision`}
+            title="Marcar para revisión del administrador"
+            aria-label={`Marcar ${document.original_name ?? document.title} para revisión`}
             className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted-soft)] transition hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)]/10 hover:text-[color:var(--danger)]"
           >
             <Flag className="h-3.5 w-3.5" />
@@ -694,7 +694,7 @@ export default function DocumentsPage() {
 
               {totalPages > 1 ? (
                 <nav
-                  aria-label="Paginacion de documentos"
+                  aria-label="Paginación de documentos"
                   className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-3"
                 >
                   <p className="text-xs text-[var(--muted)]">
@@ -706,8 +706,8 @@ export default function DocumentsPage() {
                       type="button"
                       onClick={() => setPage(1)}
                       disabled={currentPage === 1}
-                      aria-label="Ir a la primera pagina"
-                      title="Primera pagina"
+                      aria-label="Ir a la primera página"
+                      title="Primera página"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronsLeft className="h-4 w-4" />
@@ -717,8 +717,8 @@ export default function DocumentsPage() {
                       type="button"
                       onClick={() => setPage((current) => Math.max(1, current - 1))}
                       disabled={currentPage === 1}
-                      aria-label="Pagina anterior"
-                      title="Pagina anterior"
+                      aria-label="Página anterior"
+                      title="Página anterior"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -732,8 +732,8 @@ export default function DocumentsPage() {
                       type="button"
                       onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                       disabled={currentPage === totalPages}
-                      aria-label="Pagina siguiente"
-                      title="Pagina siguiente"
+                      aria-label="Página siguiente"
+                      title="Página siguiente"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -743,8 +743,8 @@ export default function DocumentsPage() {
                       type="button"
                       onClick={() => setPage(totalPages)}
                       disabled={currentPage === totalPages}
-                      aria-label="Ir a la ultima pagina"
-                      title="Ultima pagina"
+                      aria-label="Ir a la última página"
+                      title="Última página"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronsRight className="h-4 w-4" />

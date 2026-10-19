@@ -11,11 +11,11 @@ import {
 } from "@/lib/mobile-nav-store";
 
 /**
- * Estado del drawer de navegacion movil.
+ * Estado del drawer de navegación móvil.
  *
- * Vive en un store de modulo (igual que `theme-provider`) para que el boton que
+ * Vive en un store de módulo (igual que `theme-provider`) para que el botón que
  * lo abre, en el header, y el drawer que lo pinta, en el sidebar, puedan estar
- * en componentes distintos sin que cada pagina tenga que cablear el estado.
+ * en componentes distintos sin que cada página tenga que cablear el estado.
  */
 export function useMobileNav() {
   const isOpen = useSyncExternalStore(

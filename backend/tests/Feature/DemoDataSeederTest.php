@@ -62,7 +62,7 @@ class DemoDataSeederTest extends TestCase
 
         $names = Department::query()->orderBy('name')->pluck('name')->all();
         $this->assertGreaterThanOrEqual(8, count($names));
-        $this->assertContains('Tecnologia', $names);
+        $this->assertContains('Tecnología', $names);
         $this->assertContains('Marketing', $names);
         $this->assertContains('Ventas', $names);
     }

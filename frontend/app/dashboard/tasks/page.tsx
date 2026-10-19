@@ -24,11 +24,11 @@ type MeResponse = {
 };
 
 /**
- * Columnas del tablero. Se muestran en estado atenuado: el modulo todavia no
- * tiene backend, asi que no hay conteos reales que mostrar y los mensajes no
- * deben insinuar que el tablero esta operativo.
+ * Columnas del tablero. Se muestran en estado atenuado: el módulo todavía no
+ * tiene backend, así que no hay conteos reales que mostrar y los mensajes no
+ * deben insinuar que el tablero está operativo.
  */
-const KANBAN_COLUMNS = ["Pendiente", "En curso", "En revision", "Completado"] as const;
+const KANBAN_COLUMNS = ["Pendiente", "En curso", "En revisión", "Completado"] as const;
 
 export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +48,7 @@ export default function TasksPage() {
 
         if (!ignore) {
           setUser(response.data);
-          // El administrador tambien entra: antes la condicion lo excluia
+          // El administrador también entra: antes la condición lo excluía
           // explicitamente y leia "contacta al administrador" a si mismo.
           setHasAccess(isAdministrator(response.data) || isLeader(response.data));
         }
@@ -58,12 +58,12 @@ export default function TasksPage() {
         }
 
         if (error instanceof ApiClientError && error.status === 401) {
-          setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+          setErrorMessage("No autenticado. Inicia sesión nuevamente.");
           clearAccessToken();
         } else if (error instanceof ApiClientError) {
           setErrorMessage(error.message);
         } else {
-          setErrorMessage("No se pudo validar la sesion.");
+          setErrorMessage("No se pudo validar la sesión.");
         }
       } finally {
         if (!ignore) {
@@ -92,7 +92,7 @@ export default function TasksPage() {
           isLeader={isUserLeader}
           isNewHire={isUserNewHire}
           activeRoute="tasks"
-          statusMessage={isLoading ? "Validando sesion..." : errorMessage ?? "Sesion activa"}
+          statusMessage={isLoading ? "Validando sesión..." : errorMessage ?? "Sesión activa"}
         />
 
         <section className="min-w-0 flex-1 px-5 py-6 lg:px-6 xl:px-8">
@@ -105,7 +105,7 @@ export default function TasksPage() {
                 Tablero de tu equipo
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Organiza el trabajo por etapas: pendiente, en curso, en revision y completado.
+                Organiza el trabajo por etapas: pendiente, en curso, en revisión y completado.
               </p>
             </header>
 
@@ -113,7 +113,7 @@ export default function TasksPage() {
               <article className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 px-4 py-3 text-sm text-[color:var(--warning)]">
                 <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <p>
-                  El tablero esta disponible para lideres de equipo. Si necesitas escribir tareas,
+                  El tablero está disponible para líderes de equipo. Si necesitas escribir tareas,
                   pide a un administrador que te asigne ese rol.
                 </p>
               </article>
@@ -124,7 +124,7 @@ export default function TasksPage() {
                 <article className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)]/60 px-4 py-3 text-sm text-[var(--foreground)]">
                   <Construction className="mt-0.5 h-4 w-4 shrink-0 text-[var(--muted)]" aria-hidden="true" />
                   <p>
-                    Este modulo todavia no esta habilitado. El tablero se pondra en marcha cuando
+                    Este módulo todavía no está habilitado. El tablero se pondrá en marcha cuando
                     se active el seguimiento de tareas; las columnas de abajo muestran el flujo
                     previsto.
                   </p>
@@ -145,7 +145,7 @@ export default function TasksPage() {
                           {column}
                         </h3>
                       </header>
-                      <p className="mt-4 text-xs text-[var(--muted-soft)]">Sin conexion por ahora</p>
+                      <p className="mt-4 text-xs text-[var(--muted-soft)]">Sin conexión por ahora</p>
                     </article>
                   ))}
                 </section>

@@ -90,7 +90,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     });
   } catch {
     throw new ApiClientError(
-      "No se pudo conectar con el backend. Revisa URL de API, CORS y que el servidor este encendido.",
+      "No se pudo conectar con el backend. Revisa URL de API, CORS y que el servidor esté encendido.",
       0,
       null,
     );

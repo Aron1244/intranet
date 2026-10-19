@@ -54,23 +54,23 @@ type LaravelValidationErrorPayload = {
 const HIGHLIGHTS = [
   {
     icon: MessageSquare,
-    title: "Mensajeria en vivo",
+    title: "Mensajería en vivo",
     body: "Conversaciones sincronizadas en tiempo real con Laravel Echo y Reverb.",
   },
   {
     icon: ShieldCheck,
     title: "Permisos por rol",
-    body: "Cada modulo sabe que puede ver y que puede editar tu rol.",
+    body: "Cada módulo sabe qué puede ver y qué puede editar tu rol.",
   },
   {
     icon: Sparkles,
     title: "Onboarding guiado",
-    body: "Recorridos interactivos para que ningun ingreso empiece en cero.",
+    body: "Recorridos interactivos para que ningún ingreso empiece en cero.",
   },
 ];
 
 const STATS = [
-  { label: "Modulos internos", value: "8" },
+  { label: "Módulos internos", value: "8" },
   { label: "Roles de acceso", value: "4" },
   { label: "Rutas autenticadas", value: "100%" },
 ];
@@ -133,11 +133,11 @@ export default function Home() {
           "Demasiados intentos. Espera un minuto antes de volver a entrar.",
         );
       } else if (error instanceof ApiClientError && error.status === 401) {
-        setErrorMessage("Credenciales invalidas. Verifica tu correo y tu contrasena.");
+        setErrorMessage("Credenciales inválidas. Verifica tu correo y tu contraseña.");
       } else if (error instanceof ApiClientError) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("No pudimos iniciar sesion. Intenta nuevamente.");
+        setErrorMessage("No pudimos iniciar sesión. Intenta nuevamente.");
       }
     } finally {
       setIsSubmitting(false);
@@ -183,9 +183,9 @@ export default function Home() {
 
               <Field
                 id="password"
-                label="Contrasena"
+                label="Contraseña"
                 type={showPassword ? "text" : "password"}
-                placeholder="Minimo 6 caracteres"
+                placeholder="Mínimo 6 caracteres"
                 autoComplete="current-password"
                 value={password}
                 onChange={(value) => {
@@ -200,7 +200,7 @@ export default function Home() {
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
-                    aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -245,7 +245,7 @@ export default function Home() {
                     </svg>
                   </span>
                 </span>
-                Mantener sesion iniciada en este equipo
+                Mantener sesión iniciada en este equipo
               </label>
 
               <AnimatePresence initial={false} mode="wait">
@@ -344,7 +344,7 @@ function BrandPanel() {
 
         <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/90 sm:text-base">
           Conversaciones, publicaciones y documentos accesibles solo para tu equipo, con
-          permisos claros segun el rol que tienes.
+          permisos claros según el rol que tienes.
         </p>
 
         <ul className="mt-10 grid gap-3 sm:grid-cols-3">

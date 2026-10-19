@@ -90,7 +90,7 @@ const HONORIFICS = new Set([
   "msc",
 ]);
 
-/** "Prof. Tatum Bernier" -> "Tatum". Evita saludar por el titulo. */
+/** "Prof. Tatum Bernier" -> "Tatum". Evita saludar por el título. */
 function firstName(fullName?: string | null): string {
   const tokens = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
   let start = 0;
@@ -140,12 +140,12 @@ function getConversationTitle(conversation: Conversation, currentUserId?: number
     return others.map((participant) => participant.name).join(", ");
   }
 
-  return `Conversacion ${conversation.id}`;
+  return `Conversación ${conversation.id}`;
 }
 
 function greeting(now: Date, name?: string | null): string {
   const hour = now.getHours();
-  const slot = hour < 12 ? "Buenos dias" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+  const slot = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
   const who = firstName(name);
   return who ? `${slot}, ${who}` : slot;
 }
@@ -204,12 +204,12 @@ export default function DashboardPage() {
         }
 
         if (error instanceof ApiClientError && error.status === 401) {
-          setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+          setErrorMessage("No autenticado. Inicia sesión nuevamente.");
           clearAccessToken();
         } else if (error instanceof ApiClientError) {
           setErrorMessage(error.message);
         } else {
-          setErrorMessage("No se pudo validar la sesion con el backend.");
+          setErrorMessage("No se pudo validar la sesión con el backend.");
         }
       } finally {
         if (!ignore) {
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               const latest = messages[messages.length - 1];
 
               if (!latest) {
-                return [conversation.id, "Sin mensajes todavia"] as const;
+                return [conversation.id, "Sin mensajes todavía"] as const;
               }
 
               const normalizedContent = latest.content?.trim();
@@ -262,7 +262,7 @@ export default function DashboardPage() {
                 latest.type === "file" ? "Archivo adjunto" : "Mensaje sin texto",
               ] as const;
             } catch {
-              return [conversation.id, "Sin mensajes todavia"] as const;
+              return [conversation.id, "Sin mensajes todavía"] as const;
             }
           }),
         );
@@ -350,7 +350,7 @@ export default function DashboardPage() {
           id: conversation.id,
           name: getConversationTitle(conversation, user?.id),
           status: formatRelativeTime(conversation.updated_at),
-          lastMessage: conversationPreviews[conversation.id] ?? "Sin mensajes todavia",
+          lastMessage: conversationPreviews[conversation.id] ?? "Sin mensajes todavía",
           unread: conversation.unread_count ?? 0,
         })),
     [conversations, conversationPreviews, user?.id],
@@ -407,7 +407,7 @@ export default function DashboardPage() {
         canManageAnnouncements={canManageAnnouncements}
         activeRoute="dashboard"
         statusMessage={
-          isLoading ? "Validando sesion..." : errorMessage ? errorMessage : "Sesion activa"
+          isLoading ? "Validando sesión..." : errorMessage ? errorMessage : "Sesión activa"
         }
       />
 
@@ -421,7 +421,7 @@ export default function DashboardPage() {
         canManageAnnouncements={canManageAnnouncements}
         activeRoute="dashboard"
         statusMessage={
-          isLoading ? "Validando sesion..." : errorMessage ? errorMessage : "Sesion activa"
+          isLoading ? "Validando sesión..." : errorMessage ? errorMessage : "Sesión activa"
         }
       />
 
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                 label="Sin leer"
                 value={isLoadingChats ? null : unreadTotal}
                 tone={unreadTotal > 0 ? "warning" : "neutral"}
-                hint={unreadTotal > 0 ? "mensajes esperandote" : "todo al dia"}
+                hint={unreadTotal > 0 ? "mensajes esperándote" : "todo al día"}
               />
             </div>
 
@@ -475,7 +475,7 @@ export default function DashboardPage() {
                     subtitle={
                       query
                         ? `Filtrando por "${search.trim()}"`
-                        : "Lo ultimo que compartieron tus departamentos."
+                        : "Lo último que compartieron tus departamentos."
                     }
                     action={
                       canManageAnnouncements ? (
@@ -484,7 +484,7 @@ export default function DashboardPage() {
                           className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          Nueva publicacion
+                          Nueva publicación
                         </Link>
                       ) : null
                     }
@@ -495,8 +495,8 @@ export default function DashboardPage() {
                   {!isLoadingAnnouncements && departmentFeed.length === 0 ? (
                     <EmptyState
                       icon={Megaphone}
-                      title="Aun no hay publicaciones"
-                      body="Cuando tu equipo comparta novedades apareceran aqui."
+                      title="Aún no hay publicaciones"
+                      body="Cuando tu equipo comparta novedades aparecerán aquí."
                     />
                   ) : null}
 
@@ -506,7 +506,7 @@ export default function DashboardPage() {
                     <EmptyState
                       icon={Megaphone}
                       title="Sin coincidencias"
-                      body={`Ninguna publicacion responde a "${search.trim()}".`}
+                      body={`Ninguna publicación responde a "${search.trim()}".`}
                     />
                   ) : null}
 
@@ -526,7 +526,7 @@ export default function DashboardPage() {
                 <FeedCard>
                   <FeedHeader
                     title="Atajos"
-                    subtitle="Accede rapidamente a las areas mas usadas."
+                    subtitle="Accede rápidamente a las áreas más usadas."
                   />
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <QuickAction
@@ -573,7 +573,7 @@ export default function DashboardPage() {
                       <EmptyState
                         icon={MessageSquare}
                         title="Sin conversaciones"
-                        body="Inicia una nueva conversacion desde la seccion de mensajes."
+                        body="Inicia una nueva conversación desde la sección de mensajes."
                       />
                     ) : null}
 
@@ -581,7 +581,7 @@ export default function DashboardPage() {
                       <EmptyState
                         icon={MessageSquare}
                         title="Sin coincidencias"
-                        body={`Ninguna conversacion responde a "${search.trim()}".`}
+                        body={`Ninguna conversación responde a "${search.trim()}".`}
                       />
                     ) : null}
 
@@ -703,7 +703,7 @@ function HeroCard({ isLoading, errorMessage, greeting }: HeroCardProps) {
           )}
 
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
-            Aqui encontraras tus publicaciones, mensajes pendientes y los ultimos movimientos de
+            Aquí encontrarás tus publicaciones, mensajes pendientes y los últimos movimientos de
             tu equipo.
           </p>
 
@@ -782,8 +782,8 @@ function StatTile({ href, icon: Icon, label, value, tone = "primary", hint }: St
 }
 
 /**
- * Resumen de alcance: que roles tiene el usuario y que modulos puede ver.
- * Es el complemento del feed: deja claro por que aparece (o no) cada seccion.
+ * Resumen de alcance: qué roles tiene el usuario y qué módulos puede ver.
+ * Es el complemento del feed: deja claro por qué aparece (o no) cada sección.
  */
 function ScopeCard({
   roles,
@@ -807,7 +807,7 @@ function ScopeCard({
   const badges: string[] = [];
 
   if (isAdmin) badges.push("Acceso total");
-  if (isLeader) badges.push("Gestion de equipo");
+  if (isLeader) badges.push("Gestión de equipo");
   if (canManageAnnouncements) badges.push("Publica contenido");
   if (isNewHire) badges.push("Onboarding pendiente");
 
@@ -870,7 +870,7 @@ function ScopeCard({
 
           <div>
             <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-              Modulos visibles
+              Módulos visibles
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {modules.map((module) => (

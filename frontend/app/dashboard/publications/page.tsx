@@ -143,8 +143,8 @@ export default function PublicationsPage() {
 
   const backendOrigin = useMemo(() => API_BASE.replace(/\/+api$/, ""), []);
 
-  // Opciones del desplegable de departamento del formulario de publicacion.
-  // El color viaja con la opcion para que se vea al desplegar la lista.
+  // Opciones del desplegable de departamento del formulario de publicación.
+  // El color viaja con la opción para que se vea al desplegar la lista.
   const departmentSelectOptions = useMemo<DepartmentSelectOption[]>(
     () =>
       departments.map((department) => ({
@@ -236,7 +236,7 @@ export default function PublicationsPage() {
       } catch (error) {
         if (!ignore) {
           if (error instanceof ApiClientError && error.status === 401) {
-            setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+            setErrorMessage("No autenticado. Inicia sesión nuevamente.");
             setIsPermissionError(false);
             clearAccessToken();
           } else if (error instanceof ApiClientError && error.status === 403) {
@@ -246,7 +246,7 @@ export default function PublicationsPage() {
             setErrorMessage(error.message);
             setIsPermissionError(false);
           } else {
-            setErrorMessage("No se pudo cargar la seccion de publicaciones.");
+            setErrorMessage("No se pudo cargar la sección de publicaciones.");
             setIsPermissionError(false);
           }
         }
@@ -361,7 +361,7 @@ export default function PublicationsPage() {
     const selectedDepartmentId = formState.department_id || (user.department_id ? String(user.department_id) : "");
 
     if (!normalizedTitle || !normalizedContent) {
-      setErrorMessage("Completa titulo y contenido antes de guardar.");
+      setErrorMessage("Completa título y contenido antes de guardar.");
       setIsPermissionError(false);
       return;
     }
@@ -408,7 +408,7 @@ export default function PublicationsPage() {
           body: payload,
         });
 
-        setSuccessMessage(formState.is_visible ? "Publicacion actualizada y visible." : "Publicacion actualizada (oculta).");
+        setSuccessMessage(formState.is_visible ? "Publicación actualizada y visible." : "Publicación actualizada (oculta).");
       } else {
         if (!isAdmin || !formState.publish_all) {
           payload.append("department_id", selectedDepartmentId);
@@ -424,9 +424,9 @@ export default function PublicationsPage() {
         });
 
         if (isAdmin && formState.publish_all) {
-          setSuccessMessage(formState.is_visible ? "Publicacion visible creada para todos los departamentos." : "Borrador creado para todos los departamentos.");
+          setSuccessMessage(formState.is_visible ? "Publicación visible creada para todos los departamentos." : "Borrador creado para todos los departamentos.");
         } else {
-          setSuccessMessage(formState.is_visible ? "Publicacion creada y visible." : "Publicacion creada como borrador (oculta).");
+          setSuccessMessage(formState.is_visible ? "Publicación creada y visible." : "Publicación creada como borrador (oculta).");
         }
       }
 
@@ -440,7 +440,7 @@ export default function PublicationsPage() {
         setErrorMessage(error.message);
         setIsPermissionError(false);
       } else {
-        setErrorMessage("No se pudo guardar la publicacion.");
+        setErrorMessage("No se pudo guardar la publicación.");
         setIsPermissionError(false);
       }
     } finally {
@@ -476,7 +476,7 @@ export default function PublicationsPage() {
     const token = getAccessToken();
 
     if (!token) {
-      setErrorMessage("Sesion expirada. Inicia sesion nuevamente.");
+      setErrorMessage("Sesión expirada. Inicia sesión nuevamente.");
       setIsPermissionError(false);
       return;
     }
@@ -527,7 +527,7 @@ export default function PublicationsPage() {
   };
 
   const handleDeleteAnnouncement = async (announcement: Announcement) => {
-    const confirmed = window.confirm(`Eliminar la publicacion \"${announcement.title}\"?`);
+    const confirmed = window.confirm(`Eliminar la publicación \"${announcement.title}\"?`);
     if (!confirmed) {
       return;
     }
@@ -540,20 +540,20 @@ export default function PublicationsPage() {
         method: "DELETE",
       });
 
-      setSuccessMessage("Publicacion eliminada correctamente.");
+      setSuccessMessage("Publicación eliminada correctamente.");
       if (editingAnnouncementId === announcement.id) {
         resetForm();
       }
       await loadAnnouncements();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 403) {
-        setErrorMessage("No tienes permisos para eliminar esta publicacion.");
+        setErrorMessage("No tienes permisos para eliminar esta publicación.");
         setIsPermissionError(true);
       } else if (error instanceof ApiClientError) {
         setErrorMessage(error.message);
         setIsPermissionError(false);
       } else {
-        setErrorMessage("No se pudo eliminar la publicacion.");
+        setErrorMessage("No se pudo eliminar la publicación.");
         setIsPermissionError(false);
       }
     }
@@ -574,7 +574,7 @@ export default function PublicationsPage() {
         },
       });
 
-      setSuccessMessage(nextVisibility ? "Publicacion marcada como visible." : "Publicacion cambiada a borrador.");
+      setSuccessMessage(nextVisibility ? "Publicación marcada como visible." : "Publicación cambiada a borrador.");
       await loadAnnouncements();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 403) {
@@ -617,7 +617,7 @@ export default function PublicationsPage() {
                 Comparte novedades con tu equipo
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Redacta una publicacion, adjunta los archivos que hagan falta y decide si queda
+                Redacta una publicación, adjunta los archivos que hagan falta y decide si queda
                 visible para todos o se guarda como borrador.
               </p>
             </header>
@@ -666,7 +666,7 @@ export default function PublicationsPage() {
                       className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--primary)] px-3.5 text-xs font-semibold text-white transition hover:bg-[var(--primary-hover)]"
                     >
                       <Plus className="h-4 w-4" />
-                      Nueva publicacion
+                      Nueva publicación
                     </button>
                   </div>
 
@@ -710,7 +710,7 @@ export default function PublicationsPage() {
                                     {announcement.creator?.name ?? "Usuario"}
                                   </p>
                                   <p className="truncate text-xs text-[var(--muted)]">
-                                    {announcement.department?.name ? `${announcement.department.name} • Publicacion interna` : "General • Publicacion interna"}
+                                    {announcement.department?.name ? `${announcement.department.name} • Publicación interna` : "General • Publicación interna"}
                                   </p>
                                   <p className="text-xs text-[var(--muted-soft)]">
                                     {formatRelativeTime(announcement.created_at)}
@@ -740,7 +740,7 @@ export default function PublicationsPage() {
                                 type="button"
                                 className="mt-1 text-sm font-medium text-[var(--primary)] hover:underline"
                               >
-                                Ver mas
+                                Ver más
                               </button>
                             ) : null}
                           </div>
@@ -762,10 +762,10 @@ export default function PublicationsPage() {
                             {imageAttachments.length + fileAttachments.length > 0
                               ? `${imageAttachments.length + fileAttachments.length} ${
                                   imageAttachments.length + fileAttachments.length === 1
-                                    ? "adjunto en esta publicacion"
-                                    : "adjuntos en esta publicacion"
+                                    ? "adjunto en esta publicación"
+                                    : "adjuntos en esta publicación"
                                 }`
-                              : "Publicacion sin adjuntos"}
+                              : "Publicación sin adjuntos"}
                           </div>
 
                           {fileAttachments.length > 0 ? (
@@ -849,7 +849,7 @@ export default function PublicationsPage() {
                   <motion.div
                     role="dialog"
                     aria-modal="true"
-                    aria-label={editingAnnouncementId ? "Editar publicacion" : "Nueva publicacion"}
+                    aria-label={editingAnnouncementId ? "Editar publicación" : "Nueva publicación"}
                     initial={{ opacity: 0, y: 12, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.97 }}
@@ -859,7 +859,7 @@ export default function PublicationsPage() {
                     <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
                       <div>
                         <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
-                          {editingAnnouncementId ? "Editar publicacion" : "Nueva publicacion"}
+                          {editingAnnouncementId ? "Editar publicación" : "Nueva publicación"}
                         </h3>
                         <p className="mt-1 text-xs text-[var(--muted)]">
                           Adjunta los archivos que hagan falta y decide si queda visible o como borrador.
@@ -894,14 +894,14 @@ export default function PublicationsPage() {
                             htmlFor="announcement-title"
                             className="text-sm font-medium text-[var(--foreground)]"
                           >
-                            Titulo
+                            Título
                           </label>
                           <input
                             id="announcement-title"
                             type="text"
                             value={formState.title}
                             onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))}
-                            placeholder="Ej. Nueva politica de vacaciones"
+                            placeholder="Ej. Nueva política de vacaciones"
                             className="mt-1.5 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                           />
                         </div>
@@ -1013,7 +1013,7 @@ export default function PublicationsPage() {
                             value={formState.content}
                             onChange={(event) => setFormState((current) => ({ ...current, content: event.target.value }))}
                             rows={5}
-                            placeholder="Comparte una actualizacion para el equipo..."
+                            placeholder="Comparte una actualización para el equipo..."
                             className="mt-1.5 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                           />
                         </div>
@@ -1064,7 +1064,7 @@ export default function PublicationsPage() {
                             disabled={isSavingAnnouncement}
                             className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            {isSavingAnnouncement ? "Guardando..." : editingAnnouncementId ? "Actualizar" : "Crear publicacion"}
+                            {isSavingAnnouncement ? "Guardando..." : editingAnnouncementId ? "Actualizar" : "Crear publicación"}
                           </button>
                         </div>
                       </form>
@@ -1083,10 +1083,10 @@ export default function PublicationsPage() {
                               </div>
                             </div>
                             <h4 className="mt-3 text-base font-semibold text-[var(--foreground)]">
-                              {formState.title.trim() || "Titulo de la publicacion"}
+                              {formState.title.trim() || "Título de la publicación"}
                             </h4>
                             <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-[var(--muted)]">
-                              {formState.content.trim() || "Aqui veras la vista previa del contenido."}
+                              {formState.content.trim() || "Aquí verás la vista previa del contenido."}
                             </p>
 
                             {previewExistingAttachments.length > 0 || newAttachmentPreviews.length > 0 ? (

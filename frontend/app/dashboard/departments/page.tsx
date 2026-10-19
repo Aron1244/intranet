@@ -177,7 +177,7 @@ export default function DepartmentsPage() {
       } catch (error) {
         if (!ignore) {
           if (error instanceof ApiClientError && error.status === 401) {
-            setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+            setErrorMessage("No autenticado. Inicia sesión nuevamente.");
             setIsPermissionError(false);
             clearAccessToken();
           } else if (error instanceof ApiClientError && error.status === 403) {
@@ -364,9 +364,9 @@ export default function DepartmentsPage() {
     setDeptFormState({
       name: dept.name,
       description: dept.description ?? "",
-      // Si el departamento todavia no tiene color propio, se ofrece el que
+      // Si el departamento todavía no tiene color propio, se ofrece el que
       // la interfaz ya le muestra en la lista, para que editar no cambie el
-      // circulo visible sin que el administrador lo haya pedido.
+      // círculo visible sin que el administrador lo haya pedido.
       color: resolveDepartmentColor(dept),
     });
     setEditingDepartmentId(dept.id);
@@ -495,7 +495,7 @@ export default function DepartmentsPage() {
             <header className="space-y-3">
               <p className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
                 <ShieldCheck className="h-3 w-3" />
-                Administracion
+                Administración
               </p>
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
@@ -531,7 +531,7 @@ export default function DepartmentsPage() {
 
             {canAccessDepartments ? (
               <div className="space-y-10">
-                {/* ============== SECCION DEPARTAMENTOS ============== */}
+                {/* ============== SECCIÓN DEPARTAMENTOS ============== */}
                 <section className="space-y-4">
                   <header className="flex items-center gap-3">
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary-soft)] text-[var(--primary)]">
@@ -559,7 +559,7 @@ export default function DepartmentsPage() {
                     </h4>
                     <p className="mt-1 text-xs text-[var(--muted)]">
                       {editingDepartmentId
-                        ? "Modifica el nombre o la descripcion."
+                        ? "Modifica el nombre o la descripción."
                         : "Crea un nuevo departamento para la organizacion."}
                     </p>
 
@@ -574,10 +574,10 @@ export default function DepartmentsPage() {
                       />
                       <Field
                         id="dept-description"
-                        label="Descripcion"
+                        label="Descripción"
                         as="textarea"
                         rows={2}
-                        placeholder="Descripcion opcional"
+                        placeholder="Descripción opcional"
                         value={deptFormState.description}
                         onChange={(value) => setDeptFormState({ ...deptFormState, description: value })}
                       />
@@ -619,7 +619,7 @@ export default function DepartmentsPage() {
                   ) : departments_sorted.length === 0 ? (
                     <EmptyState
                       icon={Building2}
-                      title="Aun no hay departamentos"
+                      title="Aún no hay departamentos"
                       body="Crea el primero con el formulario de arriba."
                     />
                   ) : (
@@ -630,7 +630,7 @@ export default function DepartmentsPage() {
                           type="search"
                           value={deptSearchTerm}
                           onChange={(event) => setDeptSearchTerm(event.target.value)}
-                          placeholder="Buscar departamento por nombre o descripcion..."
+                          placeholder="Buscar departamento por nombre o descripción..."
                           className="h-8 w-full border-0 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted-soft)]"
                         />
                         <span className="shrink-0 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted)] uppercase">
@@ -734,7 +734,7 @@ export default function DepartmentsPage() {
                   )}
                 </section>
 
-                {/* ============== SECCION ROLES ============== */}
+                {/* ============== SECCIÓN ROLES ============== */}
                 <section className="space-y-4">
                   <header className="flex items-center gap-3">
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent-soft)] text-[var(--accent)]">
@@ -780,7 +780,7 @@ export default function DepartmentsPage() {
                     <EmptyState
                       icon={Users}
                       title="Este departamento no tiene roles"
-                      body="Usa el boton 'Nuevo rol' arriba para crear el primero."
+                      body="Usa el botón 'Nuevo rol' arriba para crear el primero."
                     />
                   ) : (
                     <div className="surface-card overflow-hidden">
@@ -801,7 +801,7 @@ export default function DepartmentsPage() {
                                     <p className="text-xs text-[var(--muted)]">
                                       {role.can_post_announcements
                                         ? "Puede publicar anuncios"
-                                        : "Sin permisos de publicacion"}
+                                        : "Sin permisos de publicación"}
                                     </p>
                                   </div>
                                 </div>
@@ -853,7 +853,7 @@ export default function DepartmentsPage() {
               </div>
             ) : (
               <div className="surface-card p-8 text-center text-sm text-[var(--muted)]">
-                {errorMessage || "No tienes acceso a esta seccion."}
+                {errorMessage || "No tienes acceso a esta sección."}
               </div>
             )}
           </div>
@@ -930,9 +930,9 @@ type ColorFieldProps = {
 };
 
 /**
- * Selector de color del departamento. Es una seccion secundaria: el color es
- * una ayuda visual para distinguir departamentos, no un dato obligatorio, asi
- * que se presenta en una sola linea con la paleta rapida y el selector nativo
+ * Selector de color del departamento. Es una sección secundaria: el color es
+ * una ayuda visual para distinguir departamentos, no un dato obligatorio, así
+ * que se presenta en una sola línea con la paleta rápida y el selector nativo
  * para un color a medida.
  */
 function ColorField({ id, label, value, onChange }: ColorFieldProps) {
@@ -1273,7 +1273,7 @@ function RoleFormModal({
       title={editing ? "Editar rol" : "Nuevo rol"}
       description={
         editing
-          ? "Modifica el nombre o el permiso de publicacion."
+          ? "Modifica el nombre o el permiso de publicación."
           : `Crea un rol dentro de ${departmentName || "este departamento"}.`
       }
     >
@@ -1282,7 +1282,7 @@ function RoleFormModal({
           id="role-name"
           label="Nombre del rol"
           required
-          placeholder="Ej: Jefe de Area"
+          placeholder="Ej: Jefe de Área"
           value={formState.name}
           onChange={(value) => onChange({ ...formState, name: value })}
         />

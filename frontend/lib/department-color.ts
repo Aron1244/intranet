@@ -2,9 +2,9 @@
  * Color de identificacion visual para un departamento.
  *
  * El color vive en la base de datos (`departments.color`) y lo asigna un
- * administrador. Los departamentos que todavia no tienen color propio usan
- * uno de esta paleta, derivado de su id: es deterministico, asi que el mismo
- * departamento muestra siempre el mismo circulo, y los departamentos existentes
+ * administrador. Los departamentos que todavía no tienen color propio usan
+ * uno de esta paleta, derivado de su id: es determinístico, así que el mismo
+ * departamento muestra siempre el mismo círculo, y los departamentos existentes
  * se distinguen entre si sin necesidad de intervencion manual.
  */
 
@@ -40,7 +40,7 @@ export function isValidHexColor(value?: string | null): boolean {
 
 /**
  * Resuelve el color a mostrar para un departamento: el que tenga asignado o,
- * si no tiene, uno de la paleta por defecto segun su id.
+ * si no tiene, uno de la paleta por defecto según su id.
  */
 export function resolveDepartmentColor(department: {
   id: number;

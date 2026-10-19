@@ -154,7 +154,7 @@ export default function UsersPage() {
       } catch (error) {
         if (!ignore) {
           if (error instanceof ApiClientError && error.status === 401) {
-            setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+            setErrorMessage("No autenticado. Inicia sesión nuevamente.");
             setIsPermissionError(false);
             clearAccessToken();
           } else if (error instanceof ApiClientError && error.status === 403) {
@@ -214,7 +214,7 @@ export default function UsersPage() {
     };
   }, [formState.department_id]);
 
-  // Cambiar filtro o busqueda acorta la lista: se vuelve a la pagina 1 desde el
+  // Cambiar filtro o busqueda acorta la lista: se vuelve a la página 1 desde el
   // handler en vez de un efecto, para no desincronizar un setState en un efecto.
   const handleFilterChange = (value: string) => {
     setSelectedDepartmentFilter(value);
@@ -229,7 +229,7 @@ export default function UsersPage() {
   const departments_sorted = departments.slice().sort((a, b) => a.name.localeCompare(b.name));
 
   // Opciones del desplegable de departamento del formulario de alta de usuario.
-  // El color viaja con la opcion para que se vea al desplegar la lista.
+  // El color viaja con la opción para que se vea al desplegar la lista.
   const departmentSelectOptions = useMemo<DepartmentSelectOption[]>(
     () => [
       { value: "", label: "Sin asignar" },
@@ -266,10 +266,10 @@ export default function UsersPage() {
     users_sorted.filter((u) => u.department_id === departmentId).length;
 
   /*
-   * `/users` devuelve la coleccion completa sin paginar (UserController::index
+   * `/users` devuelve la colección completa sin paginar (UserController::index
    * hace ->get()). Con 300 registros eso pintaba 300 tarjetas en el DOM de una
-   * vez. Aqui se pagina en cliente: el filtro y la busqueda ya operaban sobre el
-   * conjunto completo, asi que solo hay que recortar la vista.
+   * vez. Aquí se pagina en cliente: el filtro y la búsqueda ya operaban sobre el
+   * conjunto completo, así que solo hay que recortar la vista.
    */
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
   const currentPage = Math.min(Math.max(1, page), totalPages);
@@ -280,8 +280,8 @@ export default function UsersPage() {
   const firstShown = filteredUsers.length === 0 ? 0 : (currentPage - 1) * USERS_PER_PAGE + 1;
   const lastShown = Math.min(currentPage * USERS_PER_PAGE, filteredUsers.length);
 
-  // Al cambiar de pagina el listado se reconstruye entero arriba; sin esto se
-  // hereda el scroll anterior y la pagina nueva aparece a media altura.
+  // Al cambiar de página el listado se reconstruye entero arriba; sin esto se
+  // hereda el scroll anterior y la página nueva aparece a media altura.
   useEffect(() => {
     usersListRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
@@ -654,7 +654,7 @@ export default function UsersPage() {
                                         </span>
                                       ) : null}
                                       {!role.can_manage_department && !role.can_post_announcements ? (
-                                        <span>Permiso estandar</span>
+                                        <span>Permiso estándar</span>
                                       ) : null}
                                     </span>
                                   </span>
@@ -700,10 +700,10 @@ export default function UsersPage() {
                       <p className="text-sm font-semibold text-[var(--foreground)]">Buscar por departamento</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {/*
-                         * "Todos" no es un departamento mas: es la vista completa.
+                         * "Todos" no es un departamento más: es la vista completa.
                          * Por eso lleva tono primario (azul) en vez del accent
                          * que comparten los filtros concretos, y se mantiene
-                         * distinguible tambien en reposo, con borde y fondo
+                         * distinguible también en reposo, con borde y fondo
                          * suaves en vez del gris neutro de los chips.
                          */}
                         <button
@@ -779,7 +779,7 @@ export default function UsersPage() {
                     ) : null}
 
                     {!isLoadingUsers && users_sorted.length === 0 ? (
-                      <p className="text-sm text-[var(--muted)]">Aun no hay usuarios.</p>
+                      <p className="text-sm text-[var(--muted)]">Aún no hay usuarios.</p>
                     ) : null}
 
                     {!isLoadingUsers && users_sorted.length > 0 && filteredUsers.length === 0 ? (
@@ -834,7 +834,7 @@ export default function UsersPage() {
 
                   {totalPages > 1 ? (
                     <nav
-                      aria-label="Paginacion de usuarios"
+                      aria-label="Paginación de usuarios"
                       className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-3"
                     >
                       <p className="text-xs text-[var(--muted)]">
@@ -846,8 +846,8 @@ export default function UsersPage() {
                           type="button"
                           onClick={() => setPage(1)}
                           disabled={currentPage === 1}
-                          aria-label="Ir a la primera pagina"
-                          title="Primera pagina"
+                          aria-label="Ir a la primera página"
+                          title="Primera página"
                           className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <ChevronsLeft className="h-4 w-4" />
@@ -857,8 +857,8 @@ export default function UsersPage() {
                           type="button"
                           onClick={() => setPage((current) => Math.max(1, current - 1))}
                           disabled={currentPage === 1}
-                          aria-label="Pagina anterior"
-                          title="Pagina anterior"
+                          aria-label="Página anterior"
+                          title="Página anterior"
                           className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <ChevronLeft className="h-4 w-4" />
@@ -874,8 +874,8 @@ export default function UsersPage() {
                             setPage((current) => Math.min(totalPages, current + 1))
                           }
                           disabled={currentPage === totalPages}
-                          aria-label="Pagina siguiente"
-                          title="Pagina siguiente"
+                          aria-label="Página siguiente"
+                          title="Página siguiente"
                           className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <ChevronRight className="h-4 w-4" />
@@ -885,8 +885,8 @@ export default function UsersPage() {
                           type="button"
                           onClick={() => setPage(totalPages)}
                           disabled={currentPage === totalPages}
-                          aria-label="Ir a la ultima pagina"
-                          title="Ultima pagina"
+                          aria-label="Ir a la última página"
+                          title="Última página"
                           className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <ChevronsRight className="h-4 w-4" />
