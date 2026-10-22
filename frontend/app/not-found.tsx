@@ -14,7 +14,7 @@ export default function NotFound() {
           Ruta no encontrada
         </h1>
         <p className="mt-4 max-w-lg text-sm leading-relaxed text-intra-secondary/75 sm:text-base">
-          La pagina que intentas abrir no existe o fue movida. Vuelve al login para
+          La página que intentas abrir no existe o fue movida. Vuelve al login para
           continuar navegando en la intranet.
         </p>
 

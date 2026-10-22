@@ -184,7 +184,7 @@ export default function TrashPage() {
 
   const handleDestroy = useCallback(
     async (type: "message" | "document", id: number, label: string) => {
-      const confirmed = window.confirm(`Eliminar definitivamente "${label}"? Esta accion no se puede deshacer.`);
+      const confirmed = window.confirm(`Eliminar definitivamente "${label}"? Esta acción no se puede deshacer.`);
       if (!confirmed) {
         return;
       }
@@ -253,10 +253,10 @@ export default function TrashPage() {
                   Papelera
                 </p>
                 <h1 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-                  Revision de elementos marcados
+                  Revisión de elementos marcados
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                  Los lideres de departamento pueden marcar mensajes y documentos para revision.
+                  Los líderes de departamento pueden marcar mensajes y documentos para revisión.
                   Tu decides si restaurar o eliminarlos definitivamente.
                 </p>
               </div>
@@ -275,7 +275,7 @@ export default function TrashPage() {
             </div>
           ) : null}
 
-          {/* Con la papelera vacia no hay nada que filtrar, asi que se oculta la
+          {/* Con la papelera vacía no hay nada que filtrar, así que se oculta la
               fila completa. El tour (help-tours.ts) apunta a este data-tour-id y
               driver.js omite el paso si el ancla no existe. */}
           {totalCount > 0 ? (
@@ -316,7 +316,7 @@ export default function TrashPage() {
                       <TrashItem
                         key={`message-${message.id}`}
                         icon={<MessageSquare className="h-4 w-4" />}
-                        title={message.content || "(mensaje vacio)"}
+                        title={message.content || "(mensaje vacío)"}
                         subtitle={
                           <span>
                             Por <strong>{message.sender?.name ?? "Desconocido"}</strong>
@@ -483,9 +483,9 @@ function EmptyTrash() {
       <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--muted)]">
         <Archive className="h-5 w-5" />
       </span>
-      <p className="text-sm font-semibold text-[var(--foreground)]">La papelera esta vacia</p>
+      <p className="text-sm font-semibold text-[var(--foreground)]">La papelera está vacía</p>
       <p className="max-w-md text-sm text-[var(--muted)]">
-        No hay elementos marcados para revision. Los lideres de departamento pueden enviarte contenido para decidir aqui.
+        No hay elementos marcados para revisión. Los líderes de departamento pueden enviarte contenido para decidir aquí.
       </p>
       <Link
         href="/dashboard"

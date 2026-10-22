@@ -55,7 +55,7 @@ class DocumentAuthorizationTest extends TestCase
         $this->actingAs($owner, 'sanctum')
             ->deleteJson("/api/documents/{$document->id}")
             ->assertOk()
-            ->assertJsonPath('message', 'Documento marcado para revision.');
+            ->assertJsonPath('message', 'Documento marcado para revisión.');
 
         $this->assertSoftDeleted('documents', ['id' => $document->id]);
     }
@@ -69,7 +69,7 @@ class DocumentAuthorizationTest extends TestCase
         $this->actingAs($admin, 'sanctum')
             ->deleteJson("/api/documents/{$document->id}")
             ->assertOk()
-            ->assertJsonPath('message', 'Documento marcado para revision.');
+            ->assertJsonPath('message', 'Documento marcado para revisión.');
 
         $this->assertSoftDeleted('documents', ['id' => $document->id]);
     }

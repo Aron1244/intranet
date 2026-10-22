@@ -28,7 +28,7 @@ export function DashboardHeader({
         <button
           type="button"
           onClick={toggleNav}
-          aria-label="Abrir navegacion"
+          aria-label="Abrir navegación"
           aria-expanded={isNavOpen}
           aria-controls="mobile-nav-drawer"
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] transition hover:bg-[var(--surface-muted)] lg:hidden"

@@ -103,21 +103,21 @@ class DemoDataSeeder extends Seeder
     private function seedDepartments(): array
     {
         $seeds = [
-            ['Tecnologia', 'Equipo de desarrollo e infraestructura'],
-            ['Recursos Humanos', 'Gestion de personas y talento'],
-            ['Marketing', 'Comunicacion y marca'],
-            ['Ventas', 'Equipo comercial'],
-            ['Operaciones', 'Logistica y operaciones internas'],
-            ['Finanzas', 'Contabilidad y control financiero'],
-            ['Diseno', 'Producto y diseno visual'],
-            ['Legal', 'Asesoria juridica'],
+            ['Tecnología', 'Equipo de desarrollo e infraestructura', '#2563eb'],
+            ['Recursos Humanos', 'Gestión de personas y talento', '#059669'],
+            ['Marketing', 'Comunicación y marca', '#db2777'],
+            ['Ventas', 'Equipo comercial', '#d97706'],
+            ['Operaciones', 'Logística y operaciones internas', '#0891b2'],
+            ['Finanzas', 'Contabilidad y control financiero', '#7c3aed'],
+            ['Diseño', 'Producto y diseño visual', '#65a30d'],
+            ['Legal', 'Asesoría jurídica', '#dc2626'],
         ];
 
         $departments = [];
-        foreach ($seeds as [$name, $description]) {
+        foreach ($seeds as [$name, $description, $color]) {
             $departments[] = Department::query()->firstOrCreate(
                 ['name' => $name],
-                ['description' => $description],
+                ['description' => $description, 'color' => $color],
             );
         }
 
@@ -225,10 +225,10 @@ class DemoDataSeeder extends Seeder
     private function seedDocuments(): void
     {
         $sampleTitles = [
-            'Politica interna', 'Manual de bienvenida', 'Reporte mensual',
-            'Plantilla presentacion', 'Contrato tipo', 'Procedimiento operativo',
-            'Checklist onboarding', 'Guia de estilo', 'Presupuesto Q3',
-            'Minuta reunion', 'Cronograma proyecto', 'Acta de conformidad',
+            'Política interna', 'Manual de bienvenida', 'Reporte mensual',
+            'Plantilla presentación', 'Contrato tipo', 'Procedimiento operativo',
+            'Checklist onboarding', 'Guía de estilo', 'Presupuesto Q3',
+            'Minuta reunión', 'Cronograma proyecto', 'Acta de conformidad',
         ];
 
         $mimeTypes = [
@@ -308,15 +308,15 @@ class DemoDataSeeder extends Seeder
     {
         $titles = [
             'Resultados del trimestre',
-            'Nueva politica de trabajo hibrido',
-            'Celebracion de aniversario',
+            'Nueva política de trabajo híbrido',
+            'Celebración de aniversario',
             'Lanzamiento de producto',
-            'Convocatoria a capacitacion',
+            'Convocatoria a capacitación',
             'Cambio en beneficios',
             'Bienvenida al nuevo equipo',
             'Cierre temporal de oficina',
             'Resultados de la encuesta interna',
-            'Actualizacion de procedimientos',
+            'Actualización de procedimientos',
         ];
 
         $announcements = [];
@@ -380,15 +380,15 @@ class DemoDataSeeder extends Seeder
     private function seedComments(array $announcements): void
     {
         $sampleComments = [
-            'Excelente iniciativa!',
-            'Gracias por la informacion.',
-            'Tenemos algunas dudas, podemos agendar una reunion?',
-            'Cuando empieza el periodo de prueba?',
-            'Se comparte con todos los departamentos?',
-            'Donde puedo descargar el documento?',
+            '¡Excelente iniciativa!',
+            'Gracias por la información.',
+            '¿Tenemos algunas dudas, podemos agendar una reunión?',
+            '¿Cuándo empieza el periodo de prueba?',
+            '¿Se comparte con todos los departamentos?',
+            '¿Dónde puedo descargar el documento?',
             'Muy buen resumen.',
             'Quedo atento a los siguientes pasos.',
-            'Hay capacitacion previa?',
+            '¿Hay capacitación previa?',
             'Sugerencia: agregar un FAQ.',
         ];
 
@@ -461,18 +461,18 @@ class DemoDataSeeder extends Seeder
     {
         $messages = [];
         $samples = [
-            'Hola, como van?',
-            'Ya quedo listo el reporte.',
-            'Puedes revisar el archivo adjunto?',
-            'Tengo una duda rapida.',
+            'Hola, ¿cómo van?',
+            'Ya quedó listo el reporte.',
+            '¿Puedes revisar el archivo adjunto?',
+            'Tengo una duda rápida.',
             'Confirmado, nos vemos a las 3.',
-            'Gracias!',
-            'Mando el resumen por aca.',
+            '¡Gracias!',
+            'Mando el resumen por acá.',
             'Ok, procedo.',
             'Necesitamos aprobar esto antes del viernes.',
             'Avance actualizado, todo en tiempo.',
             'Adjunto la minuta de hoy.',
-            'Tienes 5 min?',
+            '¿Tienes 5 min?',
             'Listo para la demo.',
             'Buenas tardes equipo.',
             'Recibido, gracias.',

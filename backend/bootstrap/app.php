@@ -26,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $retryAfter = (int) ($e->getHeaders()['Retry-After'] ?? 60);
 
                 return response()->json([
-                    'message' => 'Demasiados intentos de inicio de sesion. Por favor, espera '.$retryAfter.' segundos antes de intentar nuevamente.',
+                    'message' => 'Demasiados intentos de inicio de sesión. Por favor, espera '.$retryAfter.' segundos antes de intentar nuevamente.',
                     'retry_after' => $retryAfter,
                 ], 429, $e->getHeaders());
             }

@@ -46,7 +46,7 @@ class UserRoleController extends Controller
         $user->load('roles:id,name,can_post_announcements,can_manage_department,department_id');
 
         return response()->json([
-            'message' => 'User roles updated successfully.',
+            'message' => 'Roles actualizados correctamente.',
             'data' => [
                 'user_id' => $user->id,
                 'roles' => $user->roles,

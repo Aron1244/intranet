@@ -37,7 +37,7 @@ const MASK_STYLE: CSSProperties = {
 
 /**
  * Lockup oficial de Coherev (isotipo + wordmark) renderizado desde
- * `public/brand/logo.png`. El asset es blanco sobre transparente, asi que se usa
+ * `public/brand/logo.png`. El asset es blanco sobre transparente, así que se usa
  * como mascara y el color lo aporta `bg-current`, igual que el texto que lo rodea.
  */
 export function CoherevLogo({

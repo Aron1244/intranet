@@ -136,19 +136,18 @@ El proyecto se analiza automáticamente con **[Graphify](https://github.com/Grap
 
 ### Lo que produce
 
-`graphify-out/` queda **gitignored** y contiene (regenerable con `graphify .`):
+`graphify-out/` queda **gitignored**: es local y se regenera, no se versiona.
 
 | Archivo | Descripción |
 |---|---|
 | `graph.html` | Visualización clickeable, filtrable y buscable en cualquier navegador |
 | `GRAPH_REPORT.md` | Highlights: god nodes, conexiones sorprendentes, comunidades Leiden |
-| `graph.json` | Grafo completo (≈ 1080 nodos, 2364 aristas, 96 comunidades) |
-| `architecture.md` | Vista arquitectónica |
-| `backend.md` / `frontend.md` | Vistas por capa |
-| `backend-routes.md` / `backend-classes.md` | Rutas y modelos Eloquent |
+| `graph.json` | Grafo completo (≈ 1472 nodos, 2773 aristas, 140 comunidades) |
 | `manifest.json` | Metadata portable con `schema_version` y `graphify_version` |
 
 Cada arista lleva etiqueta de origen: **EXTRACTED** (en el código) o **INFERRED** (resuelta por graphify).
+
+> `architecture.md`, `backend.md`, `frontend.md`, `backend-routes.md` y `backend-classes.md` los generaba un script propio del proyecto (`gen_structure.bat` / `gen_graph.py`) que ya no está en el repositorio. Se quedan congelados en la última versión que produjo y **no se regeneran** con `graphify update`; por eso pueden describir código anterior al actual.
 
 ### Cómo regenerar el grafo
 
@@ -191,11 +190,9 @@ Abre `graphify-out/graph.html` en cualquier navegador. Click en un nodo para ver
 
 ```gitignore
 graphify-out/
-gen_graph.py
-gen_structure.bat
 ```
 
-`graphify-out/` no se commitea por defecto (es local). Para compartirlo con un equipo, fuerza-add solo los artefactos consultables (`graph.json`, `GRAPH_REPORT.md` y opcionalmente `wiki/` u `obsidian/`).
+`graphify-out/` no se commitea: es un artefacto generado y se regenera con `graphify update .`. Evita además diffs de cientos de kilobytes en `graph.json` en cada commit.
 
 ---
 

@@ -130,7 +130,7 @@ class ConversationController extends Controller
         abort_unless(
             $conversation->users()->whereKey($user->id)->exists(),
             403,
-            'No participas en esta conversacion.'
+            'No participas en esta conversación.'
         );
 
         $this->ensureAdminOrLeader($user);
@@ -162,7 +162,7 @@ class ConversationController extends Controller
         abort_unless(
             (bool) ($user->es_lider ?? false),
             403,
-            'Solo administradores o lideres pueden renombrar conversaciones.'
+            'Solo administradores o líderes pueden renombrar conversaciones.'
         );
     }
 }
