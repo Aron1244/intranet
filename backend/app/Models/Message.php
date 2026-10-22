@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Message extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'conversation_id',
@@ -21,7 +24,7 @@ class Message extends Model
     /**
      * Message belongs to conversation
      */
-    public function conversation()
+    public function conversation(): BelongsTo
     {
         return $this->belongsTo(
             Conversation::class
@@ -31,7 +34,7 @@ class Message extends Model
     /**
      * Message belongs to sender (user)
      */
-    public function sender()
+    public function sender(): BelongsTo
     {
         return $this->belongsTo(
             User::class,
@@ -39,7 +42,7 @@ class Message extends Model
         );
     }
 
-    public function document()
+    public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
     }
@@ -47,5 +50,10 @@ class Message extends Model
     public function reads(): HasMany
     {
         return $this->hasMany(MessageRead::class);
+    }
+
+    public function deletedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 }

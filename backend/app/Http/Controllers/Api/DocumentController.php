@@ -59,7 +59,7 @@ class DocumentController extends Controller
 
                 $origin = [
                     'type' => 'chat',
-                    'label' => 'Chat: '.($conversation->name ?: ('Conversacion '.$conversation->id)),
+                    'label' => 'Chat: '.($conversation->name ?: ('Conversación '.$conversation->id)),
                     'conversation_id' => (int) $conversation->id,
                 ];
             } elseif ($document->folder) {
@@ -175,11 +175,22 @@ class DocumentController extends Controller
 
     public function destroy(Document $document): JsonResponse
     {
-        $this->authorize('delete', $document);
+        $user = auth()->user();
+        abort_unless($user, 401);
 
+        $isOwner = (int) $document->user_id === (int) $user->id;
+
+        abort_unless(
+            $user->isAdministrator() || $user->isDepartmentLeader() || $isOwner,
+            403,
+            'Solo administradores, lideres o el dueno pueden marcar el documento.'
+        );
+
+        $document->deleted_by = $user->id;
+        $document->save();
         $document->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Documento marcado para revisión.'], 200);
     }
 
     public function storeDepartmentDocument(

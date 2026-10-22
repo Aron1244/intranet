@@ -1,11 +1,18 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Download, Plus, X } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DepartmentSelect } from "@/components/department-select";
+import type { DepartmentSelectOption } from "@/components/department-select";
+import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import { resolveDepartmentColor } from "@/lib/department-color";
 import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
+import { cn } from "@/lib/cn";
 
 type MeResponse = {
   data: {
@@ -74,6 +81,7 @@ const INITIAL_FORM_STATE: AnnouncementFormState = {
 type DepartmentOption = {
   id: number;
   name: string;
+  color?: string | null;
 };
 
 type DepartmentsResponse = {
@@ -119,6 +127,9 @@ export default function PublicationsPage() {
   const [isUpdatingVisibilityId, setIsUpdatingVisibilityId] = useState<number | null>(null);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  // El formulario ocupa media pantalla y empujaba el listado por debajo del
+  // pliegue. Vive en un modal que solo se abre al publicar o al editar.
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [canAccessPublications, setCanAccessPublications] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -129,9 +140,20 @@ export default function PublicationsPage() {
   const [formState, setFormState] = useState<AnnouncementFormState>(INITIAL_FORM_STATE);
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [removeAttachmentIds, setRemoveAttachmentIds] = useState<number[]>([]);
-  const formSectionRef = useRef<HTMLElement | null>(null);
 
   const backendOrigin = useMemo(() => API_BASE.replace(/\/+api$/, ""), []);
+
+  // Opciones del desplegable de departamento del formulario de publicación.
+  // El color viaja con la opción para que se vea al desplegar la lista.
+  const departmentSelectOptions = useMemo<DepartmentSelectOption[]>(
+    () =>
+      departments.map((department) => ({
+        value: String(department.id),
+        label: department.name,
+        color: resolveDepartmentColor(department),
+      })),
+    [departments],
+  );
 
   const newAttachmentPreviews = useMemo(
     () =>
@@ -214,7 +236,7 @@ export default function PublicationsPage() {
       } catch (error) {
         if (!ignore) {
           if (error instanceof ApiClientError && error.status === 401) {
-            setErrorMessage("No autenticado. Inicia sesion nuevamente.");
+            setErrorMessage("No autenticado. Inicia sesión nuevamente.");
             setIsPermissionError(false);
             clearAccessToken();
           } else if (error instanceof ApiClientError && error.status === 403) {
@@ -224,7 +246,7 @@ export default function PublicationsPage() {
             setErrorMessage(error.message);
             setIsPermissionError(false);
           } else {
-            setErrorMessage("No se pudo cargar la seccion de publicaciones.");
+            setErrorMessage("No se pudo cargar la sección de publicaciones.");
             setIsPermissionError(false);
           }
         }
@@ -294,9 +316,38 @@ export default function PublicationsPage() {
     }));
     setEditingAnnouncementId(null);
     setShowPreview(false);
+    setIsFormModalOpen(false);
     setNewAttachments([]);
     setRemoveAttachmentIds([]);
   };
+
+  const openCreateModal = () => {
+    resetForm();
+    setIsFormModalOpen(true);
+  };
+
+  const closeFormModal = () => {
+    // No se llama a resetForm porque al cancelar se descartan los adjuntos
+    // pendientes; resetForm ya limpia todo y cierra el modal.
+    setIsFormModalOpen(false);
+  };
+
+  // Escape cierra el modal. Sin esto el overlay es un callejon sin salida para
+  // quien navega con teclado, que es como se revisa la vista en auditoria.
+  useEffect(() => {
+    if (!isFormModalOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFormModalOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isFormModalOpen]);
 
   const handleSubmitAnnouncement = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -310,7 +361,7 @@ export default function PublicationsPage() {
     const selectedDepartmentId = formState.department_id || (user.department_id ? String(user.department_id) : "");
 
     if (!normalizedTitle || !normalizedContent) {
-      setErrorMessage("Completa titulo y contenido antes de guardar.");
+      setErrorMessage("Completa título y contenido antes de guardar.");
       setIsPermissionError(false);
       return;
     }
@@ -357,7 +408,7 @@ export default function PublicationsPage() {
           body: payload,
         });
 
-        setSuccessMessage(formState.is_visible ? "Publicacion actualizada y visible." : "Publicacion actualizada (oculta).");
+        setSuccessMessage(formState.is_visible ? "Publicación actualizada y visible." : "Publicación actualizada (oculta).");
       } else {
         if (!isAdmin || !formState.publish_all) {
           payload.append("department_id", selectedDepartmentId);
@@ -373,9 +424,9 @@ export default function PublicationsPage() {
         });
 
         if (isAdmin && formState.publish_all) {
-          setSuccessMessage(formState.is_visible ? "Publicacion visible creada para todos los departamentos." : "Borrador creado para todos los departamentos.");
+          setSuccessMessage(formState.is_visible ? "Publicación visible creada para todos los departamentos." : "Borrador creado para todos los departamentos.");
         } else {
-          setSuccessMessage(formState.is_visible ? "Publicacion creada y visible." : "Publicacion creada como borrador (oculta).");
+          setSuccessMessage(formState.is_visible ? "Publicación creada y visible." : "Publicación creada como borrador (oculta).");
         }
       }
 
@@ -389,7 +440,7 @@ export default function PublicationsPage() {
         setErrorMessage(error.message);
         setIsPermissionError(false);
       } else {
-        setErrorMessage("No se pudo guardar la publicacion.");
+        setErrorMessage("No se pudo guardar la publicación.");
         setIsPermissionError(false);
       }
     } finally {
@@ -425,7 +476,7 @@ export default function PublicationsPage() {
     const token = getAccessToken();
 
     if (!token) {
-      setErrorMessage("Sesion expirada. Inicia sesion nuevamente.");
+      setErrorMessage("Sesión expirada. Inicia sesión nuevamente.");
       setIsPermissionError(false);
       return;
     }
@@ -472,14 +523,11 @@ export default function PublicationsPage() {
     setShowPreview(false);
     setNewAttachments([]);
     setRemoveAttachmentIds([]);
-
-    window.requestAnimationFrame(() => {
-      formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    setIsFormModalOpen(true);
   };
 
   const handleDeleteAnnouncement = async (announcement: Announcement) => {
-    const confirmed = window.confirm(`Eliminar la publicacion \"${announcement.title}\"?`);
+    const confirmed = window.confirm(`Eliminar la publicación \"${announcement.title}\"?`);
     if (!confirmed) {
       return;
     }
@@ -492,20 +540,20 @@ export default function PublicationsPage() {
         method: "DELETE",
       });
 
-      setSuccessMessage("Publicacion eliminada correctamente.");
+      setSuccessMessage("Publicación eliminada correctamente.");
       if (editingAnnouncementId === announcement.id) {
         resetForm();
       }
       await loadAnnouncements();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 403) {
-        setErrorMessage("No tienes permisos para eliminar esta publicacion.");
+        setErrorMessage("No tienes permisos para eliminar esta publicación.");
         setIsPermissionError(true);
       } else if (error instanceof ApiClientError) {
         setErrorMessage(error.message);
         setIsPermissionError(false);
       } else {
-        setErrorMessage("No se pudo eliminar la publicacion.");
+        setErrorMessage("No se pudo eliminar la publicación.");
         setIsPermissionError(false);
       }
     }
@@ -526,7 +574,7 @@ export default function PublicationsPage() {
         },
       });
 
-      setSuccessMessage(nextVisibility ? "Publicacion marcada como visible." : "Publicacion cambiada a borrador.");
+      setSuccessMessage(nextVisibility ? "Publicación marcada como visible." : "Publicación cambiada a borrador.");
       await loadAnnouncements();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 403) {
@@ -545,7 +593,7 @@ export default function PublicationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-intra-ligth">
+    <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
           user={user ? { name: user.name, email: user.email } : null}
@@ -557,315 +605,80 @@ export default function PublicationsPage() {
           statusMessage={isLoadingUser || isLoadingAnnouncements ? "Cargando publicaciones..." : errorMessage ? errorMessage : "Publicaciones sincronizadas"}
         />
 
+        <HelpButton tourId="publications" variant="floating" />
+
         <section className="min-w-0 flex-1 px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
           <div className="mx-auto w-full max-w-360 space-y-6">
-            <header className="rounded-3xl border border-intra-border bg-white p-6 shadow-sm">
-              <p className="text-sm font-semibold tracking-[0.18em] text-intra-accent uppercase">
+            <header className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
+              <p className="text-[11px] font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
                 Publicaciones
               </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-intra-secondary">
-                Feed estilo LinkedIn interno
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                Comparte novedades con tu equipo
               </h2>
-              <p className="mt-2 max-w-3xl text-base text-intra-secondary/70">
-                Crea publicaciones, revisa preview antes de guardarlas y decide si quedan visibles o como borrador.
+              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                Redacta una publicación, adjunta los archivos que hagan falta y decide si queda
+                visible para todos o se guarda como borrador.
               </p>
             </header>
 
             {errorMessage ? (
-              <div className={`rounded-3xl px-4 py-3 text-base shadow-sm ${isPermissionError ? "border border-amber-200 bg-amber-50 text-amber-800" : "border border-red-200 bg-red-50 text-red-700"}`}>
+              <div className={`rounded-[var(--radius-md)] px-4 py-3 text-sm shadow-sm ${isPermissionError ? "border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 text-[color:var(--warning)]" : "border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 text-[color:var(--danger)]"}`}>
                 <p>{errorMessage}</p>
               </div>
             ) : null}
 
             {successMessage ? (
-              <div className="pointer-events-none fixed top-4 right-4 z-50 rounded-2xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-base font-medium text-emerald-700 shadow-lg backdrop-blur-sm">
+              <div className="pointer-events-none fixed top-4 right-4 z-50 rounded-[var(--radius-md)] border border-[color:var(--success)]/40 bg-[color:var(--success)]/10 px-4 py-3 text-sm font-medium text-[color:var(--success)] shadow-[var(--shadow-lg)] backdrop-blur-sm">
                 {successMessage}
               </div>
             ) : null}
 
             {!isLoadingAnnouncements && !canAccessPublications ? (
-              <section className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-                <p className="text-base text-intra-secondary/70">Solo usuarios autorizados pueden administrar publicaciones.</p>
+              <section className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+                <p className="text-sm text-[var(--muted)]">
+                  Solo usuarios autorizados pueden administrar publicaciones.
+                </p>
               </section>
             ) : null}
 
             {canAccessPublications ? (
               <>
-                <section ref={formSectionRef} className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xl font-semibold text-intra-secondary">
-                      {editingAnnouncementId ? "Editar publicacion" : "Nueva publicacion"}
-                    </h3>
-                    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${formState.is_visible ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                      {formState.is_visible ? "Visible" : "Borrador"}
-                    </span>
+
+                <section
+                  data-tour-id="publications-list"
+                  className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                        Todas las publicaciones
+                      </h3>
+                      <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
+                        {sortedAnnouncements.length}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      data-tour-id="publications-form-trigger"
+                      onClick={openCreateModal}
+                      className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--primary)] px-3.5 text-xs font-semibold text-white transition hover:bg-[var(--primary-hover)]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Nueva publicación
+                    </button>
                   </div>
 
-                  <form onSubmit={handleSubmitAnnouncement} className="mt-4 space-y-3">
-                    <div>
-                      <label htmlFor="announcement-title" className="text-sm font-medium text-intra-secondary">
-                        Titulo
-                      </label>
-                      <input
-                        id="announcement-title"
-                        type="text"
-                        value={formState.title}
-                        onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))}
-                        placeholder="Ej. Nueva politica de vacaciones"
-                        className="mt-1 w-full rounded-2xl border border-intra-border bg-white px-4 py-2.5 text-base text-intra-secondary outline-none transition focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="announcement-attachments" className="text-sm font-medium text-intra-secondary">
-                        Adjuntos (imagenes o archivos)
-                      </label>
-                      <input
-                        id="announcement-attachments"
-                        type="file"
-                        multiple
-                        onChange={(event) => {
-                          const files = Array.from(event.target.files ?? []);
-                          setNewAttachments((current) => [...current, ...files]);
-                          event.currentTarget.value = "";
-                        }}
-                        className="mt-1 block w-full text-sm text-intra-secondary file:mr-3 file:rounded-xl file:border-0 file:bg-intra-primary file:px-3 file:py-2 file:font-semibold file:text-white hover:file:bg-[#173d7d]"
-                      />
-                      {newAttachments.length > 0 ? (
-                        <div className="mt-1 space-y-1">
-                          <p className="text-xs text-intra-secondary/60">
-                            {newAttachments.length} archivo(s) nuevo(s) seleccionado(s).
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {newAttachments.map((file, index) => (
-                              <button
-                                key={`${file.name}-${file.lastModified}-${index}`}
-                                type="button"
-                                onClick={() => setNewAttachments((current) => current.filter((_, fileIndex) => fileIndex !== index))}
-                                className="rounded-full border border-intra-border bg-white px-2.5 py-1 text-xs text-intra-secondary hover:bg-intra-ligth"
-                              >
-                                Quitar {file.name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div>
-                      <label htmlFor="announcement-department" className="text-sm font-medium text-intra-secondary">
-                        Departamento
-                      </label>
-                      <select
-                        id="announcement-department"
-                        value={formState.department_id}
-                        onChange={(event) => setFormState((current) => ({ ...current, department_id: event.target.value }))}
-                        disabled={!isAdmin || formState.publish_all}
-                        className="mt-1 w-full rounded-2xl border border-intra-border bg-white px-4 py-2.5 text-base text-intra-secondary outline-none transition focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="">Selecciona un departamento</option>
-                        {departments.map((department) => (
-                          <option key={department.id} value={String(department.id)}>
-                            {department.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {editingAnnouncementId ? (
-                      <div className="rounded-2xl border border-intra-border bg-intra-ligth/30 p-3">
-                        <p className="text-xs font-semibold tracking-wide text-intra-secondary/70 uppercase">Adjuntos actuales</p>
-                        <div className="mt-2 space-y-2">
-                          {editingAnnouncement
-                            ?.attachments?.map((attachment) => (
-                              <label key={attachment.id} className="flex items-center gap-2 text-sm text-intra-secondary">
-                                <input
-                                  type="checkbox"
-                                  checked={removeAttachmentIds.includes(attachment.id)}
-                                  onChange={(event) => {
-                                    setRemoveAttachmentIds((current) =>
-                                      event.target.checked
-                                        ? [...current, attachment.id]
-                                        : current.filter((id) => id !== attachment.id),
-                                    );
-                                  }}
-                                  className="h-4 w-4 rounded border-intra-border text-intra-primary focus:ring-intra-primary"
-                                />
-                                <span>Eliminar: {attachment.original_name}</span>
-                              </label>
-                            ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div>
-                      <label htmlFor="announcement-content" className="text-sm font-medium text-intra-secondary">
-                        Contenido
-                      </label>
-                      <textarea
-                        id="announcement-content"
-                        value={formState.content}
-                        onChange={(event) => setFormState((current) => ({ ...current, content: event.target.value }))}
-                        rows={5}
-                        placeholder="Comparte una actualizacion para el equipo..."
-                        className="mt-1 w-full rounded-2xl border border-intra-border bg-white px-4 py-3 text-base text-intra-secondary outline-none transition focus:border-intra-primary focus:ring-4 focus:ring-intra-primary/15"
-                      />
-                    </div>
-
-                    <label className="inline-flex items-center gap-2 rounded-xl border border-intra-border bg-intra-ligth/40 px-3 py-2 text-sm text-intra-secondary">
-                      <input
-                        type="checkbox"
-                        checked={formState.is_visible}
-                        onChange={(event) => setFormState((current) => ({ ...current, is_visible: event.target.checked }))}
-                        className="h-4 w-4 rounded border-intra-border text-intra-primary focus:ring-intra-primary"
-                      />
-                      Marcar como visible
-                    </label>
-
-                    {isAdmin ? (
-                      <label className="inline-flex items-center gap-2 rounded-xl border border-intra-border bg-intra-ligth/40 px-3 py-2 text-sm text-intra-secondary">
-                        <input
-                          type="checkbox"
-                          checked={formState.publish_all}
-                          onChange={(event) => setFormState((current) => ({ ...current, publish_all: event.target.checked }))}
-                          className="h-4 w-4 rounded border-intra-border text-intra-primary focus:ring-intra-primary"
-                        />
-                        Publicar para todos los departamentos
-                      </label>
-                    ) : null}
-
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowPreview((current) => !current)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-intra-border px-4 text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth"
-                      >
-                        {showPreview ? "Ocultar preview" : "Ver preview"}
-                      </button>
-                      {editingAnnouncementId ? (
-                        <button
-                          type="button"
-                          onClick={resetForm}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-intra-border px-4 text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth"
-                        >
-                          Cancelar edicion
-                        </button>
-                      ) : null}
-                      <button
-                        type="submit"
-                        disabled={isSavingAnnouncement}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-intra-primary px-4 text-sm font-semibold text-white transition hover:bg-[#173d7d] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSavingAnnouncement ? "Guardando..." : editingAnnouncementId ? "Actualizar" : "Crear publicacion"}
-                      </button>
-                    </div>
-                  </form>
-
-                  {showPreview ? (
-                    <article className="mt-4 rounded-2xl border border-intra-border bg-white p-5 shadow-sm">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-intra-primary/15 text-lg font-semibold text-intra-primary">
-                          {(user?.name ?? "U").charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-intra-secondary">{user?.name ?? "Usuario"}</p>
-                          <p className="text-xs text-intra-secondary/55">Preview • ahora</p>
-                        </div>
-                      </div>
-                      <h4 className="mt-3 text-xl font-semibold text-intra-secondary">
-                        {formState.title.trim() || "Titulo de la publicacion"}
-                      </h4>
-                      <p className="mt-2 whitespace-pre-wrap text-base leading-relaxed text-intra-secondary/85">
-                        {formState.content.trim() || "Aqui veras la vista previa del contenido."}
-                      </p>
-
-                      {previewExistingAttachments.length > 0 || newAttachmentPreviews.length > 0 ? (
-                        <div className="mt-4 space-y-3">
-                          {previewExistingAttachments.map((attachment) => {
-                            const isImage = Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false);
-
-                            if (isImage) {
-                              return (
-                                <figure key={`existing-${attachment.id}`} className="overflow-hidden rounded-2xl border border-intra-border bg-white">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={getAttachmentUrl(attachment)}
-                                    alt={attachment.original_name}
-                                    className="h-auto max-h-96 w-full object-cover"
-                                  />
-                                  <figcaption className="px-3 py-2 text-xs text-intra-secondary/60">
-                                    {attachment.original_name}
-                                  </figcaption>
-                                </figure>
-                              );
-                            }
-
-                            return (
-                              <div
-                                key={`existing-${attachment.id}`}
-                                className="rounded-xl border border-intra-border bg-intra-ligth/25 px-3 py-2 text-sm text-intra-secondary"
-                              >
-                                Archivo adjunto: {attachment.original_name}
-                              </div>
-                            );
-                          })}
-
-                          {newAttachmentPreviews.map((preview) => {
-                            if (preview.isImage) {
-                              return (
-                                <figure key={`new-${preview.file.name}-${preview.file.lastModified}`} className="overflow-hidden rounded-2xl border border-intra-border bg-white">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={preview.objectUrl}
-                                    alt={preview.file.name}
-                                    className="h-auto max-h-96 w-full object-cover"
-                                  />
-                                  <figcaption className="px-3 py-2 text-xs text-intra-secondary/60">
-                                    Nuevo: {preview.file.name}
-                                  </figcaption>
-                                </figure>
-                              );
-                            }
-
-                            return (
-                              <div
-                                key={`new-${preview.file.name}-${preview.file.lastModified}`}
-                                className="rounded-xl border border-intra-border bg-intra-ligth/25 px-3 py-2 text-sm text-intra-secondary"
-                              >
-                                Nuevo archivo: {preview.file.name}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : null}
-
-                      <div className="mt-4 inline-flex rounded-full border border-intra-border bg-intra-ligth/50 px-3 py-1 text-xs font-semibold text-intra-secondary/70">
-                        {formState.is_visible ? "Estado: Visible" : "Estado: Borrador (oculto)"}
-                      </div>
-                      {isAdmin && formState.publish_all ? (
-                        <div className="mt-2 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-                          Alcance: Todos los departamentos
-                        </div>
-                      ) : null}
-                    </article>
-                  ) : null}
-                </section>
-
-                <section className="rounded-3xl border border-intra-border bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xl font-semibold text-intra-secondary">Feed</h3>
-                    <span className="rounded-full bg-intra-ligth px-3 py-1 text-sm font-medium text-intra-secondary">
-                      {sortedAnnouncements.length}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 min-h-0 space-y-4 overflow-auto pr-1">
+                  <div className="mt-4 min-h-0 space-y-3 overflow-auto pr-1">
                     {isLoadingAnnouncements ? (
-                      <p className="text-base text-intra-secondary/70">Cargando publicaciones...</p>
+                      <p className="text-sm text-[var(--muted)]">Cargando publicaciones...</p>
                     ) : null}
 
                     {!isLoadingAnnouncements && sortedAnnouncements.length === 0 ? (
-                      <p className="text-base text-intra-secondary/70">Aun no hay publicaciones disponibles.</p>
+                      <p className="text-sm text-[var(--muted)]">
+                        Aun no hay publicaciones disponibles.
+                      </p>
                     ) : null}
 
                     {sortedAnnouncements.map((announcement) => {
@@ -884,48 +697,56 @@ export default function PublicationsPage() {
                       return (
                         <article
                           key={announcement.id}
-                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                          className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] transition hover:border-[var(--border-strong)]"
                         >
-                          <div className="px-5 pt-5 pb-4">
+                          <div className="px-4 pt-4 pb-3">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3">
-                                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-base font-semibold text-slate-700">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-soft)] text-sm font-semibold text-[var(--primary)]">
                                   {(announcement.creator?.name ?? "U").charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-slate-900">
+                                  <p className="truncate text-sm font-semibold text-[var(--foreground)]">
                                     {announcement.creator?.name ?? "Usuario"}
                                   </p>
-                                  <p className="truncate text-xs text-slate-600">
-                                    {announcement.department?.name ? `${announcement.department.name} • Publicacion interna` : "General • Publicacion interna"}
+                                  <p className="truncate text-xs text-[var(--muted)]">
+                                    {announcement.department?.name ? `${announcement.department.name} • Publicación interna` : "General • Publicación interna"}
                                   </p>
-                                  <p className="text-xs text-slate-500">{formatRelativeTime(announcement.created_at)}</p>
+                                  <p className="text-xs text-[var(--muted-soft)]">
+                                    {formatRelativeTime(announcement.created_at)}
+                                  </p>
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100"
-                                aria-label="Mas opciones"
+                              <span
+                                className={cn(
+                                  "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                                  announcement.is_visible
+                                    ? "bg-[color:var(--success)]/10 text-[color:var(--success)]"
+                                    : "bg-[color:var(--warning)]/12 text-[color:var(--warning)]",
+                                )}
                               >
-                                ...
-                              </button>
+                                {announcement.is_visible ? "Visible" : "Borrador"}
+                              </span>
                             </div>
 
-                            <h4 className="mt-4 text-lg font-semibold tracking-tight text-slate-900">{announcement.title}</h4>
-                            <p className="mt-2 text-sm leading-relaxed text-slate-700">{contentPreview}</p>
+                            <h4 className="mt-3 text-base font-semibold tracking-tight text-[var(--foreground)]">
+                              {announcement.title}
+                            </h4>
+                            <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">
+                              {contentPreview}
+                            </p>
                             {hasLongContent ? (
-                              <button type="button" className="mt-1 text-sm font-medium text-slate-500 hover:text-slate-700">
-                                ... mas
+                              <button
+                                type="button"
+                                className="mt-1 text-sm font-medium text-[var(--primary)] hover:underline"
+                              >
+                                Ver más
                               </button>
                             ) : null}
-
-                            <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${announcement.is_visible ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                              {announcement.is_visible ? "Visible" : "Borrador"}
-                            </span>
                           </div>
 
                           {imageAttachments.length > 0 ? (
-                            <div className="border-y border-slate-200 bg-slate-100">
+                            <div className="border-y border-[var(--border)] bg-[var(--surface-muted)]">
                               <figure className="overflow-hidden">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
@@ -937,43 +758,53 @@ export default function PublicationsPage() {
                             </div>
                           ) : null}
 
-                          <div className="px-5 py-3 text-xs text-slate-500">
+                          <div className="px-4 py-3 text-xs text-[var(--muted)]">
                             {imageAttachments.length + fileAttachments.length > 0
-                              ? `${imageAttachments.length + fileAttachments.length} adjunto(s) en esta publicacion`
-                              : "Publicacion sin adjuntos"}
+                              ? `${imageAttachments.length + fileAttachments.length} ${
+                                  imageAttachments.length + fileAttachments.length === 1
+                                    ? "adjunto en esta publicación"
+                                    : "adjuntos en esta publicación"
+                                }`
+                              : "Publicación sin adjuntos"}
                           </div>
 
                           {fileAttachments.length > 0 ? (
-                            <div className="px-5 pb-3">
+                            <div className="px-4 pb-3">
                               <div className="flex flex-wrap gap-2">
                                 {fileAttachments.map((attachment) => (
                                   <button
                                     key={attachment.id}
                                     type="button"
                                     onClick={() => void handleDownloadAttachment(announcement.id, attachment)}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-intra-border bg-white px-3 py-2 text-sm font-medium text-intra-secondary transition hover:bg-intra-ligth"
+                                    className="inline-flex max-w-full items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
                                   >
-                                    Descargar: {attachment.original_name}
+                                    <Download className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
+                                    <span className="truncate">{attachment.original_name}</span>
                                   </button>
                                 ))}
                               </div>
                             </div>
                           ) : null}
 
-                          <div className="grid grid-cols-2 border-t border-slate-200 text-sm text-slate-600 sm:grid-cols-4">
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-slate-50">Recomendar</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-slate-50">Comentar</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-slate-50">Compartir</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-slate-50">Enviar</button>
+                          <div className="grid grid-cols-2 border-t border-[var(--border)] text-sm text-[var(--muted)] sm:grid-cols-4">
+                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Recomendar</button>
+                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Comentar</button>
+                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Compartir</button>
+                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Enviar</button>
                           </div>
 
                           {canManageCurrent ? (
-                            <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-5 py-3">
+                            <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] px-4 py-3">
                               <button
                                 type="button"
                                 onClick={() => void handleToggleVisibility(announcement)}
                                 disabled={isUpdatingVisibilityId === announcement.id}
-                                className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${announcement.is_visible ? "border-amber-200 text-amber-700 hover:bg-amber-50" : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
+                                className={cn(
+                                  "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+                                  announcement.is_visible
+                                    ? "border-[color:var(--warning)]/40 text-[color:var(--warning)] hover:bg-[color:var(--warning)]/10"
+                                    : "border-[color:var(--success)]/40 text-[color:var(--success)] hover:bg-[color:var(--success)]/10",
+                                )}
                               >
                                 {isUpdatingVisibilityId === announcement.id
                                   ? "Actualizando..."
@@ -982,14 +813,14 @@ export default function PublicationsPage() {
                               <button
                                 type="button"
                                 onClick={() => handleEditAnnouncement(announcement)}
-                                className="inline-flex h-9 items-center justify-center rounded-xl border border-intra-border px-3 text-sm font-semibold text-intra-secondary transition hover:bg-intra-ligth"
+                                className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] px-3 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
                               >
                                 Editar
                               </button>
                               <button
                                 type="button"
                                 onClick={() => void handleDeleteAnnouncement(announcement)}
-                                className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                                className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[color:var(--danger)]/40 px-3 text-sm font-semibold text-[color:var(--danger)] transition hover:bg-[color:var(--danger)]/10"
                               >
                                 Eliminar
                               </button>
@@ -1001,6 +832,346 @@ export default function PublicationsPage() {
                   </div>
                 </section>
               </>
+            ) : null}
+            {isFormModalOpen && canAccessPublications ? (
+              <AnimatePresence>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <motion.button
+                    type="button"
+                    aria-label="Cerrar"
+                    onClick={closeFormModal}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+                  />
+                  <motion.div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={editingAnnouncementId ? "Editar publicación" : "Nueva publicación"}
+                    initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)]"
+                  >
+                    <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                      <div>
+                        <h3 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+                          {editingAnnouncementId ? "Editar publicación" : "Nueva publicación"}
+                        </h3>
+                        <p className="mt-1 text-xs text-[var(--muted)]">
+                          Adjunta los archivos que hagan falta y decide si queda visible o como borrador.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                            formState.is_visible
+                              ? "bg-[color:var(--success)]/10 text-[color:var(--success)]"
+                              : "bg-[color:var(--warning)]/12 text-[color:var(--warning)]",
+                          )}
+                        >
+                          {formState.is_visible ? "Visible" : "Borrador"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={closeFormModal}
+                          aria-label="Cerrar"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </header>
+
+                    <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
+                      <form onSubmit={handleSubmitAnnouncement} className="space-y-4">
+                        <div>
+                          <label
+                            htmlFor="announcement-title"
+                            className="text-sm font-medium text-[var(--foreground)]"
+                          >
+                            Título
+                          </label>
+                          <input
+                            id="announcement-title"
+                            type="text"
+                            value={formState.title}
+                            onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))}
+                            placeholder="Ej. Nueva política de vacaciones"
+                            className="mt-1.5 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor="announcement-attachments"
+                            className="text-sm font-medium text-[var(--foreground)]"
+                          >
+                            Adjuntos (imagenes o archivos)
+                          </label>
+                          <input
+                            id="announcement-attachments"
+                            type="file"
+                            multiple
+                            onChange={(event) => {
+                              const files = Array.from(event.target.files ?? []);
+                              setNewAttachments((current) => [...current, ...files]);
+                              event.currentTarget.value = "";
+                            }}
+                            className="mt-1.5 block w-full text-sm text-[var(--muted)] file:mr-3 file:rounded-[var(--radius-sm)] file:border-0 file:bg-[var(--primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[var(--primary-hover)]"
+                          />
+                          {newAttachments.length > 0 ? (
+                            <div className="mt-2 space-y-1.5">
+                              <p className="text-xs text-[var(--muted)]">
+                                {newAttachments.length}{" "}
+                                {newAttachments.length === 1
+                                  ? "archivo nuevo seleccionado"
+                                  : "archivos nuevos seleccionados"}
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {newAttachments.map((file, index) => (
+                                  <button
+                                    key={`${file.name}-${file.lastModified}-${index}`}
+                                    type="button"
+                                    onClick={() => setNewAttachments((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                                    aria-label={`Quitar ${file.name}`}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--muted)] transition hover:border-[color:var(--danger)] hover:text-[color:var(--danger)]"
+                                  >
+                                    <X className="h-3 w-3" />
+                                    <span className="max-w-40 truncate">{file.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor="announcement-department"
+                            className="text-sm font-medium text-[var(--foreground)]"
+                          >
+                            Departamento
+                          </label>
+                          <DepartmentSelect
+                            id="announcement-department"
+                            className="mt-1.5"
+                            value={formState.department_id}
+                            onChange={(value) =>
+                              setFormState((current) => ({ ...current, department_id: value }))
+                            }
+                            disabled={!isAdmin || formState.publish_all}
+                            options={departmentSelectOptions}
+                            placeholder="Selecciona un departamento"
+                          />
+                        </div>
+
+                        {editingAnnouncementId ? (
+                          <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)]/60 p-3">
+                            <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+                              Adjuntos actuales
+                            </p>
+                            <div className="mt-2 space-y-2">
+                              {editingAnnouncement
+                                ?.attachments?.map((attachment) => (
+                                  <label
+                                    key={attachment.id}
+                                    className="flex cursor-pointer items-center gap-2 text-sm text-[var(--foreground)]"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={removeAttachmentIds.includes(attachment.id)}
+                                      onChange={(event) => {
+                                        setRemoveAttachmentIds((current) =>
+                                          event.target.checked
+                                            ? [...current, attachment.id]
+                                            : current.filter((id) => id !== attachment.id),
+                                        );
+                                      }}
+                                      className="h-4 w-4 shrink-0 rounded border-[var(--border-strong)] accent-[color:var(--danger)]"
+                                    />
+                                    <span className="truncate">Quitar {attachment.original_name}</span>
+                                  </label>
+                                ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div>
+                          <label
+                            htmlFor="announcement-content"
+                            className="text-sm font-medium text-[var(--foreground)]"
+                          >
+                            Contenido
+                          </label>
+                          <textarea
+                            id="announcement-content"
+                            value={formState.content}
+                            onChange={(event) => setFormState((current) => ({ ...current, content: event.target.value }))}
+                            rows={5}
+                            placeholder="Comparte una actualización para el equipo..."
+                            className="mt-1.5 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-muted)]/60 px-3 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--border-strong)]">
+                            <input
+                              type="checkbox"
+                              checked={formState.is_visible}
+                              onChange={(event) => setFormState((current) => ({ ...current, is_visible: event.target.checked }))}
+                              className="h-4 w-4 shrink-0 rounded border-[var(--border-strong)] accent-[var(--primary)]"
+                            />
+                            Marcar como visible
+                          </label>
+
+                          {isAdmin ? (
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-muted)]/60 px-3 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--border-strong)]">
+                              <input
+                                type="checkbox"
+                                checked={formState.publish_all}
+                                onChange={(event) => setFormState((current) => ({ ...current, publish_all: event.target.checked }))}
+                                className="h-4 w-4 shrink-0 rounded border-[var(--border-strong)] accent-[var(--primary)]"
+                              />
+                              Publicar para todos los departamentos
+                            </label>
+                          ) : null}
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowPreview((current) => !current)}
+                            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
+                          >
+                            {showPreview ? "Ocultar vista previa" : "Ver vista previa"}
+                          </button>
+                          {editingAnnouncementId ? (
+                            <button
+                              type="button"
+                              onClick={resetForm}
+                              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
+                            >
+                              Cancelar edicion
+                            </button>
+                          ) : null}
+                          <button
+                            type="submit"
+                            disabled={isSavingAnnouncement}
+                            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isSavingAnnouncement ? "Guardando..." : editingAnnouncementId ? "Actualizar" : "Crear publicación"}
+                          </button>
+                        </div>
+                      </form>
+
+                        {showPreview ? (
+                          <article className="mt-5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)]/40 p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-soft)] text-sm font-semibold text-[var(--primary)]">
+                                {(user?.name ?? "U").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-[var(--foreground)]">
+                                  {user?.name ?? "Usuario"}
+                                </p>
+                                <p className="text-xs text-[var(--muted)]">Vista previa · ahora</p>
+                              </div>
+                            </div>
+                            <h4 className="mt-3 text-base font-semibold text-[var(--foreground)]">
+                              {formState.title.trim() || "Título de la publicación"}
+                            </h4>
+                            <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-[var(--muted)]">
+                              {formState.content.trim() || "Aquí verás la vista previa del contenido."}
+                            </p>
+
+                            {previewExistingAttachments.length > 0 || newAttachmentPreviews.length > 0 ? (
+                              <div className="mt-4 space-y-3">
+                                {previewExistingAttachments.map((attachment) => {
+                                  const isImage = Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false);
+
+                                  if (isImage) {
+                                    return (
+                                      <figure key={`existing-${attachment.id}`} className="overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)]">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={getAttachmentUrl(attachment)}
+                                          alt={attachment.original_name}
+                                          className="h-auto max-h-96 w-full object-cover"
+                                        />
+                                        <figcaption className="px-3 py-2 text-xs text-[var(--muted)]">
+                                          {attachment.original_name}
+                                        </figcaption>
+                                      </figure>
+                                    );
+                                  }
+
+                                  return (
+                                    <div
+                                      key={`existing-${attachment.id}`}
+                                      className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--muted)]"
+                                    >
+                                      Archivo adjunto: {attachment.original_name}
+                                    </div>
+                                  );
+                                })}
+
+                                {newAttachmentPreviews.map((preview) => {
+                                  if (preview.isImage) {
+                                    return (
+                                      <figure key={`new-${preview.file.name}-${preview.file.lastModified}`} className="overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)]">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={preview.objectUrl}
+                                          alt={preview.file.name}
+                                          className="h-auto max-h-96 w-full object-cover"
+                                        />
+                                        <figcaption className="px-3 py-2 text-xs text-[var(--muted)]">
+                                          Nuevo: {preview.file.name}
+                                        </figcaption>
+                                      </figure>
+                                    );
+                                  }
+
+                                  return (
+                                    <div
+                                      key={`new-${preview.file.name}-${preview.file.lastModified}`}
+                                      className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--muted)]"
+                                    >
+                                      Nuevo archivo: {preview.file.name}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                                  formState.is_visible
+                                    ? "bg-[color:var(--success)]/10 text-[color:var(--success)]"
+                                    : "bg-[color:var(--warning)]/12 text-[color:var(--warning)]",
+                                )}
+                              >
+                                {formState.is_visible ? "Estado: Visible" : "Estado: Borrador (oculto)"}
+                              </span>
+                              {isAdmin && formState.publish_all ? (
+                                <span className="inline-flex items-center rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--primary)]">
+                                  Alcance: Todos los departamentos
+                                </span>
+                              ) : null}
+                            </div>
+                          </article>
+                        ) : null}
+                    </div>
+                  </motion.div>
+                </div>
+              </AnimatePresence>
             ) : null}
           </div>
         </section>

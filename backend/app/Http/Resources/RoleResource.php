@@ -18,6 +18,8 @@ class RoleResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'can_post_announcements' => $this->can_post_announcements,
+            'can_manage_department' => (bool) ($this->can_manage_department ?? false),
+            'department_id' => $this->department_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

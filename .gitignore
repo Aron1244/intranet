@@ -1,1 +1,3 @@
+# Graphify artifacts: todo el grafo es local y se regenera con `graphify update .`
+# No se versiona para evitar diffs giganticos en cada commit.
 graphify-out/

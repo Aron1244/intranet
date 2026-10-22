@@ -1,6 +1,6 @@
 <div align="center">
 
-# PR Intra
+# Coherev
 
 **Intranet corporativa** con autenticación, mensajería en tiempo real, gestión documental y control de acceso por roles.
 
@@ -127,6 +127,72 @@ Las instrucciones detalladas (comandos, variables de entorno, seeders, etc.) se 
 
 - Backend → [backend/README.md](./backend/README.md)
 - Frontend → [frontend/README.md](./frontend/README.md)
+
+---
+
+## Knowledge Graph del Proyecto
+
+El proyecto se analiza automáticamente con **[Graphify](https://github.com/Graphify-Labs/graphify)** (CLI de [Graphify Labs](https://graphify.com)) para generar un **grafo de conocimiento** consultable del código + docs + SQL + configs.
+
+### Lo que produce
+
+`graphify-out/` queda **gitignored**: es local y se regenera, no se versiona.
+
+| Archivo | Descripción |
+|---|---|
+| `graph.html` | Visualización clickeable, filtrable y buscable en cualquier navegador |
+| `GRAPH_REPORT.md` | Highlights: god nodes, conexiones sorprendentes, comunidades Leiden |
+| `graph.json` | Grafo completo (≈ 1472 nodos, 2773 aristas, 140 comunidades) |
+| `manifest.json` | Metadata portable con `schema_version` y `graphify_version` |
+
+Cada arista lleva etiqueta de origen: **EXTRACTED** (en el código) o **INFERRED** (resuelta por graphify).
+
+> `architecture.md`, `backend.md`, `frontend.md`, `backend-routes.md` y `backend-classes.md` los generaba un script propio del proyecto (`gen_structure.bat` / `gen_graph.py`) que ya no está en el repositorio. Se quedan congelados en la última versión que produjo y **no se regeneran** con `graphify update`; por eso pueden describir código anterior al actual.
+
+### Cómo regenerar el grafo
+
+```bash
+# Solo code (rápido, sin API key)
+uv tool run --from graphifyy graphify .  --code-only
+
+# Code + docs + papers (necesita API key)
+export GEMINI_API_KEY=...
+uv tool run --from graphifyy graphify .
+
+# Re-extraer solo archivos modificados (incremental, sin API cost)
+uv tool run --from graphifyy graphify update .
+
+# Re-clustering y reporte (sin re-extraer AST)
+uv tool run --from graphifyy graphify cluster-only .
+```
+
+### Consultar el grafo desde la terminal
+
+```bash
+uv tool run --from graphifyy graphify explain "TrashController"
+uv tool run --from graphifyy graphify path "Message" "Document"
+uv tool run --from graphifyy graphify query "what connects trash to the conversations controller?"
+```
+
+### Auto-rebuild en commits
+
+```bash
+uv tool run --from graphifyy graphify hook install
+```
+
+Instala hooks de git que regeneran el grafo después de cada `git commit` y `git checkout` (background, sin interrumpir el flujo). Después de cada `git pull`, ejecuta `graphify update .`.
+
+### Explorar visualmente
+
+Abre `graphify-out/graph.html` en cualquier navegador. Click en un nodo para ver detalles, filtra por comunidad en la leyenda, usa el buscador para saltar a cualquier símbolo.
+
+### Configuración de `.gitignore`
+
+```gitignore
+graphify-out/
+```
+
+`graphify-out/` no se commitea: es un artefacto generado y se regenera con `graphify update .`. Evita además diffs de cientos de kilobytes en `graph.json` en cada commit.
 
 ---
 

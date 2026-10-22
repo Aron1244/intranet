@@ -28,6 +28,11 @@ class UserController extends Controller
     {
         $user = User::create($request->validated());
 
+        DepartmentController::syncUserWithDepartmentConversation(
+            $user,
+            $user->department_id
+        );
+
         return new UserResource($user);
     }
 
@@ -44,7 +49,16 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): UserResource
     {
+        $previousDepartmentId = $user->department_id;
+
         $user->update($request->validated());
+
+        if ($user->department_id !== $previousDepartmentId) {
+            DepartmentController::syncUserWithDepartmentConversation(
+                $user->refresh(),
+                $user->department_id
+            );
+        }
 
         return new UserResource($user->refresh());
     }

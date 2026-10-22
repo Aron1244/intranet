@@ -69,7 +69,7 @@ class AnnouncementController extends Controller
             });
 
             return response()->json([
-                'message' => 'Publicacion creada para todos los departamentos.',
+                'message' => 'Publicación creada para todos los departamentos.',
                 'data' => $createdAnnouncements,
             ], 201);
         }

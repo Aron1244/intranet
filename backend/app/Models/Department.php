@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'description'])]
+#[Fillable(['name', 'description', 'color'])]
 class Department extends Model
 {
     public function users(): HasMany
@@ -22,5 +23,14 @@ class Department extends Model
     public function folders(): HasMany
     {
         return $this->hasMany(DepartmentFolder::class);
+    }
+
+    /**
+     * Group conversation shared by every member of the department.
+     * Created automatically when the department is created.
+     */
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
     }
 }
