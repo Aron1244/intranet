@@ -6,9 +6,10 @@ Broadcast::channel(
     'conversation.{conversationId}',
     function ($user, $conversationId) {
 
-        return $user
-            ->conversations()
-            ->where('conversation_id', $conversationId)
-            ->exists();
+        return $user->isAdministrator()
+            || $user
+                ->conversations()
+                ->where('conversation_id', $conversationId)
+                ->exists();
     }
 );

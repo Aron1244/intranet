@@ -17,8 +17,12 @@ class MessageController extends Controller
 {
     public function index(Conversation $conversation): JsonResponse
     {
+        $user = auth()->user();
+        abort_unless($user, 401);
+
         abort_unless(
-            $conversation->users()->whereKey(auth()->id())->exists(),
+            $user->isAdministrator()
+                || $conversation->users()->whereKey($user->id)->exists(),
             403
         );
 
@@ -61,7 +65,8 @@ class MessageController extends Controller
 
         $conversation = Conversation::query()->findOrFail($request->integer('conversation_id'));
         abort_unless(
-            $conversation->users()->whereKey(auth()->id())->exists(),
+            (bool) auth()->user()?->isAdministrator()
+                || $conversation->users()->whereKey(auth()->id())->exists(),
             403
         );
 
@@ -125,7 +130,8 @@ class MessageController extends Controller
         abort_unless($user, 401);
 
         abort_unless(
-            $message->conversation?->users()->whereKey($user->id)->exists(),
+            $user->isAdministrator()
+                || $message->conversation?->users()->whereKey($user->id)->exists(),
             403,
             'No participas en la conversación.'
         );
