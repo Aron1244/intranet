@@ -79,7 +79,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Publicaciones",
     href: "/dashboard/publications",
     icon: Megaphone,
-    visible: () => true,
+    visible: (state) => state.canManageAnnouncements,
   },
   {
     key: "documents",
