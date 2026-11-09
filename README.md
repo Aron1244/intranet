@@ -142,7 +142,7 @@ El proyecto se analiza automáticamente con **[Graphify](https://github.com/Grap
 |---|---|
 | `graph.html` | Visualización clickeable, filtrable y buscable en cualquier navegador |
 | `GRAPH_REPORT.md` | Highlights: god nodes, conexiones sorprendentes, comunidades Leiden |
-| `graph.json` | Grafo completo (≈ 1472 nodos, 2773 aristas, 140 comunidades) |
+| `graph.json` | Grafo completo (≈ 1607 nodos, 2852 aristas, 157 comunidades) |
 | `manifest.json` | Metadata portable con `schema_version` y `graphify_version` |
 
 Cada arista lleva etiqueta de origen: **EXTRACTED** (en el código) o **INFERRED** (resuelta por graphify).

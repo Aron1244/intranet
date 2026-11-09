@@ -17,14 +17,14 @@ return new class extends Migration
                 // Drop the morphs index if it exists
                 try {
                     $table->dropIndex(['commentable_type', 'commentable_id']);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Index might not exist
                 }
                 $table->dropColumn(['commentable_id', 'commentable_type']);
             }
-            
+
             // Add foreign key to announcements if it doesn't exist
-            if (!Schema::hasColumn('comments', 'announcement_id')) {
+            if (! Schema::hasColumn('comments', 'announcement_id')) {
                 $table->foreignId('announcement_id')
                     ->after('user_id')
                     ->constrained('announcements')
@@ -43,9 +43,9 @@ return new class extends Migration
                 $table->dropForeign(['announcement_id']);
                 $table->dropColumn('announcement_id');
             }
-            
+
             // Recreate polymorphic columns
-            if (!Schema::hasColumn('comments', 'commentable_id')) {
+            if (! Schema::hasColumn('comments', 'commentable_id')) {
                 $table->morphs('commentable');
             }
         });
