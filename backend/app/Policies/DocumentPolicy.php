@@ -60,7 +60,7 @@ class DocumentPolicy
             return true;
         }
 
-        return (int) $user->department_id === $departmentId;
+        return $user->belongsToDepartment($departmentId);
     }
 
     private function canAccess(User $user, Document $document): bool
@@ -81,7 +81,7 @@ class DocumentPolicy
         if (
             $document->visibility === 'department'
             && $document->folder
-            && (int) $document->folder->department_id === (int) $user->department_id
+            && $user->belongsToDepartment($document->folder->department_id)
         ) {
             return true;
         }

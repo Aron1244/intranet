@@ -20,6 +20,7 @@ type MeResponse = {
     name: string;
     email: string;
     department_id?: number | null;
+    department_ids?: number[];
     es_lider?: boolean;
     onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
@@ -48,6 +49,7 @@ type AppUser = {
   name: string;
   email: string;
   department_id?: number | null;
+  department_ids: number[];
 };
 
 type Department = {
@@ -371,10 +373,7 @@ export default function ConversationsPage() {
   const canDeleteConversation = isAdmin && !isUserCollaborator;
   const canModerateMessages = (isAdmin || isDepartmentLeader(user)) && !isUserCollaborator;
   const canRenameConversation = (isAdmin || isUserLeader) && !isUserCollaborator;
-  const currentUserDepartmentId = useMemo(
-    () => users.find((candidate) => candidate.id === user?.id)?.department_id ?? null,
-    [user?.id, users],
-  );
+  const currentUserDepartmentIds = useMemo(() => user?.department_ids ?? [], [user?.department_ids]);
 
   // Opciones del desplegable de departamento del modal de nuevo chat. El color
   // viaja con la opción para que se vea al desplegar la lista.
@@ -405,13 +404,10 @@ export default function ConversationsPage() {
           return true;
         }
 
-        if (currentUserDepartmentId === null) {
-          return false;
-        }
-
-        return candidate.department_id === currentUserDepartmentId;
+        // Comparte al menos un departamento con el usuario actual.
+        return candidate.department_ids.some((id) => currentUserDepartmentIds.includes(id));
       }),
-    [currentUserDepartmentId, isAdmin, user?.id, users],
+    [currentUserDepartmentIds, isAdmin, user?.id, users],
   );
 
   const filteredAvailableUsers = useMemo(() => {
@@ -419,16 +415,15 @@ export default function ConversationsPage() {
 
     return availableUsers.filter((candidate) => {
       const userRoles = userRolesByUserId[candidate.id] ?? [];
-      const userDepartmentId = candidate.department_id ?? null;
       const normalizedRoleFilter = Number(chatRoleFilter);
       const departmentMatches =
         !isAdmin
-          ? currentUserDepartmentId !== null && userDepartmentId === currentUserDepartmentId
+          ? candidate.department_ids.some((id) => currentUserDepartmentIds.includes(id))
           : chatDepartmentFilter === "all"
             ? true
             : chatDepartmentFilter === "unassigned"
-              ? userDepartmentId === null
-              : userDepartmentId === Number(chatDepartmentFilter);
+              ? candidate.department_ids.length === 0
+              : candidate.department_ids.includes(Number(chatDepartmentFilter));
 
       const roleMatches =
         !isAdmin || chatRoleFilter === "all"
@@ -441,7 +436,7 @@ export default function ConversationsPage() {
 
       return departmentMatches && roleMatches && searchMatches;
     });
-  }, [availableUsers, chatDepartmentFilter, chatNameSearch, chatRoleFilter, currentUserDepartmentId, isAdmin, userRolesByUserId]);
+  }, [availableUsers, chatDepartmentFilter, chatNameSearch, chatRoleFilter, currentUserDepartmentIds, isAdmin, userRolesByUserId]);
 
   const loadCreateChatModalData = useCallback(async () => {
     setIsLoadingChatModalData(true);
@@ -1777,12 +1772,12 @@ export default function ConversationsPage() {
                     <button
                       type="button"
                       onClick={() => void openCreateChatModal()}
-                      disabled={!canCreateConversation || (!isAdmin && currentUserDepartmentId === null)}
+                      disabled={!canCreateConversation || (!isAdmin && currentUserDepartmentIds.length === 0)}
                       className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isUserCollaborator ? "Acceso solo lectura" : "Nuevo chat"}
                     </button>
-                    {!isAdmin && currentUserDepartmentId === null ? (
+                    {!isAdmin && currentUserDepartmentIds.length === 0 ? (
                       <p className="mt-2 text-xs text-[var(--muted)]">
                         Necesitas tener un departamento asignado para iniciar chats.
                       </p>
@@ -2186,8 +2181,15 @@ export default function ConversationsPage() {
                                 <p className="truncate text-sm font-semibold text-intra-secondary">{candidate.name}</p>
                                 <p className="truncate text-xs text-[var(--muted)]">{candidate.email}</p>
                                 <p className="truncate text-xs text-[var(--muted)]">
-                                  {candidate.department_id
-                                    ? departments.find((department) => department.id === candidate.department_id)?.name ?? "Departamento"
+                                  {candidate.department_ids.length > 0
+                                    ? candidate.department_ids
+                                        .map(
+                                          (id) =>
+                                            departments.find((department) => department.id === id)?.name ??
+                                            "",
+                                        )
+                                        .filter(Boolean)
+                                        .join(" · ") || "Departamento"
                                     : "Sin departamento"}
                                   {assignedRoles.length > 0
                                     ? ` • ${assignedRoles.map((role) => role.name).join(", ")}`

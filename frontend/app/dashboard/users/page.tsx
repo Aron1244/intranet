@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,8 +12,6 @@ import {
 } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
-import { DepartmentSelect } from "@/components/department-select";
-import type { DepartmentSelectOption } from "@/components/department-select";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
 import { resolveDepartmentColor } from "@/lib/department-color";
@@ -49,6 +47,7 @@ type User = {
   name: string;
   email: string;
   department_id: number | null;
+  department_ids: number[];
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
@@ -73,7 +72,7 @@ type UserFormState = {
   name: string;
   email: string;
   password: string;
-  department_id: string;
+  department_ids: number[];
   role_ids: number[];
 };
 
@@ -81,7 +80,7 @@ const INITIAL_FORM_STATE: UserFormState = {
   name: "",
   email: "",
   password: "",
-  department_id: "",
+  department_ids: [],
   role_ids: [],
 };
 
@@ -101,8 +100,8 @@ export default function UsersPage() {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [formState, setFormState] = useState<UserFormState>(INITIAL_FORM_STATE);
-  const [availableRoles, setAvailableRoles] = useState<DepartmentRole[]>([]);
-  const [isLoadingRoles, setIsLoadingRoles] = useState(false);
+  const [allRoles, setAllRoles] = useState<DepartmentRole[]>([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
   const [page, setPage] = useState(1);
   const formSectionRef = useRef<HTMLDivElement>(null);
   const usersListRef = useRef<HTMLDivElement>(null);
@@ -183,36 +182,51 @@ export default function UsersPage() {
     };
   }, [loadUsers, loadDepartments]);
 
+  // Los roles se cargan una sola vez y se filtran por los departamentos
+  // marcados en el formulario. Antes se pedian por departamento, lo que
+  // obligaba a un request por cada departamento seleccionado.
   useEffect(() => {
-    const deptId = formState.department_id ? parseInt(formState.department_id, 10) : null;
+    let ignore = false;
 
-    if (!deptId || Number.isNaN(deptId)) {
-      queueMicrotask(() => setAvailableRoles([]));
-      return;
-    }
-
-    let cancelled = false;
-    queueMicrotask(() => setIsLoadingRoles(true));
-    apiFetch<{ data: DepartmentRole[] }>(`/departments/${deptId}/roles`, { method: "GET" })
+    apiFetch<{ data: DepartmentRole[] }>("/roles", { method: "GET" })
       .then((response) => {
-        if (!cancelled) {
-          setAvailableRoles(Array.isArray(response.data) ? response.data : []);
+        if (!ignore) {
+          setAllRoles(Array.isArray(response.data) ? response.data : []);
         }
       })
       .catch(() => {
-        if (!cancelled) {
-          setAvailableRoles([]);
+        if (!ignore) {
+          setAllRoles([]);
         }
       })
       .finally(() => {
-        if (!cancelled) {
+        if (!ignore) {
           setIsLoadingRoles(false);
         }
       });
+
     return () => {
-      cancelled = true;
+      ignore = true;
     };
-  }, [formState.department_id]);
+  }, []);
+
+  const availableRoles = useMemo(
+    () =>
+      allRoles.filter(
+        (role) =>
+          role.department_id !== null &&
+          role.department_id !== undefined &&
+          formState.department_ids.includes(role.department_id),
+      ),
+    [allRoles, formState.department_ids],
+  );
+
+  // Los roles marcados que ya no corresponden a un departamento seleccionado
+  // no se guardan, asi que el contador solo suma los que van a persistir.
+  const selectedRoleCount = useMemo(
+    () => formState.role_ids.filter((id) => availableRoles.some((role) => role.id === id)).length,
+    [availableRoles, formState.role_ids],
+  );
 
   // Cambiar filtro o busqueda acorta la lista: se vuelve a la página 1 desde el
   // handler en vez de un efecto, para no desincronizar un setState en un efecto.
@@ -228,20 +242,6 @@ export default function UsersPage() {
   const users_sorted = users.slice().sort((a, b) => a.name.localeCompare(b.name));
   const departments_sorted = departments.slice().sort((a, b) => a.name.localeCompare(b.name));
 
-  // Opciones del desplegable de departamento del formulario de alta de usuario.
-  // El color viaja con la opción para que se vea al desplegar la lista.
-  const departmentSelectOptions = useMemo<DepartmentSelectOption[]>(
-    () => [
-      { value: "", label: "Sin asignar" },
-      ...departments_sorted.map((dept) => ({
-        value: String(dept.id),
-        label: dept.name,
-        color: resolveDepartmentColor(dept),
-      })),
-    ],
-    [departments_sorted],
-  );
-
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
   const filteredUsers = users_sorted.filter((u) => {
@@ -249,8 +249,8 @@ export default function UsersPage() {
       selectedDepartmentFilter === "all"
         ? true
         : selectedDepartmentFilter === "unassigned"
-          ? u.department_id === null
-          : u.department_id === Number(selectedDepartmentFilter);
+          ? u.department_ids.length === 0
+          : u.department_ids.includes(Number(selectedDepartmentFilter));
 
     const matchesSearch =
       normalizedSearchTerm.length === 0 ||
@@ -260,10 +260,10 @@ export default function UsersPage() {
     return matchesDepartment && matchesSearch;
   });
 
-  const usersWithoutDepartmentCount = users_sorted.filter((u) => u.department_id === null).length;
+  const usersWithoutDepartmentCount = users_sorted.filter((u) => u.department_ids.length === 0).length;
 
   const getDepartmentUsersCount = (departmentId: number): number =>
-    users_sorted.filter((u) => u.department_id === departmentId).length;
+    users_sorted.filter((u) => u.department_ids.includes(departmentId)).length;
 
   /*
    * `/users` devuelve la colección completa sin paginar (UserController::index
@@ -294,9 +294,16 @@ export default function UsersPage() {
         : departments_sorted.find((dept) => dept.id === Number(selectedDepartmentFilter))?.name ??
           "Departamento";
 
-  const getDepartmentName = (deptId: number | null): string => {
-    if (!deptId) return "Sin asignar";
-    return departments.find((d) => d.id === deptId)?.name ?? "Desconocido";
+  const getDepartmentNames = (u: User): string => {
+    if (u.department_ids.length === 0) {
+      return "Sin asignar";
+    }
+
+    const names = u.department_ids
+      .map((id) => departments.find((d) => d.id === id)?.name)
+      .filter((name): name is string => Boolean(name));
+
+    return names.length > 0 ? names.join(" · ") : "Sin asignar";
   };
 
   const resetForm = () => {
@@ -313,7 +320,6 @@ export default function UsersPage() {
 
     const normalizedName = formState.name.trim();
     const normalizedEmail = formState.email.trim();
-    const deptId = formState.department_id ? parseInt(formState.department_id, 10) : null;
 
     if (!normalizedName) {
       setErrorMessage("El nombre del usuario es obligatorio.");
@@ -341,12 +347,12 @@ export default function UsersPage() {
       const payload: {
         name: string;
         email: string;
-        department_id: number | null;
+        department_ids: number[];
         password?: string;
       } = {
         name: normalizedName,
         email: normalizedEmail,
-        department_id: deptId,
+        department_ids: formState.department_ids,
       };
 
       if (formState.password) {
@@ -364,27 +370,26 @@ export default function UsersPage() {
 
         setSuccessMessage("Usuario actualizado correctamente.");
       } else {
-        const created = await apiFetch<User>("/users", {
+        // El resource viene envuelto en "data".
+        const created = await apiFetch<{ data: User }>("/users", {
           method: "POST",
           body: payload,
         });
-        savedUserId = created.id;
+        savedUserId = created.data.id;
 
         setSuccessMessage("Usuario creado correctamente.");
       }
 
-      const deptRoles = deptId
-        ? availableRoles.filter((role) => role.department_id === deptId).map((role) => role.id)
-        : [];
+      // Solo se guardan los roles de los departamentos marcados: si se
+      // desmarca un departamento, sus roles se le quitan al usuario.
+      const validRoleIds = formState.role_ids.filter((id) =>
+        availableRoles.some((role) => role.id === id),
+      );
 
-      const onlyValidRoleIds = formState.role_ids.filter((id) => deptRoles.includes(id));
-
-      if (deptId && onlyValidRoleIds.length > 0) {
-        await apiFetch(`/users/${savedUserId}/roles`, {
-          method: "PUT",
-          body: { role_ids: onlyValidRoleIds },
-        });
-      }
+      await apiFetch(`/users/${savedUserId}/roles`, {
+        method: "PUT",
+        body: { role_ids: validRoleIds },
+      });
 
       resetForm();
       await loadUsers();
@@ -409,7 +414,7 @@ export default function UsersPage() {
       name: u.name,
       email: u.email,
       password: "",
-      department_id: u.department_id?.toString() ?? "",
+      department_ids: u.department_ids ?? [],
       role_ids: (u.roles ?? []).map((role) => role.id),
     });
     setEditingUserId(u.id);
@@ -551,114 +556,111 @@ export default function UsersPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="user-department" className="text-sm font-medium text-[var(--foreground)]">
-                        Departamento
-                      </label>
-                      <DepartmentSelect
-                        id="user-department"
-                        className="mt-1"
-                        value={formState.department_id}
-                        onChange={(value) =>
-                          setFormState((current) => ({
-                            ...current,
-                            department_id: value,
-                            role_ids: [],
-                          }))
-                        }
-                        options={departmentSelectOptions}
-                        placeholder="Selecciona un departamento"
-                      />
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="text-sm font-medium text-[var(--foreground)]">
+                          Departamentos
+                        </span>
+                        <span className="text-xs text-[var(--muted)]">
+                          {formState.department_ids.length} seleccionados
+                        </span>
+                      </div>
+
+                      {departments_sorted.length === 0 ? (
+                        <p className="rounded-[var(--radius-sm)] border border-dashed border-[var(--border)] bg-[var(--background)]/40 px-3 py-2 text-xs text-[var(--muted)]">
+                          Todavia no hay departamentos. Crea uno desde /dashboard/departments.
+                        </p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {departments_sorted.map((dept) => (
+                            <CheckboxRow
+                              key={`department-${dept.id}`}
+                              id={`user-department-${dept.id}`}
+                              checked={formState.department_ids.includes(dept.id)}
+                              onChange={(checked) =>
+                                setFormState((current) => ({
+                                  ...current,
+                                  department_ids: checked
+                                    ? [...current.department_ids, dept.id]
+                                    : current.department_ids.filter((id) => id !== dept.id),
+                                }))
+                              }
+                            >
+                              <span className="flex items-center gap-2">
+                                <span
+                                  aria-hidden="true"
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10"
+                                  style={{ backgroundColor: resolveDepartmentColor(dept) }}
+                                />
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--foreground)]">
+                                  {dept.name}
+                                </span>
+                              </span>
+                            </CheckboxRow>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {formState.department_id ? (
+                    {formState.department_ids.length > 0 ? (
                       <div>
                         <div className="mb-1 flex items-center justify-between">
                           <span className="text-sm font-medium text-[var(--foreground)]">
-                            Roles del departamento
+                            Roles de los departamentos
                           </span>
                           {isLoadingRoles ? (
                             <span className="text-xs text-[var(--muted)]">Cargando...</span>
                           ) : (
                             <span className="text-xs text-[var(--muted)]">
-                              {formState.role_ids.length}/{availableRoles.length} seleccionados
+                              {selectedRoleCount}/{availableRoles.length} seleccionados
                             </span>
                           )}
                         </div>
                         {!isLoadingRoles && availableRoles.length === 0 ? (
                           <p className="rounded-[var(--radius-sm)] border border-dashed border-[var(--border)] bg-[var(--background)]/40 px-3 py-2 text-xs text-[var(--muted)]">
-                            Este departamento aun no tiene roles. Crea uno desde /dashboard/departments.
+                            Los departamentos seleccionados aun no tienen roles. Crea uno desde /dashboard/departments.
                           </p>
                         ) : (
                           <div className="space-y-1.5">
                             {availableRoles.map((role) => {
                               const isChecked = formState.role_ids.includes(role.id);
                               return (
-                                <label
-                                  key={role.id}
-                                  className="flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 transition hover:border-[var(--primary)]"
+                                <CheckboxRow
+                                  key={`role-${role.id}`}
+                                  id={`user-role-${role.id}`}
+                                  checked={isChecked}
+                                  onChange={(checked) =>
+                                    setFormState((current) => ({
+                                      ...current,
+                                      role_ids: checked
+                                        ? [...current.role_ids, role.id]
+                                        : current.role_ids.filter((id) => id !== role.id),
+                                    }))
+                                  }
                                 >
-                                  <span className="relative inline-flex shrink-0 pt-0.5">
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={(event) => {
-                                        const checked = event.target.checked;
-                                        setFormState((current) => ({
-                                          ...current,
-                                          role_ids: checked
-                                            ? [...current.role_ids, role.id]
-                                            : current.role_ids.filter((id) => id !== role.id),
-                                        }));
-                                      }}
-                                      className="peer sr-only"
-                                    />
-                                    <span
-                                      aria-hidden="true"
-                                      className={cn(
-                                        "h-4 w-4 rounded-[var(--radius-sm)] border transition",
-                                        "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--primary)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--surface)]",
-                                        isChecked
-                                          ? "border-[var(--primary)] bg-[var(--primary)]"
-                                          : "border-[var(--border-strong)] bg-[var(--surface)]",
-                                      )}
-                                    >
-                                      <svg
-                                        viewBox="0 0 16 16"
-                                        className={cn(
-                                          "absolute inset-0 m-auto h-3 w-3 text-white transition",
-                                          isChecked ? "scale-100 opacity-100" : "scale-50 opacity-0",
-                                        )}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.4"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      >
-                                        <polyline points="3 8.5 6.5 12 13 4.5" />
-                                      </svg>
-                                    </span>
+                                  <span className="block text-sm font-medium text-[var(--foreground)]">
+                                    {role.name}
                                   </span>
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block text-sm font-medium text-[var(--foreground)]">
-                                      {role.name}
-                                    </span>
-                                    <span className="mt-0.5 flex flex-wrap gap-1 text-[11px] text-[var(--muted)]">
-                                      {role.can_manage_department ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[var(--primary)]">
-                                          Lider
-                                        </span>
-                                      ) : null}
-                                      {role.can_post_announcements ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-1.5 py-0.5 text-[var(--accent)]">
-                                          Publica anuncios
-                                        </span>
-                                      ) : null}
-                                      {!role.can_manage_department && !role.can_post_announcements ? (
-                                        <span>Permiso estándar</span>
-                                      ) : null}
-                                    </span>
+                                  <span className="mt-0.5 flex flex-wrap gap-1 text-[11px] text-[var(--muted)]">
+                                    {role.department_id ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-1.5 py-0.5">
+                                        {departments.find((d) => d.id === role.department_id)?.name ?? "Departamento"}
+                                      </span>
+                                    ) : null}
+                                    {role.can_manage_department ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[var(--primary)]">
+                                        Lider
+                                      </span>
+                                    ) : null}
+                                    {role.can_post_announcements ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-1.5 py-0.5 text-[var(--accent)]">
+                                        Publica anuncios
+                                      </span>
+                                    ) : null}
+                                    {!role.can_manage_department && !role.can_post_announcements ? (
+                                      <span>Permiso estándar</span>
+                                    ) : null}
                                   </span>
-                                </label>
+                                </CheckboxRow>
                               );
                             })}
                           </div>
@@ -799,7 +801,7 @@ export default function UsersPage() {
                           </p>
                           <p className="truncate text-xs text-[var(--muted)]">{u.email}</p>
                           <span className="mt-1 inline-flex items-center rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
-                            {getDepartmentName(u.department_id)}
+                            {getDepartmentNames(u)}
                           </span>
                         </div>
 
@@ -901,5 +903,63 @@ export default function UsersPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+type CheckboxRowProps = {
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  children: ReactNode;
+};
+
+/**
+ * Fila de seleccion multiple con casilla y contenido libre.
+ *
+ * Comparte el marcado entre la lista de departamentos y la de roles para que
+ * las dos se vean igual y no haya que duplicar el checkbox custom.
+ */
+function CheckboxRow({ id, checked, onChange, children }: CheckboxRowProps) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 transition hover:border-[var(--primary)]"
+    >
+      <span className="relative inline-flex shrink-0 pt-0.5">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="peer sr-only"
+        />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "h-4 w-4 rounded-[var(--radius-sm)] border transition",
+            "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--primary)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--surface)]",
+            checked
+              ? "border-[var(--primary)] bg-[var(--primary)]"
+              : "border-[var(--border-strong)] bg-[var(--surface)]",
+          )}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            className={cn(
+              "absolute inset-0 m-auto h-3 w-3 text-white transition",
+              checked ? "scale-100 opacity-100" : "scale-50 opacity-0",
+            )}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="3 8.5 6.5 12 13 4.5" />
+          </svg>
+        </span>
+      </span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </label>
   );
 }

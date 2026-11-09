@@ -82,23 +82,23 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Attach a user to the department's group conversation.
-     * Called from UserController when department_id changes.
+     * Attach a user to the group conversation of every department they belong to.
+     * Called from UserController when their departments change.
      */
-    public static function syncUserWithDepartmentConversation(User $user, ?int $departmentId): void
+    public static function syncUserWithDepartmentConversations(User $user): void
     {
-        if ($departmentId === null) {
+        $departmentIds = $user->departmentIds();
+
+        if ($departmentIds === []) {
             return;
         }
 
-        $conversation = Conversation::query()
-            ->where('department_id', $departmentId)
-            ->first();
+        $conversations = Conversation::query()
+            ->whereIn('department_id', $departmentIds)
+            ->get();
 
-        if ($conversation === null) {
-            return;
+        foreach ($conversations as $conversation) {
+            $conversation->users()->syncWithoutDetaching([$user->id]);
         }
-
-        $conversation->users()->syncWithoutDetaching([$user->id]);
     }
 }

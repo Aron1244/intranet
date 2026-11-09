@@ -92,6 +92,6 @@ class DepartmentFolderController extends Controller
             return;
         }
 
-        abort_unless((int) $user->department_id === $departmentId, 403);
+        abort_unless($user->belongsToDepartment($departmentId), 403);
     }
 }

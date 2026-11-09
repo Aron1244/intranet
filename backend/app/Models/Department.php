@@ -4,15 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['name', 'description', 'color'])]
 class Department extends Model
 {
-    public function users(): HasMany
+    /**
+     * Usuarios que pertenecen al departamento.
+     *
+     * La relacion es N:M: un usuario puede estar en varios departamentos.
+     */
+    public function users(): BelongsToMany
     {
-        return $this->hasMany(User::class);
+        return $this->belongsToMany(User::class, 'department_user');
     }
 
     public function announcements(): HasMany

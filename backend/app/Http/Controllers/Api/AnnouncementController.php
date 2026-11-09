@@ -7,7 +7,6 @@ use App\Http\Requests\StoreAnnouncementRequest;
 use App\Http\Requests\UpdateAnnouncementRequest;
 use App\Models\Announcement;
 use App\Models\AnnouncementAttachment;
-use App\Models\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -28,9 +27,15 @@ class AnnouncementController extends Controller
 
         if (! $user->canManageAnnouncements()) {
             $query->where('is_visible', true)
-                ->where('department_id', $user->department_id);
+                ->where(function ($subQuery) use ($user): void {
+                    $subQuery->whereNull('department_id')
+                        ->orWhereIn('department_id', $user->departmentIds());
+                });
         } elseif (! $user->isAdministrator()) {
-            $query->where('department_id', $user->department_id);
+            $query->where(function ($subQuery) use ($user): void {
+                $subQuery->whereNull('department_id')
+                    ->orWhereIn('department_id', $user->departmentIds());
+            });
         }
 
         return response()->json($query->get());
@@ -50,28 +55,11 @@ class AnnouncementController extends Controller
 
         if (! $isAdmin) {
             $validated['department_id'] = $user->department_id;
-        }
-
-        if ($isAdmin && $publishAll) {
-            $departmentIds = Department::query()->pluck('id');
-
-            $createdAnnouncements = $departmentIds->map(function (int $departmentId) use ($validated, $user, $request): Announcement {
-                $announcement = Announcement::query()->create([
-                    ...$validated,
-                    'department_id' => $departmentId,
-                    'is_visible' => (bool) ($validated['is_visible'] ?? false),
-                    'created_by' => $user->id,
-                ]);
-
-                $this->storeAttachments($request, $announcement);
-
-                return $announcement->load(['creator', 'department', 'attachments']);
-            });
-
-            return response()->json([
-                'message' => 'Publicación creada para todos los departamentos.',
-                'data' => $createdAnnouncements,
-            ], 201);
+        } elseif ($publishAll) {
+            // Publicación general: sin departamento, la ven todos. Antes se
+            // creaba una copia por departamento, lo que multiplicaba la
+            // publicación y duplicaba sus adjuntos.
+            $validated['department_id'] = null;
         }
 
         $announcement = Announcement::query()->create([
@@ -103,10 +91,14 @@ class AnnouncementController extends Controller
         $validated = $request->validated();
         $user = $request->user();
 
+        $publishAll = (bool) ($validated['publish_all'] ?? false);
         unset($validated['publish_all']);
 
         if (! $user->isAdministrator()) {
             unset($validated['department_id']);
+        } elseif ($publishAll) {
+            // Vuelve a ser una publicación general.
+            $validated['department_id'] = null;
         }
 
         if (! empty($validated['remove_attachment_ids'])) {

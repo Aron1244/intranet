@@ -950,18 +950,7 @@ function PostRow({ post }: PostRowProps) {
         {post.title}
       </h3>
       <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--muted)]">{post.body}</p>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <p className="text-[11px] text-[var(--muted)]">por {post.author}</p>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            aria-label={`Responder: ${post.title}`}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
+      <p className="mt-3 text-[11px] text-[var(--muted)]">por {post.author}</p>
     </article>
   );
 }

@@ -46,6 +46,11 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   visible: (state: SidebarState) => boolean;
+  /**
+   * False en modulos que se listan como disponibles pero no se enlazan desde
+   * la navegacion (aun sin functionality o sin backend).
+   */
+  inSidebar?: boolean;
 };
 
 export type SidebarState = {
@@ -94,6 +99,9 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard/tasks",
     icon: BarChart3,
     visible: () => true,
+    // El modulo todavia no tiene backend: se lista en el resumen pero no se
+    // enlaza desde la navegacion.
+    inSidebar: false,
   },
   {
     key: "departments",
@@ -130,6 +138,11 @@ export function visibleNavItems(state: SidebarState): NavItem[] {
   return NAV_ITEMS.filter((item) => item.visible(state));
 }
 
+/** Módulos que además se enlazan desde la navegación lateral. */
+export function sidebarNavItems(state: SidebarState): NavItem[] {
+  return visibleNavItems(state).filter((item) => item.inSidebar !== false);
+}
+
 export function DashboardSidebar({
   user,
   isAdmin,
@@ -149,7 +162,7 @@ export function DashboardSidebar({
     canManageAnnouncements: canManageAnnouncements ?? false,
   };
 
-  const visibleItems = visibleNavItems(state);
+  const visibleItems = sidebarNavItems(state);
   const initials = (user?.name ?? "Invitado")
     .split(" ")
     .filter(Boolean)
@@ -299,7 +312,7 @@ export function MobileNavDrawer({
   const pathname = usePathname();
   const { isOpen, close } = useMobileNav();
 
-  const visibleItems = visibleNavItems({
+  const visibleItems = sidebarNavItems({
     isAdmin,
     isLeader,
     isNewHire,

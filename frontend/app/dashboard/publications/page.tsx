@@ -20,6 +20,7 @@ type MeResponse = {
     name: string;
     email: string;
     department_id?: number | null;
+    department_ids?: number[];
     es_lider?: boolean;
     onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
@@ -120,6 +121,19 @@ function makePreviewText(content: string): string {
   return `${normalized.slice(0, 220)}...`;
 }
 
+/**
+ * Minusculas sin acentos para que "titulo" encuentra "Titulo".
+ *
+ * Las publicaciones estan en español y los titulos llevan tildes con
+ * frecuencia; sin esto la busqueda fallaria justo con el termino mas usado.
+ */
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export default function PublicationsPage() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
@@ -140,6 +154,7 @@ export default function PublicationsPage() {
   const [formState, setFormState] = useState<AnnouncementFormState>(INITIAL_FORM_STATE);
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [removeAttachmentIds, setRemoveAttachmentIds] = useState<number[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const backendOrigin = useMemo(() => API_BASE.replace(/\/+api$/, ""), []);
 
@@ -281,6 +296,28 @@ export default function PublicationsPage() {
     [announcements],
   );
 
+  // El listado llega completo desde la API, asi que el filtrado es en cliente.
+  const filteredAnnouncements = useMemo(() => {
+    const normalizedSearch = normalizeSearchText(searchTerm.trim());
+
+    if (!normalizedSearch) {
+      return sortedAnnouncements;
+    }
+
+    return sortedAnnouncements.filter((announcement) => {
+      const searchableFields = [
+        announcement.title,
+        announcement.content,
+        announcement.creator?.name,
+        announcement.department?.name,
+      ]
+        .filter((value): value is string => Boolean(value))
+        .map(normalizeSearchText);
+
+      return searchableFields.some((field) => field.includes(normalizedSearch));
+    });
+  }, [searchTerm, sortedAnnouncements]);
+
   const editingAnnouncement = useMemo(
     () => announcements.find((item) => item.id === editingAnnouncementId) ?? null,
     [announcements, editingAnnouncementId],
@@ -304,9 +341,13 @@ export default function PublicationsPage() {
         return false;
       }
 
-      return user?.department_id !== null && user?.department_id === announcement.department_id;
+      // Un lider administra los anuncios de cualquiera de sus departamentos.
+      return (
+        announcement.department_id != null &&
+        (user?.department_ids ?? []).includes(announcement.department_id)
+      );
     },
-    [isAdmin, isUserCollaborator, user?.department_id],
+    [isAdmin, isUserCollaborator, user?.department_ids],
   );
 
   const resetForm = () => {
@@ -397,8 +438,12 @@ export default function PublicationsPage() {
       }
 
       if (editingAnnouncementId) {
-        if (isAdmin && !formState.publish_all && selectedDepartmentId) {
-          payload.append("department_id", selectedDepartmentId);
+        if (isAdmin) {
+          payload.append("publish_all", formState.publish_all ? "1" : "0");
+
+          if (!formState.publish_all && selectedDepartmentId) {
+            payload.append("department_id", selectedDepartmentId);
+          }
         }
 
         payload.append("_method", "PATCH");
@@ -424,7 +469,7 @@ export default function PublicationsPage() {
         });
 
         if (isAdmin && formState.publish_all) {
-          setSuccessMessage(formState.is_visible ? "Publicación visible creada para todos los departamentos." : "Borrador creado para todos los departamentos.");
+          setSuccessMessage(formState.is_visible ? "Publicación general creada, visible para toda la organización." : "Borrador general creado para toda la organización.");
         } else {
           setSuccessMessage(formState.is_visible ? "Publicación creada y visible." : "Publicación creada como borrador (oculta).");
         }
@@ -510,14 +555,16 @@ export default function PublicationsPage() {
   }, []);
 
   const handleEditAnnouncement = (announcement: Announcement) => {
+    // Sin departamento es una publicación general: se edita con el alcance
+    // "todos los departamentos" marcado.
+    const isGeneral = announcement.department_id === null || announcement.department_id === undefined;
+
     setFormState({
       title: announcement.title,
       content: announcement.content,
       is_visible: announcement.is_visible,
-      publish_all: false,
-      department_id: announcement.department_id
-        ? String(announcement.department_id)
-        : (user?.department_id ? String(user.department_id) : ""),
+      publish_all: isGeneral,
+      department_id: isGeneral ? "" : String(announcement.department_id),
     });
     setEditingAnnouncementId(announcement.id);
     setShowPreview(false);
@@ -655,7 +702,7 @@ export default function PublicationsPage() {
                         Todas las publicaciones
                       </h3>
                       <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
-                        {sortedAnnouncements.length}
+                        {filteredAnnouncements.length}
                       </span>
                     </div>
 
@@ -670,6 +717,20 @@ export default function PublicationsPage() {
                     </button>
                   </div>
 
+                  <div data-tour-id="publications-search" className="mt-4">
+                    <label htmlFor="publications-search-input" className="sr-only">
+                      Buscar publicaciones
+                    </label>
+                    <input
+                      id="publications-search-input"
+                      type="search"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Buscar por título, contenido, autor o departamento..."
+                      className="h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                    />
+                  </div>
+
                   <div className="mt-4 min-h-0 space-y-3 overflow-auto pr-1">
                     {isLoadingAnnouncements ? (
                       <p className="text-sm text-[var(--muted)]">Cargando publicaciones...</p>
@@ -681,7 +742,15 @@ export default function PublicationsPage() {
                       </p>
                     ) : null}
 
-                    {sortedAnnouncements.map((announcement) => {
+                    {!isLoadingAnnouncements &&
+                    sortedAnnouncements.length > 0 &&
+                    filteredAnnouncements.length === 0 ? (
+                      <p className="text-sm text-[var(--muted)]">
+                        No hay publicaciones que coincidan con la búsqueda.
+                      </p>
+                    ) : null}
+
+                    {filteredAnnouncements.map((announcement) => {
                       const canManageCurrent = canManageAnnouncement(announcement);
                       const imageAttachments = (announcement.attachments ?? []).filter(
                         (attachment) =>
@@ -785,13 +854,6 @@ export default function PublicationsPage() {
                               </div>
                             </div>
                           ) : null}
-
-                          <div className="grid grid-cols-2 border-t border-[var(--border)] text-sm text-[var(--muted)] sm:grid-cols-4">
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Recomendar</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Comentar</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Compartir</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Enviar</button>
-                          </div>
 
                           {canManageCurrent ? (
                             <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] px-4 py-3">
@@ -1037,7 +1099,7 @@ export default function PublicationsPage() {
                                 onChange={(event) => setFormState((current) => ({ ...current, publish_all: event.target.checked }))}
                                 className="h-4 w-4 shrink-0 rounded border-[var(--border-strong)] accent-[var(--primary)]"
                               />
-                              Publicar para todos los departamentos
+                              Publicación general (la ven todos los departamentos)
                             </label>
                           ) : null}
                         </div>
@@ -1162,7 +1224,7 @@ export default function PublicationsPage() {
                               </span>
                               {isAdmin && formState.publish_all ? (
                                 <span className="inline-flex items-center rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--primary)]">
-                                  Alcance: Todos los departamentos
+                                  Alcance: General (toda la organización)
                                 </span>
                               ) : null}
                             </div>

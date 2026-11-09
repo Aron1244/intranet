@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Random\Engine\Mt19937;
+use Random\Randomizer;
 
 class DemoDataSeeder extends Seeder
 {
@@ -38,7 +40,25 @@ class DemoDataSeeder extends Seeder
 
     private const READ_PROBABILITY = 0.55;
 
-    private const PLACEHOLDER_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    /**
+     * Paleta de las imagenes de portada generadas para las publicaciones.
+     *
+     * @var list<array{int, int, int}>
+     */
+    private const IMAGE_PALETTE = [
+        [37, 99, 235],
+        [13, 148, 136],
+        [217, 119, 6],
+        [190, 24, 93],
+        [109, 40, 217],
+        [22, 163, 74],
+        [225, 29, 72],
+        [2, 132, 199],
+    ];
+
+    private const IMAGE_WIDTH = 1200;
+
+    private const IMAGE_HEIGHT = 800;
 
     private array $departments = [];
 
@@ -133,7 +153,7 @@ class DemoDataSeeder extends Seeder
         $toCreate = max(0, self::TOTAL_USERS - $existing);
 
         if ($toCreate === 0) {
-            return User::query()->orderBy('id')->get()->all();
+            return User::query()->with('departments')->orderBy('id')->get()->all();
         }
 
         $users = [];
@@ -151,6 +171,8 @@ class DemoDataSeeder extends Seeder
                 'onboarding_pendiente' => false,
                 'remember_token' => Str::random(10),
             ]);
+
+            $user->load('departments');
 
             $users[] = $user;
         }
@@ -258,14 +280,14 @@ class DemoDataSeeder extends Seeder
                 };
 
                 $relativePath = "documents/department/{$folder->department_id}/{$folder->id}/".Str::slug($title).'.'.$extension;
-                $this->writePlaceholderFile($relativePath, $mime);
+                $sizeBytes = $this->writePlaceholderFile($relativePath, $mime);
 
                 Document::query()->create([
                     'title' => $title,
                     'file_path' => $relativePath,
                     'original_name' => Str::slug($title).'.'.$extension,
                     'mime_type' => $mime,
-                    'size_bytes' => random_int(2048, 5_242_880),
+                    'size_bytes' => $sizeBytes,
                     'user_id' => $owner->id,
                     'department_folder_id' => $folder->id,
                     'visibility' => 'department',
@@ -286,14 +308,14 @@ class DemoDataSeeder extends Seeder
                 default => 'png',
             };
             $relativePath = "documents/general/{$owner->id}/".Str::slug($title).'.'.$extension;
-            $this->writePlaceholderFile($relativePath, $mime);
+            $sizeBytes = $this->writePlaceholderFile($relativePath, $mime);
 
             Document::query()->create([
                 'title' => $title,
                 'file_path' => $relativePath,
                 'original_name' => Str::slug($title).'.'.$extension,
                 'mime_type' => $mime,
-                'size_bytes' => random_int(2048, 2_097_152),
+                'size_bytes' => $sizeBytes,
                 'user_id' => $owner->id,
                 'department_folder_id' => null,
                 'visibility' => 'private',
@@ -360,7 +382,7 @@ class DemoDataSeeder extends Seeder
             $count = random_int(1, 2);
             for ($i = 0; $i < $count; $i++) {
                 $relativePath = "announcements/{$announcement->id}/".Str::slug($announcement->title).'-'.$i.'.png';
-                $this->writeImage($relativePath);
+                $sizeBytes = $this->writeImage($relativePath);
 
                 AnnouncementAttachment::query()->create([
                     'announcement_id' => $announcement->id,
@@ -368,7 +390,7 @@ class DemoDataSeeder extends Seeder
                     'file_path' => $relativePath,
                     'original_name' => Str::slug($announcement->title).'-'.$i.'.png',
                     'mime_type' => 'image/png',
-                    'size_bytes' => random_int(10_240, 524_288),
+                    'size_bytes' => $sizeBytes,
                 ]);
             }
         }
@@ -592,7 +614,7 @@ class DemoDataSeeder extends Seeder
     {
         $candidates = array_values(array_filter(
             $this->users,
-            fn (User $user) => (int) $user->department_id === $departmentId,
+            fn (User $user) => $user->belongsToDepartment($departmentId),
         ));
 
         if (empty($candidates)) {
@@ -636,10 +658,20 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
-    private function writePlaceholderFile(string $relativePath, string $mimeType): void
+    /**
+     * Escribe el archivo de un documento de demostración y devuelve su tamaño.
+     *
+     * Las imágenes se generan con writeImage(): un archivo de texto con
+     * extensión .png no lo puede decodificar ningún navegador.
+     */
+    private function writePlaceholderFile(string $relativePath, string $mimeType): int
     {
+        if (str_starts_with($mimeType, 'image/')) {
+            return $this->writeImage($relativePath);
+        }
+
         if (Storage::disk('public')->exists($relativePath)) {
-            return;
+            return (int) Storage::disk('public')->size($relativePath);
         }
 
         $content = match ($mimeType) {
@@ -648,14 +680,68 @@ class DemoDataSeeder extends Seeder
         };
 
         Storage::disk('public')->put($relativePath, $content);
+
+        return strlen($content);
     }
 
-    private function writeImage(string $relativePath): void
+    /**
+     * Genera la imagen de portada de un adjunto y la guarda en el disco.
+     *
+     * Antes se guardaba un pixel 1x1 transparente: al estirarlo con
+     * object-cover la tarjeta de la publicacion mostraba un rectangulo negro
+     * en vez de la imagen. Ahora se dibuja una portada real y devuelve su
+     * tamano en bytes para que size_bytes no sea inventado.
+     */
+    public function writeImage(string $relativePath): int
     {
-        if (Storage::disk('public')->exists($relativePath)) {
-            return;
+        $width = self::IMAGE_WIDTH;
+        $height = self::IMAGE_HEIGHT;
+
+        // La imagen se deriva de su ruta: es estable entre ejecuciones y no
+        // toca el estado aleatorio global del seeder.
+        $random = new Randomizer(new Mt19937(crc32($relativePath)));
+        [$red, $green, $blue] = self::IMAGE_PALETTE[crc32($relativePath) % count(self::IMAGE_PALETTE)];
+
+        $image = imagecreatetruecolor($width, $height);
+        imagealphablending($image, true);
+
+        $light = [
+            (int) min(255, $red + 72),
+            (int) min(255, $green + 72),
+            (int) min(255, $blue + 72),
+        ];
+
+        for ($y = 0; $y < $height; $y++) {
+            $ratio = $y / max(1, $height - 1);
+            $color = imagecolorallocate(
+                $image,
+                (int) round($red + ($light[0] - $red) * $ratio),
+                (int) round($green + ($light[1] - $green) * $ratio),
+                (int) round($blue + ($light[2] - $blue) * $ratio),
+            );
+            imagefilledrectangle($image, 0, $y, $width, $y, $color);
         }
 
-        Storage::disk('public')->put($relativePath, base64_decode(self::PLACEHOLDER_PNG));
+        // Figuras translucidas: dan textura sin depender de archivos externos.
+        for ($i = 0; $i < 5; $i++) {
+            $overlay = imagecolorallocatealpha($image, 255, 255, 255, $random->getInt(20, 48));
+            imagefilledellipse(
+                $image,
+                $random->getInt(0, $width),
+                $random->getInt(0, $height),
+                $random->getInt(180, 460),
+                $random->getInt(180, 460),
+                $overlay,
+            );
+        }
+
+        ob_start();
+        imagepng($image, null, 6);
+        $content = (string) ob_get_clean();
+        imagedestroy($image);
+
+        Storage::disk('public')->put($relativePath, $content);
+
+        return strlen($content);
     }
 }

@@ -18,7 +18,9 @@ class UserController extends Controller
      */
     public function index(): AnonymousResourceCollection
     {
-        return UserResource::collection(User::query()->latest()->get());
+        return UserResource::collection(
+            User::query()->with('departments:id,name,color')->latest()->get()
+        );
     }
 
     /**
@@ -26,14 +28,16 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): UserResource
     {
-        $user = User::create($request->validated());
+        $validated = $request->validated();
+        $departmentIds = $validated['department_ids'] ?? [];
+        unset($validated['department_ids']);
 
-        DepartmentController::syncUserWithDepartmentConversation(
-            $user,
-            $user->department_id
-        );
+        $user = User::create($validated);
+        $user->syncDepartments($departmentIds);
 
-        return new UserResource($user);
+        DepartmentController::syncUserWithDepartmentConversations($user);
+
+        return new UserResource($user->refresh()->load('departments:id,name,color'));
     }
 
     /**
@@ -41,7 +45,7 @@ class UserController extends Controller
      */
     public function show(User $user): UserResource
     {
-        return new UserResource($user);
+        return new UserResource($user->load('departments:id,name,color'));
     }
 
     /**
@@ -49,18 +53,19 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): UserResource
     {
-        $previousDepartmentId = $user->department_id;
+        $validated = $request->validated();
+        $departmentIds = $validated['department_ids'] ?? null;
+        unset($validated['department_ids']);
 
-        $user->update($request->validated());
+        $user->update($validated);
 
-        if ($user->department_id !== $previousDepartmentId) {
-            DepartmentController::syncUserWithDepartmentConversation(
-                $user->refresh(),
-                $user->department_id
-            );
+        if ($departmentIds !== null) {
+            $user->syncDepartments($departmentIds);
+
+            DepartmentController::syncUserWithDepartmentConversations($user);
         }
 
-        return new UserResource($user->refresh());
+        return new UserResource($user->refresh()->load('departments:id,name,color'));
     }
 
     /**
@@ -77,17 +82,31 @@ class UserController extends Controller
      * List users eligible to start a conversation with the authenticated user.
      *
      * Admin: every user except themselves.
-     * Non-admin: only users in the same department.
+     * Non-admin: only users sharing at least one of their departments.
      */
     public function chatPartners(Request $request): AnonymousResourceCollection
     {
         $currentUser = $request->user();
         $isAdmin = $currentUser->isAdministrator();
 
-        $query = User::query()->where('id', '!=', $currentUser->id);
+        $query = User::query()
+            ->with('departments:id,name,color')
+            ->where('id', '!=', $currentUser->id);
 
         if (! $isAdmin) {
-            $query->where('department_id', $currentUser->department_id);
+            $departmentIds = $currentUser->departmentIds();
+
+            $query->where(function ($subQuery) use ($departmentIds): void {
+                if ($departmentIds === []) {
+                    $subQuery->whereNull('department_id');
+
+                    return;
+                }
+
+                $subQuery->whereHas('departments', function ($departmentQuery) use ($departmentIds): void {
+                    $departmentQuery->whereIn('departments.id', $departmentIds);
+                });
+            });
         }
 
         return UserResource::collection(

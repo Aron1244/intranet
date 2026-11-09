@@ -106,6 +106,29 @@ class DemoDataSeederTest extends TestCase
         $this->assertTrue(Storage::disk('public')->exists($sample->file_path));
     }
 
+    public function test_announcement_attachments_are_decodable_images_with_the_real_size(): void
+    {
+        $this->seed(DemoDataSeeder::class);
+
+        $attachment = AnnouncementAttachment::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->first();
+
+        $this->assertNotNull($attachment);
+
+        $path = Storage::disk('public')->path($attachment->file_path);
+        $this->assertFileExists($path);
+
+        // Un placeholder 1x1 se estiraba con object-cover y la tarjeta de la
+        // publicacion mostraba un rectangulo negro en lugar de la imagen.
+        $dimensions = getimagesize($path);
+        $this->assertNotFalse($dimensions);
+        $this->assertSame(1200, $dimensions[0]);
+        $this->assertSame(800, $dimensions[1]);
+
+        $this->assertSame(filesize($path), (int) $attachment->size_bytes);
+    }
+
     public function test_every_user_has_a_department_assignment(): void
     {
         $this->seed(DemoDataSeeder::class);

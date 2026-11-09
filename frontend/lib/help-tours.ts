@@ -82,6 +82,14 @@ const PUBLICATIONS_TOUR: TourStep[] = [
     align: "start",
   },
   {
+    selector: "[data-tour-id='publications-search']",
+    title: "Buscar publicaciones",
+    description:
+      "Filtra por título, contenido, autor o departamento para encontrar una publicación concreta.",
+    side: "bottom",
+    align: "start",
+  },
+  {
     selector: "[data-tour-id='publications-list']",
     title: "Listado de publicaciones",
     description:
