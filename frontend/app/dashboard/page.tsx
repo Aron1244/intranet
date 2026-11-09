@@ -133,6 +133,27 @@ function formatRelativeTime(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString("es", { day: "numeric", month: "short" });
 }
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Timestamp de una publicacion: mientras sea reciente conviven el tiempo
+ * relativo y la fecha ("hace 3 h · 9 nov"); pasadas las 24 h queda solo la
+ * fecha, que a esa distancia ya no aporta el tiempo relativo.
+ */
+function formatPublishedAt(isoDate: string): string {
+  const publishedAt = new Date(isoDate);
+  const calendarDate = publishedAt.toLocaleDateString("es", {
+    day: "numeric",
+    month: "short",
+  });
+
+  if (Date.now() - publishedAt.getTime() >= DAY_IN_MS) {
+    return calendarDate;
+  }
+
+  return `${formatRelativeTime(isoDate)} · ${calendarDate}`;
+}
+
 function getConversationTitle(conversation: Conversation, currentUserId?: number): string {
   if (conversation.name) {
     return conversation.name;
@@ -343,7 +364,7 @@ export default function DashboardPage() {
             department: announcement.department?.name ?? "General",
             title: announcement.title,
             body: announcement.content,
-            time: formatRelativeTime(announcement.created_at),
+            time: formatPublishedAt(announcement.created_at),
             author: announcement.creator?.name ?? "Usuario",
             image: attachments.find(isImageAttachment),
             attachmentCount: attachments.length,
