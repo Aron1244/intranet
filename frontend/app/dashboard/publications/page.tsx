@@ -10,6 +10,8 @@ import type { DepartmentSelectOption } from "@/components/department-select";
 import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import type { AnnouncementAttachment } from "@/lib/attachment-url";
+import { getAttachmentUrl, isImageAttachment } from "@/lib/attachment-url";
 import { resolveDepartmentColor } from "@/lib/department-color";
 import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
 import { cn } from "@/lib/cn";
@@ -50,17 +52,6 @@ type Announcement = {
     name: string;
   } | null;
   attachments?: AnnouncementAttachment[];
-};
-
-type AnnouncementAttachment = {
-  id: number;
-  announcement_id: number;
-  file_path: string;
-  file_url?: string;
-  original_name: string;
-  mime_type?: string | null;
-  size_bytes?: number | null;
-  is_image?: boolean;
 };
 
 type AnnouncementFormState = {
@@ -155,8 +146,6 @@ export default function PublicationsPage() {
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [removeAttachmentIds, setRemoveAttachmentIds] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-
-  const backendOrigin = useMemo(() => API_BASE.replace(/\/+api$/, ""), []);
 
   // Opciones del desplegable de departamento del formulario de publicación.
   // El color viaja con la opción para que se vea al desplegar la lista.
@@ -493,30 +482,6 @@ export default function PublicationsPage() {
     }
   };
 
-  const getAttachmentUrl = useCallback((attachment: AnnouncementAttachment) => {
-    if (attachment.file_url && /^https?:\/\//i.test(attachment.file_url)) {
-      try {
-        const remoteUrl = new URL(attachment.file_url);
-        const backendUrl = new URL(backendOrigin);
-        const isLocalHost = remoteUrl.hostname === "localhost" || remoteUrl.hostname === "127.0.0.1";
-
-        if (isLocalHost && !remoteUrl.port && backendUrl.port) {
-          remoteUrl.port = backendUrl.port;
-        }
-
-        return remoteUrl.toString();
-      } catch {
-        return attachment.file_url;
-      }
-    }
-
-    if (attachment.file_url) {
-      return `${backendOrigin}${attachment.file_url.startsWith("/") ? "" : "/"}${attachment.file_url}`;
-    }
-
-    return `${backendOrigin}/storage/${attachment.file_path}`;
-  }, [backendOrigin]);
-
   const handleDownloadAttachment = useCallback(async (announcementId: number, attachment: AnnouncementAttachment) => {
     const token = getAccessToken();
 
@@ -753,12 +718,10 @@ export default function PublicationsPage() {
                     {filteredAnnouncements.map((announcement) => {
                       const canManageCurrent = canManageAnnouncement(announcement);
                       const imageAttachments = (announcement.attachments ?? []).filter(
-                        (attachment) =>
-                          Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false),
+                        isImageAttachment,
                       );
                       const fileAttachments = (announcement.attachments ?? []).filter(
-                        (attachment) =>
-                          !(Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false)),
+                        (attachment) => !isImageAttachment(attachment),
                       );
                       const contentPreview = makePreviewText(announcement.content);
                       const hasLongContent = contentPreview.length < announcement.content.replace(/\s+/g, " ").trim().length;
@@ -1154,7 +1117,7 @@ export default function PublicationsPage() {
                             {previewExistingAttachments.length > 0 || newAttachmentPreviews.length > 0 ? (
                               <div className="mt-4 space-y-3">
                                 {previewExistingAttachments.map((attachment) => {
-                                  const isImage = Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false);
+                                  const isImage = isImageAttachment(attachment);
 
                                   if (isImage) {
                                     return (

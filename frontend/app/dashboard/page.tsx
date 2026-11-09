@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Eye,
@@ -23,6 +23,8 @@ import {
 import { HelpButton } from "@/components/help-button";
 import { Skeleton } from "@/components/skeleton";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
+import type { AnnouncementAttachment } from "@/lib/attachment-url";
+import { getAttachmentUrl, isImageAttachment } from "@/lib/attachment-url";
 import { clearAccessToken } from "@/lib/auth-token";
 import { isAdministrator, isLeader, isNewHire, ROLE_ADMIN_LEGACY_ALIASES } from "@/lib/roles";
 import { cn } from "@/lib/cn";
@@ -68,6 +70,7 @@ type Announcement = {
   created_at: string;
   creator?: { id: number; name: string } | null;
   department?: { id: number; name: string } | null;
+  attachments?: AnnouncementAttachment[];
 };
 
 type Department = {
@@ -159,6 +162,9 @@ function displayRoles(roles: UserRole[] | undefined): string[] {
   );
 }
 
+/** Cuantas publicaciones se pintan por tanda en el feed con scroll infinito. */
+const FEED_PAGE_SIZE = 6;
+
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
@@ -170,6 +176,7 @@ export default function DashboardPage() {
   const [conversationPreviews, setConversationPreviews] = useState<Record<number, string>>({});
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [search, setSearch] = useState("");
+  const [visiblePostCount, setVisiblePostCount] = useState(FEED_PAGE_SIZE);
 
   useEffect(() => {
     let ignore = false;
@@ -328,15 +335,20 @@ export default function DashboardPage() {
       announcements
         .slice()
         .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
-        .slice(0, 6)
-        .map((announcement) => ({
-          id: announcement.id,
-          department: announcement.department?.name ?? "General",
-          title: announcement.title,
-          body: announcement.content,
-          time: formatRelativeTime(announcement.created_at),
-          author: announcement.creator?.name ?? "Usuario",
-        })),
+        .map((announcement) => {
+          const attachments = announcement.attachments ?? [];
+
+          return {
+            id: announcement.id,
+            department: announcement.department?.name ?? "General",
+            title: announcement.title,
+            body: announcement.content,
+            time: formatRelativeTime(announcement.created_at),
+            author: announcement.creator?.name ?? "Usuario",
+            image: attachments.find(isImageAttachment),
+            attachmentCount: attachments.length,
+          };
+        }),
     [announcements],
   );
 
@@ -369,6 +381,40 @@ export default function DashboardPage() {
           ),
     [departmentFeed, query],
   );
+
+  // El feed se revela de a tandas: el sentinel al final del panel pide la
+  // siguiente tanda cuando entra en vista. Con IntersectionObserver y no con
+  // onScroll porque, si las primeras 6 publicaciones no desbordan el panel,
+  // no habria scroll y el feed quedaria trabado en 6.
+  const renderedPosts = useMemo(
+    () => visibleFeed.slice(0, visiblePostCount),
+    [visibleFeed, visiblePostCount],
+  );
+
+  const feedContainerRef = useRef<HTMLDivElement | null>(null);
+  const feedSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = feedContainerRef.current;
+    const sentinel = feedSentinelRef.current;
+
+    if (!container || !sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisiblePostCount((count) => Math.min(count + FEED_PAGE_SIZE, visibleFeed.length));
+        }
+      },
+      { root: container, rootMargin: "240px" },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [visibleFeed.length, visiblePostCount]);
 
   const visibleChats = useMemo(
     () =>
@@ -506,17 +552,15 @@ export default function DashboardPage() {
                     />
                   ) : null}
 
-                  <div className="space-y-3">
-                    {visibleFeed.map((post) => (
+                  <div
+                    ref={feedContainerRef}
+                    className="max-h-[70vh] space-y-3 overflow-y-auto"
+                  >
+                    {renderedPosts.map((post) => (
                       <PostRow key={post.id} post={post} />
                     ))}
+                    <div ref={feedSentinelRef} aria-hidden="true" className="h-px" />
                   </div>
-
-                  {announcementTotal > departmentFeed.length ? (
-                    <p className="mt-4 text-center text-xs text-[var(--muted)]">
-                      Mostrando {departmentFeed.length} de {announcementTotal} publicaciones
-                    </p>
-                  ) : null}
                 </FeedCard>
 
                 <FeedCard>
@@ -930,23 +974,46 @@ type PostRowProps = {
     body: string;
     time: string;
     author: string;
+    image?: AnnouncementAttachment;
+    attachmentCount: number;
   };
 };
 
 function PostRow({ post }: PostRowProps) {
   return (
-    <article className="group rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] p-4 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase">
-          {post.department}
-        </span>
-        <span className="text-[10px] text-[var(--muted)]">{post.time}</span>
+    <article className="group overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]">
+      <div className="p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase">
+            {post.department}
+          </span>
+          <span className="text-[10px] text-[var(--muted)]">{post.time}</span>
+        </div>
+        <h3 className="mt-3 text-sm font-semibold leading-tight text-[var(--foreground)]">
+          {post.title}
+        </h3>
+        <p className="mt-1 text-xs leading-relaxed whitespace-pre-wrap text-[var(--muted)]">
+          {post.body}
+        </p>
+        <p className="mt-3 text-[11px] text-[var(--muted)]">por {post.author}</p>
       </div>
-      <h3 className="mt-3 text-sm font-semibold leading-tight text-[var(--foreground)]">
-        {post.title}
-      </h3>
-      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--muted)]">{post.body}</p>
-      <p className="mt-3 text-[11px] text-[var(--muted)]">por {post.author}</p>
+
+      {post.image ? (
+        <figure className="border-t border-[var(--border)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getAttachmentUrl(post.image)}
+            alt={post.image.original_name}
+            className="h-auto max-h-[320px] w-full object-cover"
+          />
+        </figure>
+      ) : null}
+
+      {post.attachmentCount > 0 ? (
+        <p className="border-t border-[var(--border)] px-4 py-2 text-[11px] text-[var(--muted)]">
+          {post.attachmentCount} {post.attachmentCount === 1 ? "adjunto" : "adjuntos"}
+        </p>
+      ) : null}
     </article>
   );
 }
