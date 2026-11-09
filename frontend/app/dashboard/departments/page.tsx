@@ -394,7 +394,7 @@ export default function DepartmentsPage() {
   }, [isSavingRole]);
 
   const handleDeleteDepartment = async (dept: Department) => {
-    const confirmed = window.confirm(`Eliminar departamento "${dept.name}" y todos sus roles?`);
+    const confirmed = window.confirm(`¿Eliminar departamento "${dept.name}" y todos sus roles?`);
     if (!confirmed) {
       return;
     }
@@ -431,7 +431,7 @@ export default function DepartmentsPage() {
   };
 
   const handleDeleteRole = async (role: Role) => {
-    const confirmed = window.confirm(`Eliminar rol "${role.name}"?`);
+    const confirmed = window.confirm(`¿Eliminar rol "${role.name}"?`);
     if (!confirmed) {
       return;
     }
@@ -494,7 +494,7 @@ export default function DepartmentsPage() {
                     Departamentos y Roles
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                    Crea y edita los departamentos de la organizacion, luego asigna roles especificos a cada uno.
+                    Crea y edita los departamentos de la organización, luego asigna roles específicos a cada uno.
                   </p>
                 </div>
               </div>
@@ -551,7 +551,7 @@ export default function DepartmentsPage() {
                     <p className="mt-1 text-xs text-[var(--muted)]">
                       {editingDepartmentId
                         ? "Modifica el nombre o la descripción."
-                        : "Crea un nuevo departamento para la organizacion."}
+                        : "Crea un nuevo departamento para la organización."}
                     </p>
 
                     <form onSubmit={handleSubmitDepartment} className="mt-5 space-y-4">
@@ -806,7 +806,7 @@ export default function DepartmentsPage() {
                                   )}
                                 >
                                   <Megaphone className="h-3 w-3" />
-                                  {role.can_post_announcements ? "publica" : "sin anuncios"}
+                                  {role.can_post_announcements ? "pública" : "sin anuncios"}
                                 </span>
 
                                 <div className="flex items-center gap-2">

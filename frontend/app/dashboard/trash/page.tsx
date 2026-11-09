@@ -180,7 +180,7 @@ export default function TrashPage() {
 
   const handleDestroy = useCallback(
     async (type: "message" | "document", id: number, label: string) => {
-      const confirmed = window.confirm(`Eliminar definitivamente "${label}"? Esta acción no se puede deshacer.`);
+      const confirmed = window.confirm(`¿Eliminar definitivamente "${label}"? Esta acción no se puede deshacer.`);
       if (!confirmed) {
         return;
       }

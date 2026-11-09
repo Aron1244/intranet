@@ -136,7 +136,7 @@ function formatRelativeTime(isoDate: string): string {
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Timestamp de una publicacion: mientras sea reciente conviven el tiempo
+ * Timestamp de una publicación: mientras sea reciente conviven el tiempo
  * relativo y la fecha ("hace 3 h · 9 nov"); pasadas las 24 h queda solo la
  * fecha, que a esa distancia ya no aporta el tiempo relativo.
  */
@@ -174,7 +174,7 @@ function greeting(now: Date, name?: string | null): string {
   return who ? `${slot}, ${who}` : slot;
 }
 
-/** Quita el alias legacy "Admin" cuando ya existe el rol canonico "Administrador". */
+/** Quita el alias legacy "Admin" cuando ya existe el rol canónico "Administrador". */
 function displayRoles(roles: UserRole[] | undefined): string[] {
   const names = (roles ?? []).map((role) => role.name);
   const hasCanonicalAdmin = names.includes("Administrador");
@@ -183,7 +183,7 @@ function displayRoles(roles: UserRole[] | undefined): string[] {
   );
 }
 
-/** Cuantas publicaciones se pintan por tanda en el feed con scroll infinito. */
+/** Cuántas publicaciones se pintan por tanda en el feed con scroll infinito. */
 const FEED_PAGE_SIZE = 6;
 
 export default function DashboardPage() {
@@ -406,7 +406,7 @@ export default function DashboardPage() {
   // El feed se revela de a tandas: el sentinel al final del panel pide la
   // siguiente tanda cuando entra en vista. Con IntersectionObserver y no con
   // onScroll porque, si las primeras 6 publicaciones no desbordan el panel,
-  // no habria scroll y el feed quedaria trabado en 6.
+  // no habría scroll y el feed quedaría trabado en 6.
   const renderedPosts = useMemo(
     () => visibleFeed.slice(0, visiblePostCount),
     [visibleFeed, visiblePostCount],
@@ -857,7 +857,7 @@ function ScopeCard({
 
   if (isAdmin) badges.push("Acceso total");
   if (isLeader) badges.push("Gestión de equipo");
-  if (canManageAnnouncements) badges.push("Publica contenido");
+  if (canManageAnnouncements) badges.push("Pública contenido");
   if (isNewHire) badges.push("Onboarding pendiente");
 
   return (

@@ -47,7 +47,7 @@ export default function TasksPage() {
 
         if (!ignore) {
           // El administrador también entra: antes la condición lo excluía
-          // explicitamente y leia "contacta al administrador" a si mismo.
+          // explícitamente y leía "contacta al administrador" a sí mismo.
           setHasAccess(isAdministrator(response.data) || isLeader(response.data));
         }
       } catch (error) {

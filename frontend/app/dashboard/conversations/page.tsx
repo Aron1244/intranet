@@ -172,7 +172,7 @@ function conversationTitle(
   return `Conversación ${conversation.id}`;
 }
 
-/** `type` viene del backend en ingles ("private", "group"). */
+/** `type` viene del backend en inglés ("private", "group"). */
 function conversationTypeLabel(type?: string | null): string {
   if (!type) {
     return "Conversación";
@@ -803,9 +803,9 @@ export default function ConversationsPage() {
     return String(count);
   }, []);
 
-  // SeCalcula una vez por conversación y no en el JSX: la tarjeta llama a este
-  // helper dos veces y `Date.now()` dentro del render daria dos lecturas por
-  //montaje, que pueden caer en distinto minuto en el límite de "hace 1 min".
+  // Se calcula una vez por conversación y no en el JSX: la tarjeta llama a este
+  // helper dos veces y `Date.now()` dentro del render daría dos lecturas por
+  // montaje, que pueden caer en distinto minuto en el límite de "hace 1 min".
   const conversationLastActivity = useCallback(
     (conversation: Conversation): string => formatRelativeTime(conversation.updated_at),
     [],
@@ -1500,7 +1500,7 @@ export default function ConversationsPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Eliminar la conversación "${conversation.name ?? `Conversación ${conversation.id}`}"?`);
+    const confirmed = window.confirm(`¿Eliminar la conversación "${conversation.name ?? `Conversación ${conversation.id}`}"?`);
     if (!confirmed) {
       return;
     }
@@ -1593,7 +1593,7 @@ export default function ConversationsPage() {
     }
 
     const confirmed = window.confirm(
-      "Marcar este mensaje para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
+      "¿Marcar este mensaje para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
     );
     if (!confirmed) {
       return;

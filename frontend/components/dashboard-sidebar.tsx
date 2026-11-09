@@ -42,8 +42,8 @@ export type NavItem = {
   icon: LucideIcon;
   visible: (state: SidebarState) => boolean;
   /**
-   * False en modulos que se listan como disponibles pero no se enlazan desde
-   * la navegacion (aun sin functionality o sin backend).
+   * False en módulos que se listan como disponibles pero no se enlazan desde
+   * la navegación (aun sin functionality o sin backend).
    */
   inSidebar?: boolean;
 };
@@ -94,8 +94,8 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard/tasks",
     icon: BarChart3,
     visible: () => true,
-    // El modulo todavia no tiene backend: se lista en el resumen pero no se
-    // enlaza desde la navegacion.
+    // El módulo todavía no tiene backend: se lista en el resumen pero no se
+    // enlaza desde la navegación.
     inSidebar: false,
   },
   {

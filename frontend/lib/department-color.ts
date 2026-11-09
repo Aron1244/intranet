@@ -1,18 +1,18 @@
 /**
- * Color de identificacion visual para un departamento.
+ * Color de identificación visual para un departamento.
  *
  * El color vive en la base de datos (`departments.color`) y lo asigna un
  * administrador. Los departamentos que todavía no tienen color propio usan
  * uno de esta paleta, derivado de su id: es determinístico, así que el mismo
  * departamento muestra siempre el mismo círculo, y los departamentos existentes
- * se distinguen entre si sin necesidad de intervencion manual.
+ * se distinguen entre sí sin necesidad de intervención manual.
  */
 
 /**
  * Paleta por defecto. Tonos Tailwind 600: legibles sobre fondo claro y sobre
- * fondo oscuro, y distinguibles entre si en la mayoria de combinaciones. Son
- * doce para que una organizacion con hasta doce departamentos vea un color
- * distinto en cada uno sin intervencion manual.
+ * fondo oscuro, y distinguibles entre sí en la mayoría de combinaciones. Son
+ * doce para que una organización con hasta doce departamentos vea un color
+ * distinto en cada uno sin intervención manual.
  */
 export const DEFAULT_DEPARTMENT_COLORS = [
   "#2563eb",

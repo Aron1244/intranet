@@ -1,23 +1,23 @@
-# Documentacion de API para Frontend Next.js
+# Documentación de API para Frontend Next.js
 
 Esta guia resume las APIs disponibles en este backend Laravel para consumirlas desde Next.js.
 
 ## 1) Base URL
 
 - Base local sugerida: `http://localhost:8000/api`
-- Todas las rutas listadas aqui asumen el prefijo `/api`.
+- Todas las rutas listadas aquí asumen el prefijo `/api`.
 
 Ejemplo:
 
 - Login: `POST http://localhost:8000/api/login`
 
-## 2) Autenticacion (Sanctum token)
+## 2) Autenticación (Sanctum token)
 
 Este proyecto usa tokens Bearer con Sanctum.
 
 ### Login
 
-- Metodo: `POST /login`
+- Método: `POST /login`
 - Auth requerida: No
 - Body (JSON):
 
@@ -31,7 +31,7 @@ Este proyecto usa tokens Bearer con Sanctum.
 
 Validaciones:
 
-- `email`: requerido, email valido
+- `email`: requerido, email válido
 - `password`: requerido, string
 - `device_name`: opcional, string, max 255
 
@@ -66,7 +66,7 @@ Error 422 (credenciales invalidas):
 
 ### Obtener usuario autenticado
 
-- Metodo: `GET /me`
+- Método: `GET /me`
 - Auth requerida: Si
 - Header: `Authorization: Bearer {access_token}`
 
@@ -90,7 +90,7 @@ Respuesta 200:
 
 ### Logout
 
-- Metodo: `POST /logout`
+- Método: `POST /logout`
 - Auth requerida: Si
 
 Respuesta 200:
@@ -101,7 +101,7 @@ Respuesta 200:
 }
 ```
 
-## 3) Convencion de headers para Next.js
+## 3) Convenção de headers para Next.js
 
 Para endpoints protegidos:
 
@@ -117,12 +117,12 @@ Rutas protegidas con Sanctum.
 
 ### Listar usuarios
 
-- Metodo: `GET /users`
-- Respuesta 200: coleccion tipo resource (`data: []`) de usuarios.
+- Método: `GET /users`
+- Respuesta 200: colección tipo resource (`data: []`) de usuarios.
 
 ### Crear usuario
 
-- Metodo: `POST /users`
+- Método: `POST /users`
 - Body:
 
 ```json
@@ -138,7 +138,7 @@ Rutas protegidas con Sanctum.
 Validaciones:
 
 - `name`: requerido, string, max 255
-- `email`: requerido, email, unico
+- `email`: requerido, email, único
 - `password`: requerido, string, min 8, confirmado
 - `department_ids`: opcional, array de ids de `departments`. Un usuario puede
   pertenecer a varios departamentos a la vez. El primero queda como
@@ -163,12 +163,12 @@ Respuesta 200 (resource):
 
 ### Ver usuario
 
-- Metodo: `GET /users/{id}`
+- Método: `GET /users/{id}`
 - Respuesta 200: resource de usuario.
 
 ### Actualizar usuario
 
-- Metodo: `PUT/PATCH /users/{id}`
+- Método: `PUT/PATCH /users/{id}`
 - Body (campos opcionales):
 
 ```json
@@ -183,16 +183,16 @@ Respuesta 200 (resource):
 
 Validaciones:
 
-- `name`: opcional, pero si se envia debe ser valido
-- `email`: opcional, unico ignorando el usuario actual
+- `name`: opcional, pero si se envía debe ser válido
+- `email`: opcional, único ignorando el usuario actual
 - `password`: opcional, nullable, min 8, confirmado
-- `department_ids`: opcional, array de ids de `departments`. Si se envia,
+- `department_ids`: opcional, array de ids de `departments`. Si se envía,
   reemplaza la lista completa de departamentos del usuario (enviar `[]` los
   deja sin departamento).
 
 ### Eliminar usuario
 
-- Metodo: `DELETE /users/{id}`
+- Método: `DELETE /users/{id}`
 - Respuesta: `204 No Content`
 
 ## 5) Endpoints de Roles
@@ -210,7 +210,7 @@ Rutas protegidas con Sanctum.
 
 ### Listar todos los roles
 
-- Metodo: `GET /roles`
+- Método: `GET /roles`
 - Respuesta 200:
 
 ```json
@@ -230,7 +230,7 @@ Rutas protegidas con Sanctum.
 
 ### Crear rol
 
-- Metodo: `POST /roles`
+- Método: `POST /roles`
 - Body (requerido):
 
 ```json
@@ -243,7 +243,7 @@ Rutas protegidas con Sanctum.
 
 Validaciones:
 
-- `name`: requerido, string, max 255, unico por departamento
+- `name`: requerido, string, max 255, único por departamento
 - `department_id`: requerido, debe existir en `departments.id`
 - `can_post_announcements`: opcional, boolean, default false
 
@@ -264,12 +264,12 @@ Respuesta 201:
 
 ### Listar roles por departamento
 
-- Metodo: `GET /departments/{department}/roles`
-- Respuesta 200: coleccion de roles del departamento.
+- Método: `GET /departments/{department}/roles`
+- Respuesta 200: colección de roles del departamento.
 
 ### Actualizar rol
 
-- Metodo: `PUT/PATCH /roles/{id}`
+- Método: `PUT/PATCH /roles/{id}`
 - Body (campos opcionales):
 
 ```json
@@ -287,7 +287,7 @@ Validaciones:
 
 ### Eliminar rol
 
-- Metodo: `DELETE /roles/{id}`
+- Método: `DELETE /roles/{id}`
 - Respuesta: `204 No Content`
 
 ## 6) Endpoints de Departamentos
@@ -298,7 +298,7 @@ Rutas protegidas con Sanctum.
 
 ### Listar departamentos
 
-- Metodo: `GET /departments`
+- Método: `GET /departments`
 - Respuesta 200:
 
 ```json
@@ -317,19 +317,19 @@ Rutas protegidas con Sanctum.
 
 ### Crear departamento
 
-- Metodo: `POST /departments`
+- Método: `POST /departments`
 - Body:
 
 ```json
 {
   "name": "Recursos Humanos",
-  "description": "Descripcion opcional del departamento"
+  "description": "Descripción opcional del departamento"
 }
 ```
 
 Validaciones:
 
-- `name`: requerido, string, max 255, unico
+- `name`: requerido, string, max 255, único
 - `description`: opcional, string
 
 Respuesta 201:
@@ -340,7 +340,7 @@ Respuesta 201:
   "data": {
     "id": 1,
     "name": "Recursos Humanos",
-    "description": "Descripcion opcional del departamento",
+    "description": "Descripción opcional del departamento",
     "created_at": "2026-04-20T12:00:00.000000Z",
     "updated_at": "2026-04-20T12:00:00.000000Z"
   }
@@ -349,30 +349,30 @@ Respuesta 201:
 
 ### Ver departamento
 
-- Metodo: `GET /departments/{id}`
+- Método: `GET /departments/{id}`
 
 Respuesta 200: resource de departamento.
 
 ### Actualizar departamento
 
-- Metodo: `PUT/PATCH /departments/{id}`
+- Método: `PUT/PATCH /departments/{id}`
 - Body (campos opcionales):
 
 ```json
 {
   "name": "Recursos Humanos Actualizado",
-  "description": "Nueva descripcion"
+  "description": "Nueva descripción"
 }
 ```
 
 Validaciones:
 
-- `name`: opcional, pero si se envia debe ser valido, unico ignorando el departamento actual
+- `name`: opcional, pero si se envía debe ser válido, único ignorando el departamento actual
 - `description`: opcional, string
 
 ### Eliminar departamento
 
-- Metodo: `DELETE /departments/{id}`
+- Método: `DELETE /departments/{id}`
 - Respuesta: `204 No Content`
 
 ## 7) Roles por Usuario
@@ -381,7 +381,7 @@ Rutas protegidas con Sanctum.
 
 ### Listar roles de un usuario
 
-- Metodo: `GET /users/{user}/roles`
+- Método: `GET /users/{user}/roles`
 
 Respuesta 200:
 
@@ -401,7 +401,7 @@ Respuesta 200:
 
 ### Sincronizar roles de un usuario
 
-- Metodo: `PUT /users/{user}/roles`
+- Método: `PUT /users/{user}/roles`
 - Body:
 
 ```json
@@ -442,7 +442,7 @@ Rutas protegidas con Sanctum.
 
 ### Listar documentos
 
-- Metodo: `GET /documents`
+- Método: `GET /documents`
 - Respuesta 200:
 
 ```json
@@ -463,7 +463,7 @@ Rutas protegidas con Sanctum.
 
 ### Crear documento
 
-- Metodo: `POST /documents`
+- Método: `POST /documents`
 - Body:
 
 ```json
@@ -500,16 +500,16 @@ Respuesta 201:
 
 ### Ver documento
 
-- Metodo: `GET /documents/{id}`
+- Método: `GET /documents/{id}`
 
 ### Actualizar documento
 
-- Metodo: `PUT/PATCH /documents/{id}`
+- Método: `PUT/PATCH /documents/{id}`
 - Body: cualquier subconjunto de `title`, `file_path`, `user_id`, `visibility`.
 
 ### Eliminar documento
 
-- Metodo: `DELETE /documents/{id}`
+- Método: `DELETE /documents/{id}`
 - Respuesta: `204 No Content`
 
 ## 9) Endpoints de Conversaciones
@@ -518,7 +518,7 @@ Rutas protegidas con Sanctum.
 
 ### Listar conversaciones del usuario autenticado
 
-- Metodo: `GET /conversations`
+- Método: `GET /conversations`
 
 Respuesta 200:
 
@@ -542,9 +542,9 @@ Respuesta 200:
 
 Nota: este endpoint devuelve arreglo directo (sin envoltura `data`).
 
-### Crear conversacion
+### Crear conversación
 
-- Metodo: `POST /conversations`
+- Método: `POST /conversations`
 - Body:
 
 ```json
@@ -556,9 +556,9 @@ Nota: este endpoint devuelve arreglo directo (sin envoltura `data`).
 Reglas:
 
 - `user_ids`: requerido, array
-- `type` se calcula automaticamente:
-- `group` si envias mas de un usuario
-- `private` si envias solo uno
+- `type` se calcula automáticamente:
+- `group` si envías más de un usuario
+- `private` si envías solo uno
 
 Respuesta 201:
 
@@ -583,7 +583,7 @@ Ruta protegida con Sanctum.
 
 ### Crear mensaje
 
-- Metodo: `POST /messages`
+- Método: `POST /messages`
 - Body:
 
 ```json
@@ -629,12 +629,12 @@ Para validaciones Laravel (422), normalmente recibiras:
 }
 ```
 
-Recomendacion en frontend:
+Recomendación en frontend:
 
 - Mostrar `message` como resumen.
 - Mostrar `errors[field][0]` debajo de cada input.
 
-## 12) Ejemplo rapido de cliente API en Next.js
+## 12) Ejemplo rápido de cliente API en Next.js
 
 ```ts
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -672,11 +672,11 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 }
 ```
 
-## 13) Checklist de integracion
+## 13) Checklist de integración
 
-- Guardar `access_token` despues de login.
+- Guardar `access_token` después de login.
 - Enviar `Authorization: Bearer ...` en rutas protegidas.
-- Manejar `401` para sesion expirada/no autenticada.
+- Manejar `401` para sesión expirada/no autenticada.
 - Manejar `422` para validaciones de formularios.
 - Considerar inconsistencias de formato de respuesta:
 - Algunos endpoints devuelven `{ data: ... }`.

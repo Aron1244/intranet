@@ -13,11 +13,11 @@
  */
 
 /*
- * `bg-white` aparece ~55 veces en esas paginas legacy siempre como fondo de
+ * `bg-white` aparece ~55 veces en esas páginas legacy siempre como fondo de
  * tarjeta o de input. Sin esto queda en blanco puro (#fff) mientras el resto de
  * la app usa `--surface`, y el esquema pastel se rompe a mitad de proyecto.
  *
- * Va SIN capa a proposito: en Tailwind v4 las utilidades viven en
+ * Va SIN capa a propósito: en Tailwind v4 las utilidades viven en
  * `@layer utilities`, y una regla sin capa gana siempre a una con capa.
  * Solo afecta a `.bg-white`; las variantes con alfa (`bg-white/10`) son clases
  * distintas y no quedan tocadas.
@@ -423,7 +423,7 @@
   --warning: #d97706;
   --danger: #dc2626;
 
-  /* Sombras mas difusas: el esquema pastel no tolera bordes de sombra duros. */
+  /* Sombras más difusas: el esquema pastel no tolera bordes de sombra duros. */
   --shadow-sm: 0 1px 2px rgba(22, 35, 60, 0.04), 0 1px 1px rgba(22, 35, 60, 0.03);
   --shadow-md: 0 4px 14px rgba(22, 35, 60, 0.06), 0 2px 4px rgba(22, 35, 60, 0.04);
   --shadow-lg: 0 16px 36px -18px rgba(22, 35, 60, 0.14), 0 8px 16px -10px rgba(22, 35, 60, 0.08);
@@ -438,8 +438,8 @@
   /*
    * Fondo del panel de marca (login). Deliberadamente NO usa `--primary`:
    * en tema oscuro `--primary` pasa a un azul claro y el texto blanco del
-   * panel quedaria ilegible. Estos dos tonos se mantienen oscuros en ambos
-   * temas, asi el lockup y los textos blancos mantienen >= 10:1 de contraste.
+   * panel quedaría ilegible. Estos dos tonos se mantienen oscuros en ambos
+   * temas, así el lockup y los textos blancos mantienen >= 10:1 de contraste.
    */
   --panel-from: #16283d;
   --panel-to: #0c1725;
@@ -477,7 +477,7 @@
   --shadow-lg: 0 18px 40px -16px rgba(0, 0, 0, 0.6), 0 8px 18px -10px rgba(0, 0, 0, 0.4);
   --shadow-xl: 0 32px 64px -24px rgba(0, 0, 0, 0.7), 0 12px 28px -12px rgba(0, 0, 0, 0.5);
 
-  /* El panel se mantiene oscuro tambien en tema oscuro: es la superficie
+  /* El panel se mantiene oscuro también en tema oscuro: es la superficie
      que aloja el lockup blanco y los textos en blanco. */
   --panel-from: #101f31;
   --panel-to: #070f1a;
@@ -521,7 +521,7 @@
 @layer base {
   /*
    * Color de borde por defecto para elementos que solo declaran `border`.
-   * Va en `@layer base` a proposito: en Tailwind v4 las utilidades viven en
+   * Va en `@layer base` a propósito: en Tailwind v4 las utilidades viven en
    * `@layer utilities`, y una regla sin capa gana siempre a una con capa.
    * Sin esto, este `*` pisaba utilities como `border-white/15` en el panel
    * de marca del login o `border-[var(--border-strong)]` en el checkbox.

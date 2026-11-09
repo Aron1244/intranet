@@ -51,7 +51,7 @@ const GROUP_TONE_CLASSES: Record<DocumentGroupTone, { wrap: string; title: strin
 
 /**
  * Agrupa documentos por origen (chat / departamento / otros). Antes estos tres
- * bloques estaban duplicados literal en el JSX, cada uno con sus colores
+ * bloques estaban duplicados literalmente en el JSX, cada uno con sus colores
  * hardcodeados; ahora comparten el mismo marcado y tono.
  */
 function DocumentGroup({
@@ -464,7 +464,7 @@ export default function DocumentsPage() {
     }
 
     const confirmed = window.confirm(
-      "Marcar este documento para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
+      "¿Marcar este documento para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
     );
     if (!confirmed) {
       return;
@@ -645,7 +645,7 @@ export default function DocumentsPage() {
 
                 {!isLoadingDocuments && sortedDocuments.length > 0 && visibleDocuments.length === 0 ? (
                   <p className="text-sm text-[var(--muted)]">
-                    No se encontraron archivos con esa busqueda.
+                    No se encontraron archivos con esa búsqueda.
                   </p>
                 ) : null}
 

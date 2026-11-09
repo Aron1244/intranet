@@ -113,10 +113,10 @@ function makePreviewText(content: string): string {
 }
 
 /**
- * Minusculas sin acentos para que "titulo" encuentra "Titulo".
+ * Minúsculas sin acentos para que "titulo" encuentre "Titulo".
  *
- * Las publicaciones estan en español y los titulos llevan tildes con
- * frecuencia; sin esto la busqueda fallaria justo con el termino mas usado.
+ * Las publicaciones están en español y los títulos llevan tildes con
+ * frecuencia; sin esto la búsqueda fallaría justo con el término más usado.
  */
 function normalizeSearchText(value: string): string {
   return value
@@ -279,7 +279,7 @@ export default function PublicationsPage() {
     [announcements],
   );
 
-  // El listado llega completo desde la API, asi que el filtrado es en cliente.
+  // El listado llega completo desde la API, así que el filtrado es en cliente.
   const filteredAnnouncements = useMemo(() => {
     const normalizedSearch = normalizeSearchText(searchTerm.trim());
 
@@ -324,7 +324,7 @@ export default function PublicationsPage() {
         return false;
       }
 
-      // Un lider administra los anuncios de cualquiera de sus departamentos.
+      // Un líder administra los anuncios de cualquiera de sus departamentos.
       return (
         announcement.department_id != null &&
         (user?.department_ids ?? []).includes(announcement.department_id)
@@ -356,8 +356,8 @@ export default function PublicationsPage() {
     setIsFormModalOpen(false);
   };
 
-  // Escape cierra el modal. Sin esto el overlay es un callejon sin salida para
-  // quien navega con teclado, que es como se revisa la vista en auditoria.
+  // Escape cierra el modal. Sin esto el overlay es un callejón sin salida para
+  // quien navega con teclado, que es como se revisa la vista en auditoría.
   useEffect(() => {
     if (!isFormModalOpen) {
       return;
@@ -533,7 +533,7 @@ export default function PublicationsPage() {
   };
 
   const handleDeleteAnnouncement = async (announcement: Announcement) => {
-    const confirmed = window.confirm(`Eliminar la publicación \"${announcement.title}\"?`);
+    const confirmed = window.confirm(`¿Eliminar la publicación \"${announcement.title}\"?`);
     if (!confirmed) {
       return;
     }
@@ -691,7 +691,7 @@ export default function PublicationsPage() {
 
                     {!isLoadingAnnouncements && sortedAnnouncements.length === 0 ? (
                       <p className="text-sm text-[var(--muted)]">
-                        Aun no hay publicaciones disponibles.
+                        Aún no hay publicaciones disponibles.
                       </p>
                     ) : null}
 
@@ -924,7 +924,7 @@ export default function PublicationsPage() {
                             htmlFor="announcement-attachments"
                             className="text-sm font-medium text-[var(--foreground)]"
                           >
-                            Adjuntos (imagenes o archivos)
+                            Adjuntos (imágenes o archivos)
                           </label>
                           <input
                             id="announcement-attachments"
@@ -1069,7 +1069,7 @@ export default function PublicationsPage() {
                               onClick={resetForm}
                               className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
                             >
-                              Cancelar edicion
+                              Cancelar edición
                             </button>
                           ) : null}
                           <button

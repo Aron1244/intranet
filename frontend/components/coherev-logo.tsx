@@ -8,7 +8,7 @@ const LOGO_ASPECT_RATIO = "562 / 374";
 type CoherevLogoTone = "light" | "dark";
 
 type CoherevLogoProps = {
-  /** Alto del lockup en px. El ancho se deriva de la proporcion del asset. */
+  /** Alto del lockup en px. El ancho se deriva de la proporción del asset. */
   height?: number;
   /**
    * `dark` pinta el logo con `--foreground` (oscuro en tema claro, claro en tema oscuro).
@@ -38,7 +38,7 @@ const MASK_STYLE: CSSProperties = {
 /**
  * Lockup oficial de Coherev (isotipo + wordmark) renderizado desde
  * `public/brand/logo.png`. El asset es blanco sobre transparente, así que se usa
- * como mascara y el color lo aporta `bg-current`, igual que el texto que lo rodea.
+ * como máscara y el color lo aporta `bg-current`, igual que el texto que lo rodea.
  */
 export function CoherevLogo({
   height = 40,

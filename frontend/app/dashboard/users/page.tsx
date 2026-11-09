@@ -178,7 +178,7 @@ export default function UsersPage() {
   }, [loadUsers, loadDepartments]);
 
   // Los roles se cargan una sola vez y se filtran por los departamentos
-  // marcados en el formulario. Antes se pedian por departamento, lo que
+  // marcados en el formulario. Antes se pedían por departamento, lo que
   // obligaba a un request por cada departamento seleccionado.
   useEffect(() => {
     let ignore = false;
@@ -217,13 +217,13 @@ export default function UsersPage() {
   );
 
   // Los roles marcados que ya no corresponden a un departamento seleccionado
-  // no se guardan, asi que el contador solo suma los que van a persistir.
+  // no se guardan, así que el contador solo suma los que van a persistir.
   const selectedRoleCount = useMemo(
     () => formState.role_ids.filter((id) => availableRoles.some((role) => role.id === id)).length,
     [availableRoles, formState.role_ids],
   );
 
-  // Cambiar filtro o busqueda acorta la lista: se vuelve a la página 1 desde el
+  // Cambiar filtro o búsqueda acorta la lista: se vuelve a la página 1 desde el
   // handler en vez de un efecto, para no desincronizar un setState en un efecto.
   const handleFilterChange = (value: string) => {
     setSelectedDepartmentFilter(value);
@@ -429,7 +429,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async (u: User) => {
-    const confirmed = window.confirm(`Eliminar usuario \"${u.name}\"?`);
+    const confirmed = window.confirm(`¿Eliminar usuario \"${u.name}\"?`);
     if (!confirmed) {
       return;
     }
@@ -556,7 +556,7 @@ export default function UsersPage() {
 
                       {departments_sorted.length === 0 ? (
                         <p className="rounded-[var(--radius-sm)] border border-dashed border-[var(--border)] bg-[var(--background)]/40 px-3 py-2 text-xs text-[var(--muted)]">
-                          Todavia no hay departamentos. Crea uno desde /dashboard/departments.
+                          Todavía no hay departamentos. Crea uno desde /dashboard/departments.
                         </p>
                       ) : (
                         <div className="space-y-1.5">
@@ -637,12 +637,12 @@ export default function UsersPage() {
                                     ) : null}
                                     {role.can_manage_department ? (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[var(--primary)]">
-                                        Lider
+                                        Líder
                                       </span>
                                     ) : null}
                                     {role.can_post_announcements ? (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-1.5 py-0.5 text-[var(--accent)]">
-                                        Publica anuncios
+                                        Pública anuncios
                                       </span>
                                     ) : null}
                                     {!role.can_manage_department && !role.can_post_announcements ? (
@@ -692,7 +692,7 @@ export default function UsersPage() {
                       <div className="mt-3 flex flex-wrap gap-2">
                         {/*
                          * "Todos" no es un departamento más: es la vista completa.
-                         * Por eso lleva tono primario (azul) en vez del accent
+                         * Por eso lleva tono primario (azul) en vez del acento
                          * que comparten los filtros concretos, y se mantiene
                          * distinguible también en reposo, con borde y fondo
                          * suaves en vez del gris neutro de los chips.
@@ -903,7 +903,7 @@ type CheckboxRowProps = {
 };
 
 /**
- * Fila de seleccion multiple con casilla y contenido libre.
+ * Fila de selección múltiple con casilla y contenido libre.
  *
  * Comparte el marcado entre la lista de departamentos y la de roles para que
  * las dos se vean igual y no haya que duplicar el checkbox custom.

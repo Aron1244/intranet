@@ -15,11 +15,11 @@ export type AnnouncementAttachment = {
 export const BACKEND_ORIGIN = API_BASE.replace(/\/+api$/, "");
 
 /**
- * URL publica de un adjunto.
+ * URL pública de un adjunto.
  *
  * El backend arma `file_url` con APP_URL, que no incluye el puerto
- * ("http://localhost/storage/..."), asi que hay que agregarlo: sin puerto la
- * peticion cae en el puerto 80 y responde 404.
+ * ("http://localhost/storage/..."), así que hay que agregarlo: sin puerto la
+ * petición cae en el puerto 80 y responde 404.
  */
 export function getAttachmentUrl(attachment: AnnouncementAttachment): string {
   if (attachment.file_url && /^https?:\/\//i.test(attachment.file_url)) {

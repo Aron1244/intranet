@@ -24,7 +24,7 @@ type SessionValue = {
   errorMessage: string | null;
   /**
    * Publica un usuario ya resuelto. El login lo usa con la respuesta de
-   * GET /me que ya hace: asi el dashboard arranca con la sesion resuelta y
+   * GET /me que ya hace: así el dashboard arranca con la sesión resuelta y
    * el sidebar nunca dibuja "Invitado".
    */
   setUser: (user: SessionUser | null) => void;
@@ -38,16 +38,16 @@ const SessionContext = createContext<SessionValue>({
 });
 
 /**
- * Sesion compartida de la app.
+ * Sesión compartida de la app.
  *
- * Antes cada pagina pedia /me por su cuenta y el sidebar recibia los roles
- * como props: al navegar, la pagina nueva montaba con user = null, el sidebar
- * se redibujaba sin items de rol y un instante despues aparecian (con
- * "Invitado" y "Sin sesion" en el bloque del usuario).
+ * Antes cada página pedía /me por su cuenta y el sidebar recibía los roles
+ * como props: al navegar, la página nueva montaba con user = null, el sidebar
+ * se redibujaba sin items de rol y un instante después aparecían (con
+ * "Invitado" y "Sin sesión" en el bloque del usuario).
  *
- * Con este provider la sesion vive en el layout raiz, que no se desmonta al
- * navegar, asi que el sidebar siempre dibuja con los datos definitivos. El
- * login publica el usuario que ya resolvio y el dashboard arranca sin parpadeo.
+ * Con este provider la sesión vive en el layout raíz, que no se desmonta al
+ * navegar, así que el sidebar siempre dibuja con los datos definitivos. El
+ * login publica el usuario que ya resolvió y el dashboard arranca sin parpadeo.
  */
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);

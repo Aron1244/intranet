@@ -116,8 +116,8 @@ export default function Home() {
         method: "GET",
       });
 
-      // Se publica la sesion antes de navegar: el dashboard arranca con el
-      // usuario resuelto y el sidebar no dibuja "Invitado" ni "Sin sesion".
+      // Se publica la sesión antes de navegar: el dashboard arranca con el
+      // usuario resuelto y el sidebar no dibuja "Invitado" ni "Sin sesión".
       setSessionUser(currentUser.data);
 
       if (currentUser.data.id) {

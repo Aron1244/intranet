@@ -9,9 +9,9 @@ El proyecto incluye:
 - Login con token Bearer.
 - Dashboard interno con secciones por rol.
 - Conversaciones en tiempo real (Laravel Echo + Reverb/Pusher).
-- Gestion de documentos/publicaciones/usuarios/roles segun permisos.
+- Gestión de documentos/publicaciones/usuarios/roles según permisos.
 
-## Stack Tecnologico
+## Stack Tecnológico
 
 - Next.js 16
 - React 19
@@ -25,7 +25,7 @@ El proyecto incluye:
 - pnpm (recomendado)
 - Backend Laravel disponible (por defecto en `http://localhost:8000`)
 
-## Instalacion
+## Instalación
 
 ```bash
 pnpm install
@@ -33,9 +33,9 @@ pnpm install
 
 ## Variables de Entorno
 
-Crea un archivo `.env.local` en la raiz del proyecto.
+Crea un archivo `.env.local` en la raíz del proyecto.
 
-### Variables minimas
+### Variables mínimas
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
@@ -62,51 +62,51 @@ NEXT_PUBLIC_BROADCAST_AUTH_ENDPOINT=http://localhost:8000/broadcasting/auth
 NEXT_PUBLIC_CHAT_CHANNEL_TEMPLATE=conversations.{conversationId}
 ```
 
-## Ejecucion Local
+## Ejecución Local
 
 ```bash
 pnpm dev
 ```
 
-Aplicacion: `http://localhost:3000`
+Aplicación: `http://localhost:3000`
 
 ## Scripts Disponibles
 
 - `pnpm dev`: inicia entorno de desarrollo.
-- `pnpm build`: genera build de produccion.
-- `pnpm start`: levanta build de produccion.
+- `pnpm build`: genera build de producción.
+- `pnpm start`: levanta build de producción.
 - `pnpm lint`: ejecuta ESLint.
 
 ## Estructura Funcional
 
 - `/`:
-	login contra `POST /login`, validacion de sesion con `GET /me`.
+	login contra `POST /login`, validación de sesión con `GET /me`.
 - `/dashboard`:
 	vista principal con resumen de conversaciones y publicaciones.
 - `/dashboard/conversations`:
-	chat y adjuntos, con sincronizacion en tiempo real.
+	chat y adjuntos, con sincronización en tiempo real.
 - `/dashboard/documents`:
-	gestion/consulta de documentos.
+	gestión/consulta de documentos.
 - `/dashboard/publications`:
-	publicaciones internas (visible segun permisos).
+	publicaciones internas (visible según permisos).
 - `/dashboard/departments`:
-	administracion de departamentos y roles por departamento (admin).
+	administración de departamentos y roles por departamento (admin).
 - `/dashboard/users`:
-	administracion de usuarios (admin).
+	administración de usuarios (admin).
 
-## Autenticacion y Sesion
+## Autenticación y Sesión
 
 - El token se almacena en:
-	- `localStorage` si el usuario marca "Mantener sesion iniciada".
+	- `localStorage` si el usuario marca "Mantener sesión iniciada".
 	- `sessionStorage` si no lo marca.
 - Las llamadas API autenticadas agregan header `Authorization: Bearer <token>`.
-- Si una llamada retorna `401`, se limpia sesion local y se solicita login nuevamente.
+- Si una llamada retorna `401`, se limpia sesión local y se solicita login nuevamente.
 
-## Integracion con Backend
+## Integración con Backend
 
 - Base URL consumida por el frontend: `NEXT_PUBLIC_API_URL`.
 - En desarrollo se soporta `rewrite` desde `/backend/*` al origen del backend definido en `next.config.ts`.
-- Las imagenes remotas de storage local se permiten para:
+- Las imágenes remotas de storage local se permiten para:
 	- `http://localhost/storage/**`
 	- `http://127.0.0.1/storage/**`
 
@@ -118,10 +118,10 @@ Para detalle de endpoints y payloads, consulta: `API_NEXTJS.md`.
 - Todas las peticiones del frontend pasan por `lib/api-client.ts` para estandarizar headers y manejo de errores.
 - El realtime de conversaciones se inicializa desde `lib/echo-client.ts`.
 
-## Troubleshooting Rapido
+## Troubleshooting Rápido
 
-- Error de conexion con backend:
-	revisa `NEXT_PUBLIC_API_URL`, CORS y que Laravel este levantado.
+- Error de conexión con backend:
+	revisa `NEXT_PUBLIC_API_URL`, CORS y que Laravel esté levantado.
 - No llegan eventos realtime:
 	valida `NEXT_PUBLIC_REVERB_*` / `NEXT_PUBLIC_PUSHER_*` y credenciales.
 - Login exitoso pero sin acceso:
@@ -129,5 +129,5 @@ Para detalle de endpoints y payloads, consulta: `API_NEXTJS.md`.
 
 ## Referencias
 
-- Documentacion Next.js: https://nextjs.org/docs
+- Documentación Next.js: https://nextjs.org/docs
 - API del proyecto: `API_NEXTJS.md`
