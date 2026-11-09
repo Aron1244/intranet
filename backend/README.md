@@ -80,6 +80,24 @@ En Windows puede fallar si no tienes permisos de administrador.
 php artisan serve --no-reload --host=127.0.0.1 --port=8000
 ```
 
+## Datos de demostración
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+El seeder crea 300 usuarios, 8 departamentos, conversaciones, mensajes y 32
+publicaciones. Las imágenes de las publicaciones y de los documentos son **fotos
+de stock reales** (Unsplash, 1200x800) que el seeder descarga al correr: por eso
+la primera siembra tarda un poco más y necesita internet.
+
+Si no hay internet, el seeder no falla: cae a una portada dibujada con GD, así
+que ninguna publicación queda con la imagen rota.
+
+> Si ya tenés los datos sembrados y querés que las publicaciones passages a las
+> fotos de stock, `php artisan db:seed --class=DemoDataSeeder` actualiza los
+> adjuntos que ya existen en vez de duplicarlos.
+
 ## Usuarios de prueba (Postman)
 
 Puedes usar estos usuarios para probar autenticacion, roles y mensajeria:

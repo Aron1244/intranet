@@ -15,10 +15,9 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Random\Engine\Mt19937;
-use Random\Randomizer;
 
 class DemoDataSeeder extends Seeder
 {
@@ -41,7 +40,7 @@ class DemoDataSeeder extends Seeder
     private const READ_PROBABILITY = 0.55;
 
     /**
-     * Paleta de las imagenes de portada generadas para las publicaciones.
+     * Paleta de las imagenes de respaldo cuando no hay internet.
      *
      * @var list<array{int, int, int}>
      */
@@ -55,6 +54,35 @@ class DemoDataSeeder extends Seeder
         [225, 29, 72],
         [2, 132, 199],
     ];
+
+    /**
+     * Fotos de stock de Unsplash para las imagenes de demostracion.
+     *
+     * La eleccion es estable por ruta (crc32 del path), asi que una misma
+     * publicacion siempre recibe la misma foto y el seed es reproducible.
+     *
+     * @var list<string>
+     */
+    private const STOCK_PHOTOS = [
+        'photo-1497366216548-37526070297c',
+        'photo-1522071820081-009f0129c71c',
+        'photo-1600880292203-757bb62b4baf',
+        'photo-1552664730-d307ca884978',
+        'photo-1531482615713-2afd69097998',
+        'photo-1542744173-8e7e53415bb0',
+        'photo-1517245386807-bb43f82c33c4',
+        'photo-1521737604893-d14cc237f11d',
+        'photo-1504384308090-c894fdcc538d',
+        'photo-1497215728101-856f4ea42174',
+        'photo-1573164713988-8665fc963095',
+        'photo-1560472354-b33ff0c44a43',
+        'photo-1517048676732-d65bc937f952',
+        'photo-1519389950473-47ba0277781c',
+        'photo-1454165804606-c3d57bc86b40',
+        'photo-1522202176988-66273c2fd55f',
+    ];
+
+    private const STOCK_PHOTO_URL = 'https://images.unsplash.com/%s?w=1200&h=800&fit=crop&fm=jpg';
 
     private const IMAGE_WIDTH = 1200;
 
@@ -258,7 +286,7 @@ class DemoDataSeeder extends Seeder
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'text/plain',
-            'image/png',
+            'image/jpeg',
         ];
 
         foreach ($this->folders as $folder) {
@@ -271,12 +299,16 @@ class DemoDataSeeder extends Seeder
 
                 $title = $sampleTitles[array_rand($sampleTitles)];
                 $mime = $mimeTypes[array_rand($mimeTypes)];
-                $extension = match ($mime) {
-                    'application/pdf' => 'pdf',
-                    'text/plain' => 'txt',
+                // match (true): con match ($mime) los brazos booleanos de
+                // str_contains se comparan con === contra un string y nunca
+                // matchean, asi que los xlsx y docx caian al default y se
+                // guardaban con la extension y el contenido equivocados.
+                $extension = match (true) {
                     str_contains($mime, 'spreadsheet') => 'xlsx',
                     str_contains($mime, 'wordprocessing') => 'docx',
-                    default => 'png',
+                    $mime === 'application/pdf' => 'pdf',
+                    $mime === 'text/plain' => 'txt',
+                    default => 'jpg',
                 };
 
                 $relativePath = "documents/department/{$folder->department_id}/{$folder->id}/".Str::slug($title).'.'.$extension;
@@ -300,12 +332,12 @@ class DemoDataSeeder extends Seeder
             $owner = $this->users[array_rand($this->users)];
             $title = $sampleTitles[array_rand($sampleTitles)].' (privado)';
             $mime = $mimeTypes[array_rand($mimeTypes)];
-            $extension = match ($mime) {
-                'application/pdf' => 'pdf',
-                'text/plain' => 'txt',
+            $extension = match (true) {
                 str_contains($mime, 'spreadsheet') => 'xlsx',
                 str_contains($mime, 'wordprocessing') => 'docx',
-                default => 'png',
+                $mime === 'application/pdf' => 'pdf',
+                $mime === 'text/plain' => 'txt',
+                default => 'jpg',
             };
             $relativePath = "documents/general/{$owner->id}/".Str::slug($title).'.'.$extension;
             $sizeBytes = $this->writePlaceholderFile($relativePath, $mime);
@@ -381,17 +413,34 @@ class DemoDataSeeder extends Seeder
 
             $count = random_int(1, 2);
             for ($i = 0; $i < $count; $i++) {
-                $relativePath = "announcements/{$announcement->id}/".Str::slug($announcement->title).'-'.$i.'.png';
-                $sizeBytes = $this->writeImage($relativePath);
+                $slug = Str::slug($announcement->title);
+                $relativePath = "announcements/{$announcement->id}/{$slug}-{$i}.jpg";
+                $sizeBytes = $this->writeStockImage($relativePath);
 
-                AnnouncementAttachment::query()->create([
+                $attributes = [
                     'announcement_id' => $announcement->id,
                     'user_id' => $announcement->created_by,
                     'file_path' => $relativePath,
-                    'original_name' => Str::slug($announcement->title).'-'.$i.'.png',
-                    'mime_type' => 'image/png',
+                    'original_name' => "{$slug}-{$i}.jpg",
+                    'mime_type' => 'image/jpeg',
                     'size_bytes' => $sizeBytes,
-                ]);
+                ];
+
+                // Se actualiza el adjunto que ya existe en vez de crear otro:
+                // antes el seeder duplicaba las filas en cada corrida y dejaba
+                // apuntando al .png viejo, que era justo lo que rompia las
+                // imagenes en un entorno ya sembrado.
+                $existing = AnnouncementAttachment::query()
+                    ->where('announcement_id', $announcement->id)
+                    ->whereIn('original_name', ["{$slug}-{$i}.jpg", "{$slug}-{$i}.png"])
+                    ->orderBy('id')
+                    ->first();
+
+                if ($existing) {
+                    $existing->update($attributes);
+                } else {
+                    AnnouncementAttachment::query()->create($attributes);
+                }
             }
         }
     }
@@ -661,13 +710,14 @@ class DemoDataSeeder extends Seeder
     /**
      * Escribe el archivo de un documento de demostración y devuelve su tamaño.
      *
-     * Las imágenes se generan con writeImage(): un archivo de texto con
-     * extensión .png no lo puede decodificar ningún navegador.
+     * Las imágenes usan writeStockImage(): una foto real de Unsplash. Un
+     * archivo de texto con extensión .png no lo puede decodificar ningún
+     * navegador.
      */
     private function writePlaceholderFile(string $relativePath, string $mimeType): int
     {
         if (str_starts_with($mimeType, 'image/')) {
-            return $this->writeImage($relativePath);
+            return $this->writeStockImage($relativePath);
         }
 
         if (Storage::disk('public')->exists($relativePath)) {
@@ -685,58 +735,73 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Genera la imagen de portada de un adjunto y la guarda en el disco.
+     * Baja una foto de stock y la guarda en el disco.
      *
-     * Antes se guardaba un pixel 1x1 transparente: al estirarlo con
-     * object-cover la tarjeta de la publicacion mostraba un rectangulo negro
-     * en vez de la imagen. Ahora se dibuja una portada real y devuelve su
-     * tamano en bytes para que size_bytes no sea inventado.
+     * La foto se elige por la ruta, así que es la misma en cada corrida. Si
+     * no hay internet se cae a una portada dibujada con GD para que el seeder
+     * nunca falle y deje la publicación sin imagen.
      */
-    public function writeImage(string $relativePath): int
+    private function writeStockImage(string $relativePath): int
     {
-        $width = self::IMAGE_WIDTH;
-        $height = self::IMAGE_HEIGHT;
+        $content = $this->downloadStockPhoto($relativePath);
 
-        // La imagen se deriva de su ruta: es estable entre ejecuciones y no
-        // toca el estado aleatorio global del seeder.
-        $random = new Randomizer(new Mt19937(crc32($relativePath)));
-        [$red, $green, $blue] = self::IMAGE_PALETTE[crc32($relativePath) % count(self::IMAGE_PALETTE)];
-
-        $image = imagecreatetruecolor($width, $height);
-        imagealphablending($image, true);
-
-        $light = [
-            (int) min(255, $red + 72),
-            (int) min(255, $green + 72),
-            (int) min(255, $blue + 72),
-        ];
-
-        for ($y = 0; $y < $height; $y++) {
-            $ratio = $y / max(1, $height - 1);
-            $color = imagecolorallocate(
-                $image,
-                (int) round($red + ($light[0] - $red) * $ratio),
-                (int) round($green + ($light[1] - $green) * $ratio),
-                (int) round($blue + ($light[2] - $blue) * $ratio),
-            );
-            imagefilledrectangle($image, 0, $y, $width, $y, $color);
+        if ($content === null) {
+            return $this->writeFallbackJpeg($relativePath);
         }
 
-        // Figuras translucidas: dan textura sin depender de archivos externos.
-        for ($i = 0; $i < 5; $i++) {
-            $overlay = imagecolorallocatealpha($image, 255, 255, 255, $random->getInt(20, 48));
-            imagefilledellipse(
+        Storage::disk('public')->put($relativePath, $content);
+
+        return strlen($content);
+    }
+
+    /**
+     * Descarga la foto de stock que corresponde a la ruta, o null si no se
+     * pudo bajar.
+     */
+    private function downloadStockPhoto(string $relativePath): ?string
+    {
+        $photo = self::STOCK_PHOTOS[crc32($relativePath) % count(self::STOCK_PHOTOS)];
+        $url = sprintf(self::STOCK_PHOTO_URL, $photo);
+
+        try {
+            $response = Http::timeout(15)->retry(2, 200)->get($url);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $content = $response->body();
+
+            // Se comprueba la firma JPEG: si el CDN devolvio otra cosa, mejor
+            // el respaldo dibujado que un archivo que el navegador no abre.
+            return str_starts_with($content, "\xFF\xD8\xFF") ? $content : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Portada de respaldo cuando no hay internet: degradado JPEG dibujado con
+     * GD. Se guarda como JPEG de verdad para que el navegador lo decodifique.
+     */
+    private function writeFallbackJpeg(string $relativePath): int
+    {
+        $image = imagecreatetruecolor(self::IMAGE_WIDTH, self::IMAGE_HEIGHT);
+        [$red, $green, $blue] = self::IMAGE_PALETTE[crc32($relativePath) % count(self::IMAGE_PALETTE)];
+
+        for ($y = 0; $y < self::IMAGE_HEIGHT; $y++) {
+            $ratio = $y / max(1, self::IMAGE_HEIGHT - 1);
+            $color = imagecolorallocate(
                 $image,
-                $random->getInt(0, $width),
-                $random->getInt(0, $height),
-                $random->getInt(180, 460),
-                $random->getInt(180, 460),
-                $overlay,
+                (int) round($red + (255 - $red) * $ratio),
+                (int) round($green + (255 - $green) * $ratio),
+                (int) round($blue + (255 - $blue) * $ratio),
             );
+            imagefilledrectangle($image, 0, $y, self::IMAGE_WIDTH, $y, $color);
         }
 
         ob_start();
-        imagepng($image, null, 6);
+        imagejpeg($image, null, 80);
         $content = (string) ob_get_clean();
         imagedestroy($image);
 

@@ -16,6 +16,7 @@ use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -106,6 +107,33 @@ class DemoDataSeederTest extends TestCase
         $this->assertTrue(Storage::disk('public')->exists($sample->file_path));
     }
 
+    public function test_document_extension_matches_its_mime_type(): void
+    {
+        $this->seed(DemoDataSeeder::class);
+
+        $expected = [
+            'application/pdf' => 'pdf',
+            'text/plain' => 'txt',
+            'image/jpeg' => 'jpg',
+        ];
+
+        foreach (Document::query()->get() as $document) {
+            $extension = pathinfo($document->file_path, PATHINFO_EXTENSION);
+
+            if (isset($expected[$document->mime_type])) {
+                $this->assertSame(
+                    $expected[$document->mime_type],
+                    $extension,
+                    "La extension no coincide con el mime de {$document->file_path}.",
+                );
+
+                continue;
+            }
+
+            $this->assertContains($extension, ['xlsx', 'docx'], "Extension inesperada en {$document->file_path}.");
+        }
+    }
+
     public function test_announcement_attachments_are_decodable_images_with_the_real_size(): void
     {
         $this->seed(DemoDataSeeder::class);
@@ -126,6 +154,33 @@ class DemoDataSeederTest extends TestCase
         $this->assertSame(1200, $dimensions[0]);
         $this->assertSame(800, $dimensions[1]);
 
+        // Las fotos de stock son JPEG de verdad, no un PNG renombrado.
+        $this->assertSame('image/jpeg', $dimensions['mime']);
+        $this->assertSame('image/jpeg', $attachment->mime_type);
+
+        $this->assertSame(filesize($path), (int) $attachment->size_bytes);
+    }
+
+    public function test_attachments_fall_back_to_a_local_image_when_the_download_fails(): void
+    {
+        Http::fake([
+            'images.unsplash.com/*' => Http::response('sin internet', 503),
+        ]);
+
+        $this->seed(DemoDataSeeder::class);
+
+        $attachment = AnnouncementAttachment::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->first();
+
+        $this->assertNotNull($attachment);
+
+        // Sin internet el seeder no puede dejar la publicacion sin imagen: cae
+        // a una portada dibujada, y ademas tiene que ser un JPEG de verdad.
+        $path = Storage::disk('public')->path($attachment->file_path);
+        $dimensions = getimagesize($path);
+        $this->assertNotFalse($dimensions);
+        $this->assertSame('image/jpeg', $dimensions['mime']);
         $this->assertSame(filesize($path), (int) $attachment->size_bytes);
     }
 
