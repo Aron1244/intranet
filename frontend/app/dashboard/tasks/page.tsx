@@ -92,7 +92,7 @@ export default function TasksPage() {
           isLeader={isUserLeader}
           isNewHire={isUserNewHire}
           activeRoute="tasks"
-          statusMessage={isLoading ? "Validando sesión..." : errorMessage ?? "Sesión activa"}
+          statusMessage={isLoading ? "Validando sesión..." : (errorMessage ?? undefined)}
         />
 
         <section className="min-w-0 flex-1 px-5 py-6 lg:px-6 xl:px-8">

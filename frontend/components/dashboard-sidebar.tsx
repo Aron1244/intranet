@@ -20,7 +20,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
 import { clearAccessToken } from "@/lib/auth-token";
 import { useMobileNav } from "@/lib/use-mobile-nav";
@@ -285,12 +284,15 @@ function SidebarFooter({
         </button>
       </div>
 
-      <div className="mt-3 flex min-w-0 items-center justify-between gap-2">
+      <div className="mt-3 flex min-w-0 items-center">
         <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-[var(--muted)]">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--muted-soft)]" />
-          <span className="truncate">{statusMessage ?? "Sesión activa"}</span>
+          {statusMessage ? (
+            <>
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--muted-soft)]" />
+              <span className="truncate">{statusMessage}</span>
+            </>
+          ) : null}
         </span>
-        <ThemeToggle />
       </div>
     </div>
   );

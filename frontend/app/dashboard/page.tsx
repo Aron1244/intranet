@@ -406,9 +406,7 @@ export default function DashboardPage() {
         isNewHire={isUserNewHire}
         canManageAnnouncements={canManageAnnouncements}
         activeRoute="dashboard"
-        statusMessage={
-          isLoading ? "Validando sesión..." : errorMessage ? errorMessage : "Sesión activa"
-        }
+        statusMessage={isLoading ? "Validando sesión..." : (errorMessage ?? undefined)}
       />
 
       <HelpButton tourId="dashboard" variant="floating" />
@@ -420,9 +418,7 @@ export default function DashboardPage() {
         isNewHire={isUserNewHire}
         canManageAnnouncements={canManageAnnouncements}
         activeRoute="dashboard"
-        statusMessage={
-          isLoading ? "Validando sesión..." : errorMessage ? errorMessage : "Sesión activa"
-        }
+        statusMessage={isLoading ? "Validando sesión..." : (errorMessage ?? undefined)}
       />
 
       <section className="flex min-w-0 flex-1 flex-col">

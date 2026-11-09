@@ -376,10 +376,6 @@ function BrandPanel() {
           ))}
         </dl>
       </div>
-
-      <p className="relative z-10 mt-12 text-[11px] tracking-wide text-white/80 uppercase">
-        Portal interno Coherev
-      </p>
     </aside>
   );
 }
