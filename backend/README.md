@@ -64,11 +64,15 @@ php artisan install:broadcasting
 ```bash
 php artisan key:generate
 ```
-5. Crear el enlace al almacenamiento público
+5. (Opcional) Crear el enlace al almacenamiento público
 
 ```bash
 php artisan storage:link
 ```
+
+Laravel ya sirve `/storage/{path}` directamente desde `storage/app/public`, asi que este
+paso solo hace falta si sirves los archivos con nginx o Apache en vez de `php artisan serve`.
+En Windows puede fallar si no tienes permisos de administrador.
 
 ## Ejecutar en Windows
 

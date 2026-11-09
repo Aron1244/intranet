@@ -33,7 +33,6 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
@@ -43,6 +42,12 @@ return [
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
+            // Laravel sirve /storage/{path} directamente desde storage/app/public.
+            // Antes dependia del symlink public/storage, que no se versiona (y en
+            // Windows `php artisan storage:link` falla sin permisos de admin):
+            // sin el symlink la ruta caia al disco `local` y devolvia 403, dejando
+            // las imagenes de las publicaciones como icono roto.
+            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
