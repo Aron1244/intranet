@@ -5,6 +5,7 @@ import "./globals.css";
 import "driver.js/dist/driver.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SessionProvider } from "@/lib/session-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,7 +68,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

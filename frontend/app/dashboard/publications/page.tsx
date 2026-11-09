@@ -13,7 +13,7 @@ import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import type { AnnouncementAttachment } from "@/lib/attachment-url";
 import { getAttachmentUrl, isImageAttachment } from "@/lib/attachment-url";
 import { resolveDepartmentColor } from "@/lib/department-color";
-import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isCollaborator } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type MeResponse = {
@@ -126,7 +126,6 @@ function normalizeSearchText(value: string): string {
 }
 
 export default function PublicationsPage() {
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
   const [isUpdatingVisibilityId, setIsUpdatingVisibilityId] = useState<number | null>(null);
@@ -201,7 +200,6 @@ export default function PublicationsPage() {
     let ignore = false;
 
     const loadPageData = async () => {
-      setIsLoadingUser(true);
       setIsLoadingAnnouncements(true);
       setErrorMessage(null);
       setIsPermissionError(false);
@@ -256,7 +254,6 @@ export default function PublicationsPage() {
         }
       } finally {
         if (!ignore) {
-          setIsLoadingUser(false);
           setIsLoadingAnnouncements(false);
         }
       }
@@ -270,10 +267,7 @@ export default function PublicationsPage() {
   }, [loadAnnouncements]);
 
   const isAdmin = isAdministrator(user);
-  const isUserLeader = isLeader(user);
-  const isUserNewHire = isNewHire(user);
   const isUserCollaborator = isCollaborator(user);
-  const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedAnnouncements = useMemo(
     () =>
@@ -608,13 +602,7 @@ export default function PublicationsPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
-          canManageAnnouncements={canManageAnnouncements}
           activeRoute="publications"
-          statusMessage={isLoadingUser || isLoadingAnnouncements ? "Cargando publicaciones..." : errorMessage ? errorMessage : "Publicaciones sincronizadas"}
         />
 
         <HelpButton tourId="publications" variant="floating" />

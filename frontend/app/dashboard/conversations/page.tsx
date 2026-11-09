@@ -12,7 +12,7 @@ import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { resolveDepartmentColor } from "@/lib/department-color";
 import { getConversationChannelName, getEcho } from "@/lib/echo-client";
-import { isAdministrator, isCollaborator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isCollaborator, isDepartmentLeader, isLeader } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -220,7 +220,6 @@ function formatRelativeTime(isoDate?: string | null): string {
 }
 
 export default function ConversationsPage() {
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingChatModalData, setIsLoadingChatModalData] = useState(false);
@@ -303,7 +302,6 @@ export default function ConversationsPage() {
     let ignore = false;
 
     const loadPageData = async () => {
-      setIsLoadingUser(true);
       setIsLoadingConversations(true);
       setIsLoadingUsers(true);
       setErrorMessage(null);
@@ -350,7 +348,6 @@ export default function ConversationsPage() {
         }
       } finally {
         if (!ignore) {
-          setIsLoadingUser(false);
           setIsLoadingConversations(false);
           setIsLoadingUsers(false);
         }
@@ -366,9 +363,7 @@ export default function ConversationsPage() {
 
   const isAdmin = isAdministrator(user);
   const isUserLeader = isLeader(user);
-  const isUserNewHire = isNewHire(user);
   const isUserCollaborator = isCollaborator(user);
-  const canManageAnnouncements = Boolean(user?.can_manage_announcements);
   const canCreateConversation = !isUserCollaborator;
   const canDeleteConversation = isAdmin && !isUserCollaborator;
   const canModerateMessages = (isAdmin || isDepartmentLeader(user)) && !isUserCollaborator;
@@ -1653,13 +1648,7 @@ export default function ConversationsPage() {
     <div className="h-[100dvh] overflow-hidden bg-[var(--background)]">
       <main className="flex h-[100dvh] w-full overflow-hidden">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
-          canManageAnnouncements={canManageAnnouncements}
           activeRoute="conversations"
-          statusMessage={isLoadingUser || isLoadingConversations ? "Cargando conversaciones..." : errorMessage ? errorMessage : "Conversaciones sincronizadas"}
         />
 
         <HelpButton tourId="conversations" variant="floating" />

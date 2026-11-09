@@ -446,25 +446,13 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-[100dvh] w-full bg-[var(--background)]">
       <DashboardSidebar
-        user={user ? { name: user.name, email: user.email } : null}
-        isAdmin={isAdmin}
-        isLeader={isUserLeader}
-        isNewHire={isUserNewHire}
-        canManageAnnouncements={canManageAnnouncements}
         activeRoute="dashboard"
-        statusMessage={isLoading ? "Validando sesión..." : (errorMessage ?? undefined)}
       />
 
       <HelpButton tourId="dashboard" variant="floating" />
 
       <MobileNavDrawer
-        user={user ? { name: user.name, email: user.email } : null}
-        isAdmin={isAdmin}
-        isLeader={isUserLeader}
-        isNewHire={isUserNewHire}
-        canManageAnnouncements={canManageAnnouncements}
         activeRoute="dashboard"
-        statusMessage={isLoading ? "Validando sesión..." : (errorMessage ?? undefined)}
       />
 
       <section className="flex min-w-0 flex-1 flex-col">

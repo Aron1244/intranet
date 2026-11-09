@@ -16,7 +16,7 @@ import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
 import { resolveDepartmentColor } from "@/lib/department-color";
 import { cn } from "@/lib/cn";
-import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator } from "@/lib/roles";
 
 const USERS_PER_PAGE = 15;
 
@@ -85,7 +85,6 @@ const INITIAL_FORM_STATE: UserFormState = {
 };
 
 export default function UsersPage() {
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isDeletingUserId, setIsDeletingUserId] = useState<number | null>(null);
@@ -94,7 +93,6 @@ export default function UsersPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isPermissionError, setIsPermissionError] = useState(false);
-  const [user, setUser] = useState<MeResponse["data"] | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>("all");
@@ -126,7 +124,6 @@ export default function UsersPage() {
     let ignore = false;
 
     const loadPageData = async () => {
-      setIsLoadingUser(true);
       setIsLoadingUsers(true);
       setErrorMessage(null);
       setIsPermissionError(false);
@@ -139,7 +136,6 @@ export default function UsersPage() {
         }
 
         const allowed = isAdministrator(meResponse.data);
-        setUser(meResponse.data);
         setCanAccessUsers(allowed);
 
         if (!allowed) {
@@ -169,7 +165,6 @@ export default function UsersPage() {
         }
       } finally {
         if (!ignore) {
-          setIsLoadingUser(false);
           setIsLoadingUsers(false);
         }
       }
@@ -473,13 +468,7 @@ export default function UsersPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdministrator(user)}
-          isLeader={isLeader(user)}
-          isNewHire={isNewHire(user)}
-          canManageAnnouncements={Boolean(user?.can_manage_announcements)}
           activeRoute="users"
-          statusMessage={isLoadingUser || isLoadingUsers ? "Cargando usuarios..." : errorMessage ?? "Listo"}
         />
 
         <section className="min-w-0 flex flex-1 flex-col px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">

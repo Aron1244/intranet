@@ -6,7 +6,7 @@ import { Construction, Lock } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
-import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isLeader } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -33,7 +33,6 @@ const KANBAN_COLUMNS = ["Pendiente", "En curso", "En revisión", "Completado"] a
 export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [user, setUser] = useState<MeResponse["data"] | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
@@ -47,7 +46,6 @@ export default function TasksPage() {
         const response = await apiFetch<MeResponse>("/me", { method: "GET" });
 
         if (!ignore) {
-          setUser(response.data);
           // El administrador también entra: antes la condición lo excluía
           // explicitamente y leia "contacta al administrador" a si mismo.
           setHasAccess(isAdministrator(response.data) || isLeader(response.data));
@@ -79,20 +77,12 @@ export default function TasksPage() {
     };
   }, []);
 
-  const isAdmin = isAdministrator(user);
-  const isUserLeader = isLeader(user);
-  const isUserNewHire = isNewHire(user);
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
           activeRoute="tasks"
-          statusMessage={isLoading ? "Validando sesión..." : (errorMessage ?? undefined)}
         />
 
         <section className="min-w-0 flex-1 px-5 py-6 lg:px-6 xl:px-8">
@@ -108,6 +98,12 @@ export default function TasksPage() {
                 Organiza el trabajo por etapas: pendiente, en curso, en revisión y completado.
               </p>
             </header>
+
+            {errorMessage ? (
+              <div className="rounded-[var(--radius-md)] border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 px-4 py-3 text-sm text-[color:var(--danger)]">
+                <p>{errorMessage}</p>
+              </div>
+            ) : null}
 
             {!isLoading && !hasAccess ? (
               <article className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[color:var(--warning)]/40 bg-[color:var(--warning)]/10 px-4 py-3 text-sm text-[color:var(--warning)]">

@@ -15,7 +15,7 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
-import { isAdministrator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isDepartmentLeader } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type DocumentsViewMode = "all" | "chat" | "department" | "other";
@@ -183,7 +183,6 @@ function getOriginLabel(document: DocumentItem): string {
 }
 
 export default function DocumentsPage() {
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [isDownloadingDocumentId, setIsDownloadingDocumentId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -233,7 +232,6 @@ export default function DocumentsPage() {
   }, []);
 
   const loadPageData = useCallback(async () => {
-    setIsLoadingUser(true);
     setIsLoadingDocuments(true);
     setErrorMessage(null);
     setIsPermissionError(false);
@@ -249,7 +247,6 @@ export default function DocumentsPage() {
     } catch (error) {
       setHandledError(error, "No se pudo cargar la sección de documentos.");
     } finally {
-      setIsLoadingUser(false);
       setIsLoadingDocuments(false);
     }
   }, [setHandledError]);
@@ -275,10 +272,7 @@ export default function DocumentsPage() {
   }, [successMessage]);
 
   const isAdmin = isAdministrator(user);
-  const isUserLeader = isLeader(user);
-  const isUserNewHire = isNewHire(user);
   const canModerateDocuments = isAdmin || isDepartmentLeader(user);
-  const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedDocuments = useMemo(
     () =>
@@ -558,13 +552,7 @@ export default function DocumentsPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
-          canManageAnnouncements={canManageAnnouncements}
           activeRoute="documents"
-          statusMessage={isLoadingUser || isLoadingDocuments ? "Cargando documentos..." : errorMessage ? errorMessage : "Documentos sincronizados"}
         />
 
         <HelpButton tourId="documents" variant="floating" />

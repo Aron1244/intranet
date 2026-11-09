@@ -21,7 +21,7 @@ import {
   DEFAULT_DEPARTMENT_COLORS,
   resolveDepartmentColor,
 } from "@/lib/department-color";
-import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type MeResponse = {
@@ -94,7 +94,6 @@ export default function DepartmentsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isPermissionError, setIsPermissionError] = useState(false);
-  const [user, setUser] = useState<MeResponse["data"] | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [deptFormState, setDeptFormState] = useState<DepartmentFormState>(INITIAL_DEPT_FORM_STATE);
@@ -163,7 +162,6 @@ export default function DepartmentsPage() {
         }
 
         const allowed = isAdministrator(meResponse.data);
-        setUser(meResponse.data);
         setCanAccessDepartments(allowed);
 
         if (!allowed) {
@@ -480,14 +478,7 @@ export default function DepartmentsPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdministrator(user)}
-          isLeader={isLeader(user)}
-          isNewHire={isNewHire(user)}
           activeRoute="departments"
-          statusMessage={
-            isLoadingDepartments ? "Cargando departamentos..." : errorMessage ?? "Listo"
-          }
         />
 
         <section className="min-w-0 flex-1 px-4 py-6 lg:px-6 xl:px-8 2xl:px-10">
