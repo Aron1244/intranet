@@ -4,7 +4,7 @@
 **Proyecto:** Coherev — Intranet Corporativa
 **Repositorio:** monorepo `intranet/` (`backend/` Laravel 13 + `frontend/` Next.js 16)
 **Fecha de elaboration:** 10 de noviembre de 2026
-**Estado:** verificado contra el código en la rama `develop` (HEAD `1bd112d`)
+**Estado:** verificado contra el código en la rama `develop` (HEAD `e61f321`)
 
 ---
 
@@ -21,8 +21,8 @@ Toda respuesta que sigue está fundamentada en artefactos verificables del repos
 | `docs/Fase 2.1/8 y 9-requerimientos F y NF.docx` | 51 Requisitos Funcionales + 35 Requisitos No Funcionales |
 | `docs/Fase 2.1/11-product backlog.xlsx` | 35 tarjetas, 6 épicas, 7 iteraciones, WIP 3/persona |
 | `docs/Fase 2.1/2-acta de constitucion.docx` | Acta firmada, roles, hitos, criterios de aceptación |
-| `php artisan test --no-coverage` (ejecutado 10/11/2026) | **123 tests, 430 assertions, 123 passed (100 %), 226,40 s** |
-| `git log` (49 commits, 2026-08-17 → 2026-11-09) | Historial de defectos corregidos y decisiones |
+| `php artisan test --no-coverage` (ejecutado 10/11/2026) | **133 tests, 471 assertions, 133 passed (100 %), 180,57 s** |
+| `git log` (54 commits, 2026-08-17 → 2026-11-10) | Historial de defectos corregidos y decisiones |
 
 **Nota de honestidad metodológica:** el repositorio **no** contiene un registro formal de defectos (no hay Jira, ni carpeta `defects/`, ni actas de pruebas). Tampoco existen pruebas automatizadas de frontend, pruebas de carga, ni validación con usuarios reales ejecutada. En los apartados correspondientes se responde con la evidencia realmente disponible y se declara explícitamente la brecha, en lugar de estimar cifras que el repositorio no respalda.
 
@@ -83,7 +83,7 @@ Concretamente, el sistema se compone de:
 **(b) WebSocket (asíncrono, tiempo real)**
 - `frontend/lib/echo-client.ts` configura Laravel Echo con `broadcaster: "reverb"`, `ws/wss` como transportes, y `authEndpoint` → `POST /broadcasting/auth` con el mismo `Authorization: Bearer`.
 - El backend emite `broadcast(new MessageSent($message))->toOthers()` sobre un `PrivateChannel("conversation.{conversation_id}")`.
-- **Autorización del canal** en `backend/routes/channels.php`: se valida que el usuario sea participante de la conversación; si no, la suscripción se rechaza sin revelar la existencia del canal.
+- **Autorización del canal** en `backend/routes/channels.php`: se valida que el usuario sea participante de la conversación; si no, la suscripción se rechaza sin revelar la existencia del canal. Desde el commit `f2832c7` se añade un **override del administrador**: `$user->isAdministrator() || <participa de la conversación>`, es decir, el administrador puede entrar a cualquier canal. Es un privilegio deliberado de supervisión, replicado de forma consistente en `ConversationController`, `MessageController` y `channels.php`, y cubierto por los 10 casos de `AdminConversationAccessTest` (que verifican tanto el privilegio como su ausencia para el resto de los roles).
 - **Canal privado ≠ canal público**: el nombre del canal no es un dato de negocio visible; el permiso se re-verifica en el servidor en cada suscripción.
 
 > **Defecto real detectado al verificar esta respuesta** (§1.3.b): el backend emite y autoriza el canal `conversation.{id}` — singular — (`app/Events/MessageSent.php:35`, `routes/channels.php:6`), mientras que el frontend usa `conversations.{id}` — plural — por defecto (`frontend/lib/echo-client.ts:63`) y ambos README documentan la variante plural. Como `frontend/.gitignore` excluye `.env*`, un clon nuevo depende de un `.env.local` local no versionado para que el realtime funcione, y ninguna documentación indica el valor singular correcto. El síntoma es silencioso: el chat simplemente no recibe mensajes. **Ningún test lo detecta**, porque la suite es solo de backend y no hay E2E (§5.1). Es la evidencia más concreta de por qué el E2E es prioritario.
@@ -314,7 +314,7 @@ DB_DATABASE=pr_intra_back
 
 ### Herramientas de proceso
 - **Git** con flujo por *feature branch* (`feature/{ID}-{descripción}`), PR con revisión cruzada y *squash-merge* a `main`.
-- **Conventional Commits** (`feat`, `fix`, `docs`, `chore`, `refactor`, `remove`) — verificable en el historial: 49 commits, 3 autores, del 2026-08-17 al 2026-11-09.
+- **Conventional Commits** (`feat`, `fix`, `docs`, `chore`, `refactor`, `remove`) — verificable en el historial: 54 commits, 3 autores, del 2026-08-17 al 2026-11-10.
 - **Laravel Pint** (PSR-12) como formateador único del backend.
 - **ESLint** (`eslint-config-next`) como linter del frontend.
 - **Graphify**: genera un grafo de conocimiento del código (≈1.670 nodos, 3.006 aristas, 143 comunidades) para consultar dependencias; `graphify-out/` está en `.gitignore` por ser artefacto regenerable.
@@ -463,8 +463,8 @@ Evidencia directa:
 
 **Seguimiento del avance** — cuatro mecanismos complementarios:
 1. **Estado en Trello** (`Hecho` / `En curso` / `Pendiente`), exportado al `.xlsx` de backlog.
-2. **Historial Git como fuente de verdad objetiva**: 49 commits con Conventional Commits, cada commit referencia su tarjeta (`SEC-003`, `ROL-002`…) o su tipo (`feat`, `fix`, `docs`, `refactor`, `chore`).
-3. **Suite PHPUnit como gate de regresión**: 123 tests que deben estar verdes para mergear.
+2. **Historial Git como fuente de verdad objetiva**: 54 commits con Conventional Commits, cada commit referencia su tarjeta (`SEC-003`, `ROL-002`…) o su tipo (`feat`, `fix`, `docs`, `refactor`, `chore`).
+3. **Suite PHPUnit como gate de regresión**: 133 tests que deben estar verdes para mergear.
 4. **Documentos por iteración**: `docs/Fase 2.1/` con acta, stakeholders, mapa de actores, visión, goal, roadmap, RF/RNF, historias de usuario, backlog, arquitectura y ER.
 
 **Hitos planificados (7):**
@@ -517,7 +517,7 @@ Evidencia directa:
 |---|---|---|---|
 | **Unitarias** | 1 caso base (boilerplate PHPUnit) | `tests/Unit/ExampleTest.php` | Plantilla de partida; el 99 % de la lógica de negocio está en modelos y policies, que se prueban vía Feature |
 | **Funcionales / de integración (Feature)** | **121 casos** sobre la API completa con base de datos real de test, HTTP real, autenticación real y permisos reales | `tests/Feature/` (18 archivos) | Es el nivel que verifica el requisito: "un Colaborador no puede crear un usuario" solo se demuestra cruzando HTTP + auth + policy + BD |
-| **Autorización / RBAC** | 56 casos en 4 suites (`Department`, `Role`, `User`, `Document`Authorization) | `tests/Feature/` | Es el requisito de mayor riesgo del sistema (R-02, riesgo inicial R-01 "Alcance incompleto en Iter 1") |
+| **Autorización / RBAC** | 66 casos en 5 suites (`Department`, `Role`, `User`, `Document`Authorization + `AdminConversationAccess`) | `tests/Feature/` | Es el requisito de mayor riesgo del sistema (R-02, riesgo inicial R-01 "Alcance incompleto en Iter 1") |
 | **Validación de entradas** | 10 casos (`MimeValidationTest` 9 + `StoreUserRequest` uniqueness) | `tests/Feature/` | Cubre los RNF-SEG-05/06 y el rechazo con **415** |
 | **Seguridad** | 2 casos de rate limiting (`LoginRateLimitTest`) + cobertura transversal de "sin token → 401/403" en las 4 suites de autorización | `tests/Feature/` | `RNF-SEG-04`, `RNF-SEG-07`, `RF-AUT-08` |
 | **Integridad de datos** | 7 casos de `message_reads` (idempotencia, no contar propios mensajes, no marcar conversaciones ajenas) | `MessageReadTest` | `RF-CHT-08/09`, `SEC-007` |
@@ -543,28 +543,29 @@ Evidencia directa:
 **Resultado real de la ejecución (`php artisan test --no-coverage`, 10/11/2026, rama `develop`):**
 
 ```
-Tests:    123 passed (430 assertions)
-Duration: 226.40s
+Tests:    133 passed (471 assertions)
+Duration: 180.57s
 ```
 
 | Métrica | Valor |
 |---|---|
-| Casos de prueba **diseñados** (implementados en código) | **123** |
-| Casos **ejecutados** | **123** (100 % de los diseñados) |
-| Casos **exitosos** | **123** |
+| Casos de prueba **diseñados** (implementados en código) | **133** |
+| Casos **ejecutados** | **133** (100 % de los diseñados) |
+| Casos **exitosos** | **133** |
 | Casos **fallidos** | **0** |
 | **Porcentaje de éxito** | **100 %** |
-| Aserciones | **430** (promedio ≈ 3,5 aserciones por caso) |
+| Aserciones | **471** (promedio ≈ 3,5 aserciones por caso) |
 | Archivos de prueba | 20 (1 `Unit` + 19 `Feature`) |
-| Duración total | 226,40 s |
+| Duración total | 180,57 s |
 
-**Distribución de los 123 casos por suite:**
+**Distribución de los 133 casos por suite:**
 
 | Suite | Casos | Enfoque |
 |---|---|---|
 | `DepartmentAuthorizationTest` | 14 | Permisos por rol sobre departamentos |
 | `RoleAuthorizationTest` | 14 | Permisos sobre roles + no autenticado |
 | `UserAuthorizationTest` | 14 | Permisos sobre usuarios + `chat-partners` filtrado |
+| `AdminConversationAccessTest` | 10 | Privilegio de override del administrador sobre cualquier conversación (leer, enviar, borrar, renombrar, marcar leída) y su ausencia para los demás |
 | `DemoDataSeederTest` | 10 | Integridad del dataset de demostración |
 | `DocumentAuthorizationTest` | 9 | Propiedad del documento, descarga, subida |
 | `MimeValidationTest` | 9 | MIME real en 3 tipos de subida |
@@ -582,7 +583,7 @@ Duration: 226.40s
 | `ExampleTest` (Feature) | 1 | La aplicación responde |
 | `ExampleTest` (Unit) | 1 | Caso base de la plantilla |
 
-**Interpretación honesta del 100 %:** es una cifra real y verificable, **pero debe matizarse**: (a) no es cobertura de código —no hay métrica de cobertura configurada en `phpunit.xml`, solo `<source>` sin umbrales—; (b) el 100 % es **sobre las líneas base de prueba**, que concentrates en autorización; (c) el frontend tiene 0 % de cobertura automatizada; (d) la suite corre contra SQLite en memoria, no contra MariaDB. **Un 100 % de casos exitosos con 0 % de cobertura de código y 0 % de cobertura de frontend es un dato de proceso, no de cobertura.** La métrica honesta a reportar es: *"123 casos de prueba automatizada que cubren el 100 % de los requisitos funcionales de autorización, validación y persistencia del backend; 0 % de cobertura automatizada del frontend"*.
+**Interpretación honesta del 100 %:** es una cifra real y verificable, **pero debe matizarse**: (a) no es cobertura de código —no hay métrica de cobertura configurada en `phpunit.xml`, solo `<source>` sin umbrales—; (b) el 100 % es **sobre las líneas base de prueba**, que concentrates en autorización; (c) el frontend tiene 0 % de cobertura automatizada; (d) la suite corre contra SQLite en memoria, no contra MariaDB. **Un 100 % de casos exitosos con 0 % de cobertura de código y 0 % de cobertura de frontend es un dato de proceso, no de cobertura.** La métrica honesta a reportar es: *"133 casos de prueba automatizada que cubren el 100 % de los requisitos funcionales de autorización, validación y persistencia del backend; 0 % de cobertura automatizada del frontend"*.
 
 ## 5.3 ¿Cuántos ciclos de pruebas realizaron y qué actividades se realizaron en cada ciclo?
 
@@ -613,11 +614,11 @@ Duration: 226.40s
 | **Crítico** | Filtración de datos / control de acceso roto | **2** — (a) CRUD de usuarios accesible a cualquier autenticado; (b) autorización ausente en `DepartmentController` | `SEC-002` (`d29bc87`), `SEC-003` (`25af8c7`) |
 | **Alto** | Bypass de permisos o exposición de archivos | **4** — (c) `RoleController` sin restricción de admin; (d) `DocumentController` sin Policy; (e) subir ejecutables con extensión falsificada (MIME no validado); (f) sin rate limit en login (brute force) | `SEC-004` (`06b6212c`), `SEC-005` (`9fbf425`), `SEC-006` (`f002b2c`), `SEC-001` (`d1761e5`) |
 | **Medio** | Funcionalidad incorrecta o estado inconsistente | **3** — (g) contador de no leídos residía en `sessionStorage` (inconsistente entre dispositivos); (h) adjuntos no servidos en dev por dependencia del symlink; (i) desfase de zona horaria BD/app | `SEC-007` (`f68aedc`), `8130e88`, `27cb824` |
-| **Bajo** | Usabilidad, consistencia visual, texto | **4** — (j) botón "Publicaciones" ausente del sidebar; (k) roles canónicos no reflejados en el frontend; (l) parpadeo por sesión duplicada; (m) bugs reales de legibilidad en las 7 vistas + 2 pasadas de ortografía/tildes | `cb6396c`, `dd8011c`, `249737a`, `04d7a70`, `cc79143`, `db2c554` |
+| **Bajo** | Usabilidad, consistencia visual, texto | **5** — (j) botón "Publicaciones" ausente del sidebar; (k) roles canónicos no reflejados en el frontend; (l) parpadeo por sesión duplicada; (m) bugs reales de legibilidad en las 7 vistas + 2 pasadas de ortografía/tildes; (n) el botón "Publicaciones" se mostraba a quien no tenía permiso para administrar anuncios | `cb6396c`, `dd8011c`, `249737a`, `04d7a70`, `cc79143`, `db2c554`, `52f01a3` |
 | **Documentación / proceso** | Artefactos desalineados con el código | **2** — (n) esquema SQL consolidado congelado antes del soft-delete; (o) discrepancia de stack declarada en el PPT (MySQL/MariaDB, Canva/Figma) | `de79a60`, riesgo R-03 |
-| | **Total reconstruido** | **~15 defectos con evidencia en Git** | 49 commits |
+| | **Total reconstruido** | **~16 defectos con evidencia en Git** | 54 commits |
 
-**Defectos pendientes:** **0 defectos funcionales o de seguridad abiertos** — la suite final es 123/123 en verde y ningún commit reciente introduce un `fix:` sin test acompañante. **Pendientes de cierre (no son defectos, son brechas de proceso):** (1) validación con usuarios reales (Iter 4), (2) pruebas E2E del flujo de chat, (3) corrección de la inconsistencia de la hoja de backlog por estado, (4) backup automatizado y política de retención, (5) `DB::transaction` en las escrituras multi-tabla.
+**Defectos pendientes:** **0 defectos funcionales o de seguridad abiertos** — la suite final es 133/133 en verde y ningún commit reciente introduce un `fix:` sin test acompañante. **Pendientes de cierre (no son defectos, son brechas de proceso):** (1) validación con usuarios reales (Iter 4), (2) pruebas E2E del flujo de chat, (3) corrección de la inconsistencia de la hoja de backlog por estado, (4) backup automatizado y política de retención, (5) `DB::transaction` en las escrituras multi-tabla.
 
 **Sobre la clasificación por severidad:** se usó una escala de cuatro niveles alineada con la práctica de OWASP (crítico/alto/medio/bajo) en lugar de una escala propia. La decisión fue deliberada: la tabla del acta de constitución ya usa `Alto/Medio/Bajo` para riesgos (`R-01`…`R-06`), y mantener la misma escala hace comparables ambos artefactos.
 
@@ -643,7 +644,7 @@ Duration: 226.40s
 | `RNF-SEG-05/06` (validación de entrada y MIME) | 14 Form Requests + trait `RejectsMimeMismatch` + 10 casos de prueba | ✅ Verificado |
 | `RNF-SEG-07` (rate limit) | `LoginRateLimitTest` | ✅ Verificado |
 | `RNF-MANT-01/02` (MVC en capas, reglas en modelos/policies) | Estructura verificada: 12 controladores delgados, 14 Form Requests, 2 Policies, 11 modelos con 48 métodos de dominio | ✅ Por código |
-| `RNF-MANT-03` (cobertura crítica con tests, sin romper la suite) | 123 tests verdes; el criterio "no romper la suite" se aplicó en cada commit de la Iteración 1 | ✅ Verificado |
+| `RNF-MANT-03` (cobertura crítica con tests, sin romper la suite) | 133 tests verdes; el criterio "no romper la suite" se aplicó en cada commit de la Iteración 1 | ✅ Verificado |
 | `RNF-MANT-05` (documentación mantenida) | 14 artefactos en `docs/Fase 2.1/` + README raíz + `API_NEXTJS.md` en backend y frontend | ✅ Verificado |
 | `RNF-DISP-02` (Reverb con fallback Pusher) | `config/broadcasting.php` + `echo-client.ts` acepta ambas variables | ✅ Por código |
 | `RNF-DISP-03` (MariaDB solo vía Eloquent) | Cero uso de `DB::raw`/SQL directo en `app/` | ✅ Verificado |
@@ -667,7 +668,7 @@ Concretamente, la cantidad se determinó por **cuatro reglas aplicadas de forma 
 3. **Una suite por módulo crítico, no por archivo.** Los archivos de prueba se organizaron por *área de riesgo* (`Authorization`, `Validation`, `Data`), no por clase implementada. Eso permite que una suite sobreviva al refactor del código subyacente.
 4. **Deriva desde el requerimiento.** Cada tarjeta `SEC-*` de la Iteración 1 se emparejó con su suite (`SEC-002` → `UserAuthorizationTest`, `SEC-005` → `DocumentAuthorizationTest`, `SEC-006` → `MimeValidationTest`, `SEC-007` → `MessageReadTest`, `SEC-001` → `LoginRateLimitTest`). **No se escribió un test que no correspondiera a un RF, un RNF o un defecto real** — y no se dejó un RF de alto riesgo sin test.
 
-**Cifras resultantes:** 51 RF y 35 RNF definidos; los casos de alto riesgo (autorización, validación, integridad de lecturas) concentran 56 + 10 + 7 = **73 de 123 casos (60 %)**. Esa concentración es la evidencia de que el criterio fue el riesgo, no el hábito.
+**Cifras resultantes:** 51 RF y 35 RNF definidos; los casos de alto riesgo (autorización, validación, integridad de lecturas) concentran 66 + 10 + 7 = **83 de 133 casos (62 %)**. Esa concentración es la evidencia de que el criterio fue el riesgo, no el hábito.
 
 ### 5.6.2 ¿Por qué esa cantidad de ciclos y no más o menos?
 
@@ -684,7 +685,7 @@ Concretamente, la cantidad se determinó por **cuatro reglas aplicadas de forma 
 
 | Dimensión | Primer ciclo (M0–M1, ago–sep 2026) | Último ciclo (M6, nov 2026) |
 |---|---|---|
-| **Volumen de pruebas** | ~78 casos (referencia del backlog: "Cobertura de tests (Iter 1): 78+ tests PHPUnit") | **123 casos, 430 aserciones** |
+| **Volumen de pruebas** | ~78 casos (referencia del backlog: "Cobertura de tests (Iter 1): 78+ tests PHPUnit") | **133 casos, 471 aserciones** |
 | **Foco de los hallazgos** | **Seguridad**: autorización ausente en 4 controladores (`SEC-002`…`SEC-005`), MIME sin validar, sin rate limit | **Calidad de producto**: ortografía y tildes, legibilidad en las 7 vistas, botón ausente del sidebar, parpadeo de sesión, adjuntos no servidos, extensión vs MIME en los documentos del seeder |
 | **Naturaleza de los defectos** | **Arquitecturales de seguridad** — el modelo de permisos no estaba aplicado | **Funcionales y de experiencia** — el modelo de permisos ya estaba sólido |
 | **Cobertura del stack** | Solo backend | Backend completo + verificación manual del frontend en las 7 vistas |
@@ -708,7 +709,7 @@ Concretamente, la cantidad se determinó por **cuatro reglas aplicadas de forma 
    - Tras `8130e88` (adjuntos sin symlink): `PublicStorageTest` (2 casos) — este es el ejemplo más limpio de **defecto detectado manualmente → convertido en test de regresión permanente**.
    - Tras `27cb824` (timezone): `DemoDataSeederTest` (10 casos), que valida las fechas del dataset.
 
-2. **Suite completa como gate de no-regresión** — los 123 tests. Este es el requisito explícito `RNF-MANT-03` ("cobertura de la funcionalidad crítica con tests PHPUnit; **sin romper la suite existente**") y el criterio de aceptación del acta ("la suite de tests PHPUnit pasa sin romper funcionalidad existente"). Por eso `git log` no muestra ningún commit que haya eliminado o desactivado un test: la suite solo creció (78 → 123).
+2. **Suite completa como gate de no-regresión** — los 133 tests. Este es el requisito explícito `RNF-MANT-03` ("cobertura de la funcionalidad crítica con tests PHPUnit; **sin romper la suite existente**") y el criterio de aceptación del acta ("la suite de tests PHPUnit pasa sin romper funcionalidad existente"). Por eso `git log` no muestra ningún commit que haya eliminado o desactivado un test: la suite solo creció (78 → 133).
 
 **La regla operativa que se aplicó:** *un defecto corregido sin test de regresión que falle antes de la corrección y pase después, se considera no corregido.* Los 15 defectos reconstruidos en §5.4 tienen su test asociado, salvo los puramente textuales/visuales (ortografía, tildes, parpadeo), que no son automatizables por naturaleza y dependedieron de revisión manual.
 
@@ -719,14 +720,14 @@ Concretamente, la cantidad se determinó por **cuatro reglas aplicadas de forma 
 | # | Criterio de aceptación (acta) | Cómo se verifica | **Estado actual** |
 |---|---|---|---|
 | 1 | Los 10 módulos funcionan, documentados y trazables (Problema → RF → HU → Funcionalidad → Prueba) | Módulos implementados + documentos en `docs/Fase 2.1/` | ⚠️ **7 de 10 módulos implementados**; Tareas, Directorio y Panel de Novedades siguen en "Previsto (Iter 2)" |
-| 2 | Todos los endpoints sensibles validan autorización (403) y el login aplica rate-limit (429) | `php artisan test` → 56 casos de autorización + 2 de rate limit | ✅ **Cumplido y verificado** (123/123) |
-| 3 | La suite PHPUnit pasa sin romper funcionalidad existente | `php artisan test` → 123 passed, 430 assertions | ✅ **Cumplido y verificado** |
+| 2 | Todos los endpoints sensibles validan autorización (403) y el login aplica rate-limit (429) | `php artisan test` → 66 casos de autorización + 2 de rate limit | ✅ **Cumplido y verificado** (133/133) |
+| 3 | La suite PHPUnit pasa sin romper funcionalidad existente | `php artisan test` → 133 passed, 471 assertions | ✅ **Cumplido y verificado** |
 | 4 | La validación con usuarios registra evidencia y métricas en `docs/evidence/` | Acta de pruebas de usabilidad con usuarios reales | ❌ **Pendiente — Iteración 4** |
 | 5 | La interfaz cumple marca Coherev, responsive y accesibilidad WCAG AA | Tokens semánticos + tour `driver.js` + revisión de las 7 vistas | ⚠️ **Parcial** — la marca y el responsive están; WCAG AA no se verificó automáticamente |
 | 6 | El PPT y el README raíz presentan el nombre oficial Coherev y el stack coherente | README raíz (ya coherente: Laravel 13, Next.js 16, Reverb, Sanctum, MariaDB) + PPT de Fase 1 | ⚠️ **README ✅ / PPT pendiente de la Iteración 6** |
 
 **Los tres criterios que gobiernan la decisión de entrega, en orden de peso:**
-1. **Suite verde** (criterio 3) — es el único completamente cumplido y el único automatizable. Se ejecutó en el estado actual: **123 passed, 430 assertions, 0 fallos**.
+1. **Suite verde** (criterio 3) — es el único completamente cumplido y el único automatizable. Se ejecutó en el estado actual: **133 passed, 471 assertions, 0 fallos**.
 2. **Cobertura de autorización** (criterio 2) — es el riesgo R-01 del acta, y las 56 pruebas de autorización son su cierre documentado.
 3. **Validación con usuarios** (criterio 4) — el que falta y el que **no puede sustituirse por ninguna suite automática**.
 
@@ -749,11 +750,11 @@ Concretamente, la cantidad se determinó por **cuatro reglas aplicadas de forma 
 | Migraciones | 33 | `backend/database/migrations/` |
 | Tablas de dominio / framework | 15 / 8 | `docs/Fase 2.1/15.1-esquema de la base de datos.sql` |
 | Claves foráneas | 25 (24 de dominio + 1 de framework) | ídem |
-| Casos de prueba | **123** (430 aserciones) | `backend/tests/` |
+| Casos de prueba | **133** (471 aserciones) | `backend/tests/` |
 | Rutas de dashboard (frontend) | 8 + login | `frontend/app/dashboard/` |
 | Componentes reutilizables | 11 | `frontend/components/` |
 | Módulos de servicio (frontend) | 12 | `frontend/lib/` |
-| Commits | 49 (3 autores, 2026-08-17 → 2026-11-09) | `git log` |
+| Commits | 54 (3 autores, 2026-08-17 → 2026-11-10) | `git log` |
 | Tarjetas de backlog | 35 (6 épicas, 7 iteraciones) | `docs/Fase 2.1/11-product backlog.xlsx` |
 | Requerimientos | 51 RF + 35 RNF | `docs/Fase 2.1/8 y 9-requerimientos F y NF.docx` |
 | Decisiones de diseño documentadas | 7 (`DD-1`…`DD-7`) | documento de arquitectura §11 |
@@ -778,4 +779,4 @@ Concretamente, la cantidad se determinó por **cuatro reglas aplicadas de forma 
 
 ---
 
-*Documento elaborado a partir del código fuente, la documentación de proyecto y la ejecución real de la suite de pruebas del repositorio `intranet/` en la rama `develop` (HEAD `1bd112d`, 10/11/2026).*
+*Documento elaborado a partir del código fuente, la documentación de proyecto y la ejecución real de la suite de pruebas del repositorio `intranet/` en la rama `develop` (HEAD `e61f321`, 10/11/2026).*
