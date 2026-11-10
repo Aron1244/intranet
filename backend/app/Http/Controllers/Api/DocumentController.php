@@ -38,7 +38,7 @@ class DocumentController extends Controller
                         $departmentQuery
                             ->where('visibility', 'department')
                             ->whereHas('folder', function ($folderQuery) use ($user): void {
-                                $folderQuery->where('department_id', $user->department_id);
+                                $folderQuery->whereIn('department_id', $user->departmentIds());
                             });
                     })
                     ->orWhereHas('messages.conversation.users', function ($conversationUserQuery) use ($user): void {

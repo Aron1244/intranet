@@ -130,7 +130,8 @@ Rutas protegidas con Sanctum.
   "name": "Juan Perez",
   "email": "juan@example.com",
   "password": "secret123",
-  "password_confirmation": "secret123"
+  "password_confirmation": "secret123",
+  "department_ids": [1, 3]
 }
 ```
 
@@ -139,6 +140,9 @@ Validaciones:
 - `name`: requerido, string, max 255
 - `email`: requerido, email, unico
 - `password`: requerido, string, min 8, confirmado
+- `department_ids`: opcional, array de ids de `departments`. Un usuario puede
+  pertenecer a varios departamentos a la vez. El primero queda como
+  departamento principal (`department_id`).
 
 Respuesta 200 (resource):
 
@@ -148,6 +152,8 @@ Respuesta 200 (resource):
     "id": 10,
     "name": "Juan Perez",
     "email": "juan@example.com",
+    "department_id": 1,
+    "department_ids": [1, 3],
     "email_verified_at": null,
     "created_at": "2026-04-18T12:00:00.000000Z",
     "updated_at": "2026-04-18T12:00:00.000000Z"
@@ -170,7 +176,8 @@ Respuesta 200 (resource):
   "name": "Juan Actualizado",
   "email": "juan2@example.com",
   "password": "newsecret123",
-  "password_confirmation": "newsecret123"
+  "password_confirmation": "newsecret123",
+  "department_ids": [2]
 }
 ```
 
@@ -179,6 +186,9 @@ Validaciones:
 - `name`: opcional, pero si se envia debe ser valido
 - `email`: opcional, unico ignorando el usuario actual
 - `password`: opcional, nullable, min 8, confirmado
+- `department_ids`: opcional, array de ids de `departments`. Si se envia,
+  reemplaza la lista completa de departamentos del usuario (enviar `[]` los
+  deja sin departamento).
 
 ### Eliminar usuario
 

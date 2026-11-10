@@ -66,7 +66,7 @@ export function DashboardHeader({
               <button
                 type="button"
                 onClick={() => onSearchChange("")}
-                aria-label="Limpiar busqueda"
+                aria-label="Limpiar búsqueda"
                 className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-1 text-[11px] font-medium text-[var(--muted)] transition hover:bg-[var(--border)] hover:text-[var(--foreground)]"
               >
                 {searchSummary ?? "0 resultados"}

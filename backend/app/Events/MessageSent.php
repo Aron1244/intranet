@@ -3,11 +3,11 @@
 namespace App\Events;
 
 use App\Models\Message;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class MessageSent implements ShouldBroadcast
 {
@@ -32,7 +32,7 @@ class MessageSent implements ShouldBroadcast
     {
         return [
             new PrivateChannel(
-                'conversation.' .
+                'conversation.'.
                 $this->message->conversation_id
             ),
         ];

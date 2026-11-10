@@ -42,11 +42,14 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()->load('roles:id,name,can_manage_department');
+        $user = $request->user()->load(['roles:id,name,can_manage_department', 'departments:id,name,color']);
         $user->setAttribute('can_manage_announcements', $user->canManageAnnouncements());
 
         return response()->json([
-            'data' => $user,
+            'data' => [
+                ...$user->toArray(),
+                'department_ids' => $user->departmentIds(),
+            ],
         ]);
     }
 

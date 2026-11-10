@@ -10,8 +10,10 @@ import type { DepartmentSelectOption } from "@/components/department-select";
 import { HelpButton } from "@/components/help-button";
 import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import type { AnnouncementAttachment } from "@/lib/attachment-url";
+import { getAttachmentUrl, isImageAttachment } from "@/lib/attachment-url";
 import { resolveDepartmentColor } from "@/lib/department-color";
-import { isAdministrator, isCollaborator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isCollaborator } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type MeResponse = {
@@ -20,6 +22,7 @@ type MeResponse = {
     name: string;
     email: string;
     department_id?: number | null;
+    department_ids?: number[];
     es_lider?: boolean;
     onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
@@ -49,17 +52,6 @@ type Announcement = {
     name: string;
   } | null;
   attachments?: AnnouncementAttachment[];
-};
-
-type AnnouncementAttachment = {
-  id: number;
-  announcement_id: number;
-  file_path: string;
-  file_url?: string;
-  original_name: string;
-  mime_type?: string | null;
-  size_bytes?: number | null;
-  is_image?: boolean;
 };
 
 type AnnouncementFormState = {
@@ -120,8 +112,20 @@ function makePreviewText(content: string): string {
   return `${normalized.slice(0, 220)}...`;
 }
 
+/**
+ * Minúsculas sin acentos para que "titulo" encuentre "Titulo".
+ *
+ * Las publicaciones están en español y los títulos llevan tildes con
+ * frecuencia; sin esto la búsqueda fallaría justo con el término más usado.
+ */
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export default function PublicationsPage() {
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
   const [isUpdatingVisibilityId, setIsUpdatingVisibilityId] = useState<number | null>(null);
@@ -140,8 +144,7 @@ export default function PublicationsPage() {
   const [formState, setFormState] = useState<AnnouncementFormState>(INITIAL_FORM_STATE);
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [removeAttachmentIds, setRemoveAttachmentIds] = useState<number[]>([]);
-
-  const backendOrigin = useMemo(() => API_BASE.replace(/\/+api$/, ""), []);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Opciones del desplegable de departamento del formulario de publicación.
   // El color viaja con la opción para que se vea al desplegar la lista.
@@ -197,7 +200,6 @@ export default function PublicationsPage() {
     let ignore = false;
 
     const loadPageData = async () => {
-      setIsLoadingUser(true);
       setIsLoadingAnnouncements(true);
       setErrorMessage(null);
       setIsPermissionError(false);
@@ -252,7 +254,6 @@ export default function PublicationsPage() {
         }
       } finally {
         if (!ignore) {
-          setIsLoadingUser(false);
           setIsLoadingAnnouncements(false);
         }
       }
@@ -266,10 +267,7 @@ export default function PublicationsPage() {
   }, [loadAnnouncements]);
 
   const isAdmin = isAdministrator(user);
-  const isUserLeader = isLeader(user);
-  const isUserNewHire = isNewHire(user);
   const isUserCollaborator = isCollaborator(user);
-  const canManageAnnouncements = Boolean(user?.can_manage_announcements);
 
   const sortedAnnouncements = useMemo(
     () =>
@@ -280,6 +278,28 @@ export default function PublicationsPage() {
       }),
     [announcements],
   );
+
+  // El listado llega completo desde la API, así que el filtrado es en cliente.
+  const filteredAnnouncements = useMemo(() => {
+    const normalizedSearch = normalizeSearchText(searchTerm.trim());
+
+    if (!normalizedSearch) {
+      return sortedAnnouncements;
+    }
+
+    return sortedAnnouncements.filter((announcement) => {
+      const searchableFields = [
+        announcement.title,
+        announcement.content,
+        announcement.creator?.name,
+        announcement.department?.name,
+      ]
+        .filter((value): value is string => Boolean(value))
+        .map(normalizeSearchText);
+
+      return searchableFields.some((field) => field.includes(normalizedSearch));
+    });
+  }, [searchTerm, sortedAnnouncements]);
 
   const editingAnnouncement = useMemo(
     () => announcements.find((item) => item.id === editingAnnouncementId) ?? null,
@@ -304,9 +324,13 @@ export default function PublicationsPage() {
         return false;
       }
 
-      return user?.department_id !== null && user?.department_id === announcement.department_id;
+      // Un líder administra los anuncios de cualquiera de sus departamentos.
+      return (
+        announcement.department_id != null &&
+        (user?.department_ids ?? []).includes(announcement.department_id)
+      );
     },
-    [isAdmin, isUserCollaborator, user?.department_id],
+    [isAdmin, isUserCollaborator, user?.department_ids],
   );
 
   const resetForm = () => {
@@ -332,8 +356,8 @@ export default function PublicationsPage() {
     setIsFormModalOpen(false);
   };
 
-  // Escape cierra el modal. Sin esto el overlay es un callejon sin salida para
-  // quien navega con teclado, que es como se revisa la vista en auditoria.
+  // Escape cierra el modal. Sin esto el overlay es un callejón sin salida para
+  // quien navega con teclado, que es como se revisa la vista en auditoría.
   useEffect(() => {
     if (!isFormModalOpen) {
       return;
@@ -397,8 +421,12 @@ export default function PublicationsPage() {
       }
 
       if (editingAnnouncementId) {
-        if (isAdmin && !formState.publish_all && selectedDepartmentId) {
-          payload.append("department_id", selectedDepartmentId);
+        if (isAdmin) {
+          payload.append("publish_all", formState.publish_all ? "1" : "0");
+
+          if (!formState.publish_all && selectedDepartmentId) {
+            payload.append("department_id", selectedDepartmentId);
+          }
         }
 
         payload.append("_method", "PATCH");
@@ -424,7 +452,7 @@ export default function PublicationsPage() {
         });
 
         if (isAdmin && formState.publish_all) {
-          setSuccessMessage(formState.is_visible ? "Publicación visible creada para todos los departamentos." : "Borrador creado para todos los departamentos.");
+          setSuccessMessage(formState.is_visible ? "Publicación general creada, visible para toda la organización." : "Borrador general creado para toda la organización.");
         } else {
           setSuccessMessage(formState.is_visible ? "Publicación creada y visible." : "Publicación creada como borrador (oculta).");
         }
@@ -447,30 +475,6 @@ export default function PublicationsPage() {
       setIsSavingAnnouncement(false);
     }
   };
-
-  const getAttachmentUrl = useCallback((attachment: AnnouncementAttachment) => {
-    if (attachment.file_url && /^https?:\/\//i.test(attachment.file_url)) {
-      try {
-        const remoteUrl = new URL(attachment.file_url);
-        const backendUrl = new URL(backendOrigin);
-        const isLocalHost = remoteUrl.hostname === "localhost" || remoteUrl.hostname === "127.0.0.1";
-
-        if (isLocalHost && !remoteUrl.port && backendUrl.port) {
-          remoteUrl.port = backendUrl.port;
-        }
-
-        return remoteUrl.toString();
-      } catch {
-        return attachment.file_url;
-      }
-    }
-
-    if (attachment.file_url) {
-      return `${backendOrigin}${attachment.file_url.startsWith("/") ? "" : "/"}${attachment.file_url}`;
-    }
-
-    return `${backendOrigin}/storage/${attachment.file_path}`;
-  }, [backendOrigin]);
 
   const handleDownloadAttachment = useCallback(async (announcementId: number, attachment: AnnouncementAttachment) => {
     const token = getAccessToken();
@@ -510,14 +514,16 @@ export default function PublicationsPage() {
   }, []);
 
   const handleEditAnnouncement = (announcement: Announcement) => {
+    // Sin departamento es una publicación general: se edita con el alcance
+    // "todos los departamentos" marcado.
+    const isGeneral = announcement.department_id === null || announcement.department_id === undefined;
+
     setFormState({
       title: announcement.title,
       content: announcement.content,
       is_visible: announcement.is_visible,
-      publish_all: false,
-      department_id: announcement.department_id
-        ? String(announcement.department_id)
-        : (user?.department_id ? String(user.department_id) : ""),
+      publish_all: isGeneral,
+      department_id: isGeneral ? "" : String(announcement.department_id),
     });
     setEditingAnnouncementId(announcement.id);
     setShowPreview(false);
@@ -527,7 +533,7 @@ export default function PublicationsPage() {
   };
 
   const handleDeleteAnnouncement = async (announcement: Announcement) => {
-    const confirmed = window.confirm(`Eliminar la publicación \"${announcement.title}\"?`);
+    const confirmed = window.confirm(`¿Eliminar la publicación \"${announcement.title}\"?`);
     if (!confirmed) {
       return;
     }
@@ -596,13 +602,7 @@ export default function PublicationsPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <main className="flex min-h-screen w-full">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
-          canManageAnnouncements={canManageAnnouncements}
           activeRoute="publications"
-          statusMessage={isLoadingUser || isLoadingAnnouncements ? "Cargando publicaciones..." : errorMessage ? errorMessage : "Publicaciones sincronizadas"}
         />
 
         <HelpButton tourId="publications" variant="floating" />
@@ -655,7 +655,7 @@ export default function PublicationsPage() {
                         Todas las publicaciones
                       </h3>
                       <span className="inline-flex items-center justify-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
-                        {sortedAnnouncements.length}
+                        {filteredAnnouncements.length}
                       </span>
                     </div>
 
@@ -670,6 +670,20 @@ export default function PublicationsPage() {
                     </button>
                   </div>
 
+                  <div data-tour-id="publications-search" className="mt-4">
+                    <label htmlFor="publications-search-input" className="sr-only">
+                      Buscar publicaciones
+                    </label>
+                    <input
+                      id="publications-search-input"
+                      type="search"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Buscar por título, contenido, autor o departamento..."
+                      className="h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-soft)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                    />
+                  </div>
+
                   <div className="mt-4 min-h-0 space-y-3 overflow-auto pr-1">
                     {isLoadingAnnouncements ? (
                       <p className="text-sm text-[var(--muted)]">Cargando publicaciones...</p>
@@ -677,19 +691,25 @@ export default function PublicationsPage() {
 
                     {!isLoadingAnnouncements && sortedAnnouncements.length === 0 ? (
                       <p className="text-sm text-[var(--muted)]">
-                        Aun no hay publicaciones disponibles.
+                        Aún no hay publicaciones disponibles.
                       </p>
                     ) : null}
 
-                    {sortedAnnouncements.map((announcement) => {
+                    {!isLoadingAnnouncements &&
+                    sortedAnnouncements.length > 0 &&
+                    filteredAnnouncements.length === 0 ? (
+                      <p className="text-sm text-[var(--muted)]">
+                        No hay publicaciones que coincidan con la búsqueda.
+                      </p>
+                    ) : null}
+
+                    {filteredAnnouncements.map((announcement) => {
                       const canManageCurrent = canManageAnnouncement(announcement);
                       const imageAttachments = (announcement.attachments ?? []).filter(
-                        (attachment) =>
-                          Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false),
+                        isImageAttachment,
                       );
                       const fileAttachments = (announcement.attachments ?? []).filter(
-                        (attachment) =>
-                          !(Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false)),
+                        (attachment) => !isImageAttachment(attachment),
                       );
                       const contentPreview = makePreviewText(announcement.content);
                       const hasLongContent = contentPreview.length < announcement.content.replace(/\s+/g, " ").trim().length;
@@ -785,13 +805,6 @@ export default function PublicationsPage() {
                               </div>
                             </div>
                           ) : null}
-
-                          <div className="grid grid-cols-2 border-t border-[var(--border)] text-sm text-[var(--muted)] sm:grid-cols-4">
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Recomendar</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Comentar</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Compartir</button>
-                            <button type="button" className="px-3 py-2.5 font-medium transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]">Enviar</button>
-                          </div>
 
                           {canManageCurrent ? (
                             <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] px-4 py-3">
@@ -911,7 +924,7 @@ export default function PublicationsPage() {
                             htmlFor="announcement-attachments"
                             className="text-sm font-medium text-[var(--foreground)]"
                           >
-                            Adjuntos (imagenes o archivos)
+                            Adjuntos (imágenes o archivos)
                           </label>
                           <input
                             id="announcement-attachments"
@@ -1037,7 +1050,7 @@ export default function PublicationsPage() {
                                 onChange={(event) => setFormState((current) => ({ ...current, publish_all: event.target.checked }))}
                                 className="h-4 w-4 shrink-0 rounded border-[var(--border-strong)] accent-[var(--primary)]"
                               />
-                              Publicar para todos los departamentos
+                              Publicación general (la ven todos los departamentos)
                             </label>
                           ) : null}
                         </div>
@@ -1056,7 +1069,7 @@ export default function PublicationsPage() {
                               onClick={resetForm}
                               className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
                             >
-                              Cancelar edicion
+                              Cancelar edición
                             </button>
                           ) : null}
                           <button
@@ -1092,7 +1105,7 @@ export default function PublicationsPage() {
                             {previewExistingAttachments.length > 0 || newAttachmentPreviews.length > 0 ? (
                               <div className="mt-4 space-y-3">
                                 {previewExistingAttachments.map((attachment) => {
-                                  const isImage = Boolean(attachment.is_image) || (attachment.mime_type?.startsWith("image/") ?? false);
+                                  const isImage = isImageAttachment(attachment);
 
                                   if (isImage) {
                                     return (
@@ -1162,7 +1175,7 @@ export default function PublicationsPage() {
                               </span>
                               {isAdmin && formState.publish_all ? (
                                 <span className="inline-flex items-center rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--primary)]">
-                                  Alcance: Todos los departamentos
+                                  Alcance: General (toda la organización)
                                 </span>
                               ) : null}
                             </div>

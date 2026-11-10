@@ -23,7 +23,9 @@ class SyncUserRolesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'role_ids' => ['required', 'array'],
+            // present y no required: una lista vacia es valida y sirve para
+            // quitarle todos los roles al usuario.
+            'role_ids' => ['present', 'array'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ];
     }

@@ -20,9 +20,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
 import { clearAccessToken } from "@/lib/auth-token";
+import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { useSession } from "@/lib/session-context";
 import { useMobileNav } from "@/lib/use-mobile-nav";
 
 type SidebarUser = {
@@ -31,13 +32,7 @@ type SidebarUser = {
 } | null;
 
 type SidebarProps = {
-  user: SidebarUser;
-  isAdmin: boolean;
-  isLeader: boolean;
-  isNewHire: boolean;
-  canManageAnnouncements?: boolean;
   activeRoute?: string;
-  statusMessage?: string;
 };
 
 export type NavItem = {
@@ -46,6 +41,11 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   visible: (state: SidebarState) => boolean;
+  /**
+   * False en módulos que se listan como disponibles pero no se enlazan desde
+   * la navegación (aun sin functionality o sin backend).
+   */
+  inSidebar?: boolean;
 };
 
 export type SidebarState = {
@@ -79,7 +79,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Publicaciones",
     href: "/dashboard/publications",
     icon: Megaphone,
-    visible: () => true,
+    visible: (state) => state.canManageAnnouncements,
   },
   {
     key: "documents",
@@ -94,6 +94,9 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard/tasks",
     icon: BarChart3,
     visible: () => true,
+    // El módulo todavía no tiene backend: se lista en el resumen pero no se
+    // enlaza desde la navegación.
+    inSidebar: false,
   },
   {
     key: "departments",
@@ -130,32 +133,34 @@ export function visibleNavItems(state: SidebarState): NavItem[] {
   return NAV_ITEMS.filter((item) => item.visible(state));
 }
 
+/** Módulos que además se enlazan desde la navegación lateral. */
+export function sidebarNavItems(state: SidebarState): NavItem[] {
+  return visibleNavItems(state).filter((item) => item.inSidebar !== false);
+}
+
 export function DashboardSidebar({
-  user,
-  isAdmin,
-  isLeader,
-  isNewHire,
-  canManageAnnouncements,
   activeRoute,
-  statusMessage,
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, setUser } = useSession();
 
   const state: SidebarState = {
-    isAdmin,
-    isLeader,
-    isNewHire,
-    canManageAnnouncements: canManageAnnouncements ?? false,
+    isAdmin: isAdministrator(user),
+    isLeader: isLeader(user),
+    isNewHire: isNewHire(user),
+    canManageAnnouncements: Boolean(user?.can_manage_announcements),
   };
 
-  const visibleItems = visibleNavItems(state);
-  const initials = (user?.name ?? "Invitado")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "IN";
+  const visibleItems = sidebarNavItems(state);
+  const initials = user
+    ? user.name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("") || "IN"
+    : "";
 
   const activeKey =
     activeRoute ??
@@ -164,6 +169,7 @@ export function DashboardSidebar({
 
   const handleLogout = () => {
     clearAccessToken();
+    setUser(null);
     router.push("/");
   };
 
@@ -188,12 +194,7 @@ export function DashboardSidebar({
         </ul>
       </nav>
 
-      <SidebarFooter
-        user={user}
-        initials={initials}
-        statusMessage={statusMessage}
-        onLogout={handleLogout}
-      />
+      <SidebarFooter user={user} initials={initials} onLogout={handleLogout} />
     </aside>
   );
 }
@@ -230,19 +231,17 @@ function NavLink({
 }
 
 /**
- * Pie de la barra. `min-w-0` + `truncate` son obligatorios: el mensaje de
- * estado puede traer textos largos (por ejemplo "No autenticado. Inicia sesión
- * nuevamente.") y sin esto desbordaba fuera de la barra.
+ * Pie de la barra: identidad del usuario y salida. `min-w-0` + `truncate` son
+ * obligatorios porque el nombre y el correo pueden traer textos largos y sin
+ * esto desbordaban fuera de la barra.
  */
 function SidebarFooter({
   user,
   initials,
-  statusMessage,
   onLogout,
 }: {
   user: SidebarUser;
   initials: string;
-  statusMessage?: string;
   onLogout: () => void;
 }) {
   return (
@@ -254,10 +253,10 @@ function SidebarFooter({
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-[var(--foreground)]">
-            {user?.name ?? "Invitado"}
+            {user?.name ?? ""}
           </p>
           <p className="truncate text-xs text-[var(--muted)]">
-            {user?.email ?? "Sin sesión"}
+            {user?.email ?? ""}
           </p>
         </div>
 
@@ -271,14 +270,6 @@ function SidebarFooter({
           Salir
         </button>
       </div>
-
-      <div className="mt-3 flex min-w-0 items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-[var(--muted)]">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--muted-soft)]" />
-          <span className="truncate">{statusMessage ?? "Sesión activa"}</span>
-        </span>
-        <ThemeToggle />
-      </div>
     </div>
   );
 }
@@ -288,30 +279,27 @@ function SidebarFooter({
  * mismas reglas de rol que la barra de escritorio, así ambos nunca divergen.
  */
 export function MobileNavDrawer({
-  user,
-  isAdmin,
-  isLeader,
-  isNewHire,
-  canManageAnnouncements,
   activeRoute,
-  statusMessage,
 }: SidebarProps) {
   const pathname = usePathname();
   const { isOpen, close } = useMobileNav();
+  const { user, setUser } = useSession();
 
-  const visibleItems = visibleNavItems({
-    isAdmin,
-    isLeader,
-    isNewHire,
-    canManageAnnouncements: canManageAnnouncements ?? false,
+  const visibleItems = sidebarNavItems({
+    isAdmin: isAdministrator(user),
+    isLeader: isLeader(user),
+    isNewHire: isNewHire(user),
+    canManageAnnouncements: Boolean(user?.can_manage_announcements),
   });
 
-  const initials = (user?.name ?? "Invitado")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "IN";
+  const initials = user
+    ? user.name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("") || "IN"
+    : "";
 
   const activeKey =
     activeRoute ??
@@ -389,9 +377,9 @@ export function MobileNavDrawer({
         <SidebarFooter
           user={user}
           initials={initials}
-          statusMessage={statusMessage}
           onLogout={() => {
             clearAccessToken();
+            setUser(null);
             close();
             window.location.href = "/";
           }}

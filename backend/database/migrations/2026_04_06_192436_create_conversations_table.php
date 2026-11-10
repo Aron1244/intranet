@@ -19,7 +19,7 @@ return new class extends Migration
 
             $table->enum('type', [
                 'private',
-                'group'
+                'group',
             ]);
 
             $table->timestamps();

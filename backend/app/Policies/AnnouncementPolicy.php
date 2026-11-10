@@ -24,8 +24,7 @@ class AnnouncementPolicy
             return true;
         }
 
-        return $announcement->is_visible
-            && $user->department_id === $announcement->department_id;
+        return $this->isVisibleTo($user, $announcement);
     }
 
     /**
@@ -46,7 +45,7 @@ class AnnouncementPolicy
                 return true;
             }
 
-            return $user->department_id === $announcement->department_id;
+            return $user->belongsToDepartment($announcement->department_id);
         }
 
         return false;
@@ -62,9 +61,7 @@ class AnnouncementPolicy
 
     public function comment(User $user, Announcement $announcement): bool
     {
-        return $announcement->is_visible
-            && $user->department_id !== null
-            && $user->department_id === $announcement->department_id;
+        return $this->isVisibleTo($user, $announcement);
     }
 
     /**
@@ -81,5 +78,19 @@ class AnnouncementPolicy
     public function forceDelete(User $user, Announcement $announcement): bool
     {
         return false;
+    }
+
+    /**
+     * Una publicación general (sin departamento) la ven todos; una de
+     * departamento, solo sus miembros.
+     */
+    private function isVisibleTo(User $user, Announcement $announcement): bool
+    {
+        if (! $announcement->is_visible) {
+            return false;
+        }
+
+        return $announcement->department_id === null
+            || $user->belongsToDepartment($announcement->department_id);
     }
 }

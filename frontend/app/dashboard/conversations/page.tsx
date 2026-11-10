@@ -12,7 +12,7 @@ import { API_BASE, ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import { resolveDepartmentColor } from "@/lib/department-color";
 import { getConversationChannelName, getEcho } from "@/lib/echo-client";
-import { isAdministrator, isCollaborator, isDepartmentLeader, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator, isCollaborator, isDepartmentLeader, isLeader } from "@/lib/roles";
 
 type MeResponse = {
   data: {
@@ -20,6 +20,7 @@ type MeResponse = {
     name: string;
     email: string;
     department_id?: number | null;
+    department_ids?: number[];
     es_lider?: boolean;
     onboarding_pendiente?: boolean;
     can_manage_announcements?: boolean;
@@ -48,6 +49,7 @@ type AppUser = {
   name: string;
   email: string;
   department_id?: number | null;
+  department_ids: number[];
 };
 
 type Department = {
@@ -170,7 +172,7 @@ function conversationTitle(
   return `Conversación ${conversation.id}`;
 }
 
-/** `type` viene del backend en ingles ("private", "group"). */
+/** `type` viene del backend en inglés ("private", "group"). */
 function conversationTypeLabel(type?: string | null): string {
   if (!type) {
     return "Conversación";
@@ -218,7 +220,6 @@ function formatRelativeTime(isoDate?: string | null): string {
 }
 
 export default function ConversationsPage() {
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingChatModalData, setIsLoadingChatModalData] = useState(false);
@@ -301,7 +302,6 @@ export default function ConversationsPage() {
     let ignore = false;
 
     const loadPageData = async () => {
-      setIsLoadingUser(true);
       setIsLoadingConversations(true);
       setIsLoadingUsers(true);
       setErrorMessage(null);
@@ -348,7 +348,6 @@ export default function ConversationsPage() {
         }
       } finally {
         if (!ignore) {
-          setIsLoadingUser(false);
           setIsLoadingConversations(false);
           setIsLoadingUsers(false);
         }
@@ -364,17 +363,12 @@ export default function ConversationsPage() {
 
   const isAdmin = isAdministrator(user);
   const isUserLeader = isLeader(user);
-  const isUserNewHire = isNewHire(user);
   const isUserCollaborator = isCollaborator(user);
-  const canManageAnnouncements = Boolean(user?.can_manage_announcements);
   const canCreateConversation = !isUserCollaborator;
   const canDeleteConversation = isAdmin && !isUserCollaborator;
   const canModerateMessages = (isAdmin || isDepartmentLeader(user)) && !isUserCollaborator;
   const canRenameConversation = (isAdmin || isUserLeader) && !isUserCollaborator;
-  const currentUserDepartmentId = useMemo(
-    () => users.find((candidate) => candidate.id === user?.id)?.department_id ?? null,
-    [user?.id, users],
-  );
+  const currentUserDepartmentIds = useMemo(() => user?.department_ids ?? [], [user?.department_ids]);
 
   // Opciones del desplegable de departamento del modal de nuevo chat. El color
   // viaja con la opción para que se vea al desplegar la lista.
@@ -405,13 +399,10 @@ export default function ConversationsPage() {
           return true;
         }
 
-        if (currentUserDepartmentId === null) {
-          return false;
-        }
-
-        return candidate.department_id === currentUserDepartmentId;
+        // Comparte al menos un departamento con el usuario actual.
+        return candidate.department_ids.some((id) => currentUserDepartmentIds.includes(id));
       }),
-    [currentUserDepartmentId, isAdmin, user?.id, users],
+    [currentUserDepartmentIds, isAdmin, user?.id, users],
   );
 
   const filteredAvailableUsers = useMemo(() => {
@@ -419,16 +410,15 @@ export default function ConversationsPage() {
 
     return availableUsers.filter((candidate) => {
       const userRoles = userRolesByUserId[candidate.id] ?? [];
-      const userDepartmentId = candidate.department_id ?? null;
       const normalizedRoleFilter = Number(chatRoleFilter);
       const departmentMatches =
         !isAdmin
-          ? currentUserDepartmentId !== null && userDepartmentId === currentUserDepartmentId
+          ? candidate.department_ids.some((id) => currentUserDepartmentIds.includes(id))
           : chatDepartmentFilter === "all"
             ? true
             : chatDepartmentFilter === "unassigned"
-              ? userDepartmentId === null
-              : userDepartmentId === Number(chatDepartmentFilter);
+              ? candidate.department_ids.length === 0
+              : candidate.department_ids.includes(Number(chatDepartmentFilter));
 
       const roleMatches =
         !isAdmin || chatRoleFilter === "all"
@@ -441,7 +431,7 @@ export default function ConversationsPage() {
 
       return departmentMatches && roleMatches && searchMatches;
     });
-  }, [availableUsers, chatDepartmentFilter, chatNameSearch, chatRoleFilter, currentUserDepartmentId, isAdmin, userRolesByUserId]);
+  }, [availableUsers, chatDepartmentFilter, chatNameSearch, chatRoleFilter, currentUserDepartmentIds, isAdmin, userRolesByUserId]);
 
   const loadCreateChatModalData = useCallback(async () => {
     setIsLoadingChatModalData(true);
@@ -813,9 +803,9 @@ export default function ConversationsPage() {
     return String(count);
   }, []);
 
-  // SeCalcula una vez por conversación y no en el JSX: la tarjeta llama a este
-  // helper dos veces y `Date.now()` dentro del render daria dos lecturas por
-  //montaje, que pueden caer en distinto minuto en el límite de "hace 1 min".
+  // Se calcula una vez por conversación y no en el JSX: la tarjeta llama a este
+  // helper dos veces y `Date.now()` dentro del render daría dos lecturas por
+  // montaje, que pueden caer en distinto minuto en el límite de "hace 1 min".
   const conversationLastActivity = useCallback(
     (conversation: Conversation): string => formatRelativeTime(conversation.updated_at),
     [],
@@ -1510,7 +1500,7 @@ export default function ConversationsPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Eliminar la conversación "${conversation.name ?? `Conversación ${conversation.id}`}"?`);
+    const confirmed = window.confirm(`¿Eliminar la conversación "${conversation.name ?? `Conversación ${conversation.id}`}"?`);
     if (!confirmed) {
       return;
     }
@@ -1603,7 +1593,7 @@ export default function ConversationsPage() {
     }
 
     const confirmed = window.confirm(
-      "Marcar este mensaje para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
+      "¿Marcar este mensaje para revisión? Un administrador decidirá si eliminarlo definitivamente desde la Papelera.",
     );
     if (!confirmed) {
       return;
@@ -1658,13 +1648,7 @@ export default function ConversationsPage() {
     <div className="h-[100dvh] overflow-hidden bg-[var(--background)]">
       <main className="flex h-[100dvh] w-full overflow-hidden">
         <DashboardSidebar
-          user={user ? { name: user.name, email: user.email } : null}
-          isAdmin={isAdmin}
-          isLeader={isUserLeader}
-          isNewHire={isUserNewHire}
-          canManageAnnouncements={canManageAnnouncements}
           activeRoute="conversations"
-          statusMessage={isLoadingUser || isLoadingConversations ? "Cargando conversaciones..." : errorMessage ? errorMessage : "Conversaciones sincronizadas"}
         />
 
         <HelpButton tourId="conversations" variant="floating" />
@@ -1777,12 +1761,12 @@ export default function ConversationsPage() {
                     <button
                       type="button"
                       onClick={() => void openCreateChatModal()}
-                      disabled={!canCreateConversation || (!isAdmin && currentUserDepartmentId === null)}
+                      disabled={!canCreateConversation || (!isAdmin && currentUserDepartmentIds.length === 0)}
                       className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isUserCollaborator ? "Acceso solo lectura" : "Nuevo chat"}
                     </button>
-                    {!isAdmin && currentUserDepartmentId === null ? (
+                    {!isAdmin && currentUserDepartmentIds.length === 0 ? (
                       <p className="mt-2 text-xs text-[var(--muted)]">
                         Necesitas tener un departamento asignado para iniciar chats.
                       </p>
@@ -2186,8 +2170,15 @@ export default function ConversationsPage() {
                                 <p className="truncate text-sm font-semibold text-intra-secondary">{candidate.name}</p>
                                 <p className="truncate text-xs text-[var(--muted)]">{candidate.email}</p>
                                 <p className="truncate text-xs text-[var(--muted)]">
-                                  {candidate.department_id
-                                    ? departments.find((department) => department.id === candidate.department_id)?.name ?? "Departamento"
+                                  {candidate.department_ids.length > 0
+                                    ? candidate.department_ids
+                                        .map(
+                                          (id) =>
+                                            departments.find((department) => department.id === id)?.name ??
+                                            "",
+                                        )
+                                        .filter(Boolean)
+                                        .join(" · ") || "Departamento"
                                     : "Sin departamento"}
                                   {assignedRoles.length > 0
                                     ? ` • ${assignedRoles.map((role) => role.name).join(", ")}`

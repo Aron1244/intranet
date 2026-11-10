@@ -19,7 +19,7 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { HelpButton } from "@/components/help-button";
 import { ApiClientError, apiFetch } from "@/lib/api-client";
 import { clearAccessToken } from "@/lib/auth-token";
-import { isAdministrator, isLeader, isNewHire } from "@/lib/roles";
+import { isAdministrator } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type MeResponse = {
@@ -98,8 +98,6 @@ function formatDateTime(iso: string): string {
 
 export default function TrashPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<MeResponse["data"] | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [items, setItems] = useState<TrashPayload>({ messages: [], documents: [] });
   const [filter, setFilter] = useState<Filter>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -135,9 +133,7 @@ export default function TrashPage() {
         if (ignore) {
           return;
         }
-        setUser(meResponse.data);
         const allowed = isAdministrator(meResponse.data);
-        setIsAdmin(allowed);
         if (!allowed) {
           setErrorMessage("Solo los administradores pueden acceder a la papelera.");
           clearAccessToken();
@@ -184,7 +180,7 @@ export default function TrashPage() {
 
   const handleDestroy = useCallback(
     async (type: "message" | "document", id: number, label: string) => {
-      const confirmed = window.confirm(`Eliminar definitivamente "${label}"? Esta acción no se puede deshacer.`);
+      const confirmed = window.confirm(`¿Eliminar definitivamente "${label}"? Esta acción no se puede deshacer.`);
       if (!confirmed) {
         return;
       }
@@ -223,15 +219,7 @@ export default function TrashPage() {
   return (
     <div className="flex min-h-[100dvh] w-full bg-[var(--background)]">
       <DashboardSidebar
-        user={user ? { name: user.name, email: user.email } : null}
-        isAdmin={isAdmin}
-        isLeader={isLeader(user)}
-        isNewHire={isNewHire(user)}
-        canManageAnnouncements={Boolean(user?.can_manage_announcements)}
         activeRoute="trash"
-        statusMessage={
-          isLoading ? "Cargando papelera..." : (errorMessage ?? (totalCount > 0 ? `${totalCount} por revisar` : "Listo"))
-        }
       />
 
       <HelpButton tourId="trash" variant="floating" />

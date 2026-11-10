@@ -18,6 +18,8 @@ import {
 
 import { apiFetch, ApiClientError } from "@/lib/api-client";
 import { saveAccessToken } from "@/lib/auth-token";
+import type { SessionUser } from "@/lib/session-context";
+import { useSession } from "@/lib/session-context";
 import { cn } from "@/lib/cn";
 
 import { BrandMark } from "@/components/brand-mark";
@@ -34,11 +36,7 @@ type LoginResponse = {
 };
 
 type MeResponse = {
-  data: {
-    id: number;
-    name: string;
-    email: string;
-  };
+  data: SessionUser;
 };
 
 type FieldErrors = {
@@ -77,6 +75,7 @@ const STATS = [
 
 export default function Home() {
   const router = useRouter();
+  const { setUser: setSessionUser } = useSession();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -116,6 +115,10 @@ export default function Home() {
       const currentUser = await apiFetch<MeResponse>("/me", {
         method: "GET",
       });
+
+      // Se publica la sesión antes de navegar: el dashboard arranca con el
+      // usuario resuelto y el sidebar no dibuja "Invitado" ni "Sin sesión".
+      setSessionUser(currentUser.data);
 
       if (currentUser.data.id) {
         router.push("/dashboard");
@@ -376,10 +379,6 @@ function BrandPanel() {
           ))}
         </dl>
       </div>
-
-      <p className="relative z-10 mt-12 text-[11px] tracking-wide text-white/80 uppercase">
-        Portal interno Coherev
-      </p>
     </aside>
   );
 }

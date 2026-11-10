@@ -155,14 +155,39 @@ CREATE TABLE IF NOT EXISTS user_roles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
+-- Pertenencia N:M de usuarios a departamentos
+-- -----------------------------------------------------------------------------
+-- Un usuario puede pertenecer a varios departamentos a la vez. Esta tabla es
+-- la fuente de verdad de la pertenencia: users.department_id se conserva como
+-- departamento principal (el primero de la lista) para los listados y las
+-- vistas que muestran un unico departamento.
+CREATE TABLE IF NOT EXISTS department_user (
+    id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id       BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY department_user_user_id_department_id_unique
+        (user_id, department_id),
+    CONSTRAINT department_user_user_id_foreign
+        FOREIGN KEY (user_id) REFERENCES users (id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT department_user_department_id_foreign
+        FOREIGN KEY (department_id) REFERENCES departments (id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
 -- Anuncios + comentarios + adjuntos
 -- -----------------------------------------------------------------------------
+-- department_id NULL = publicación general: la ve toda la organización.
+-- Antes "publicar para todos los departamentos" creaba una copia de la
+-- publicación por cada departamento.
 CREATE TABLE IF NOT EXISTS announcements (
     id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     title         VARCHAR(255)    NOT NULL,
     content       TEXT            NOT NULL,
     is_visible    TINYINT(1)      NOT NULL DEFAULT 0,
-    department_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NULL,
     created_by    BIGINT UNSIGNED NOT NULL,
     created_at    TIMESTAMP       NULL,
     updated_at    TIMESTAMP       NULL,

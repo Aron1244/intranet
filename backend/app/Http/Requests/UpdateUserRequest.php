@@ -27,7 +27,8 @@ class UpdateUserRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user')?->id)],
             'password' => ['nullable', 'string', 'min:8'],
-            'department_id' => ['nullable', 'exists:departments,id'],
+            'department_ids' => ['sometimes', 'nullable', 'array'],
+            'department_ids.*' => ['integer', 'distinct', 'exists:departments,id'],
         ];
     }
 }

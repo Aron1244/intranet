@@ -18,7 +18,9 @@ class ConversationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $conversations = $user->conversations()->with('users')->get();
+        $conversations = $user->isAdministrator()
+            ? Conversation::query()->with('users')->get()
+            : $user->conversations()->with('users')->get();
 
         $unreadByConversation = Message::query()
             ->whereIn('conversation_id', $conversations->pluck('id'))
@@ -30,10 +32,14 @@ class ConversationController extends Controller
             ->groupBy('conversation_id')
             ->pluck('unread_count', 'conversation_id');
 
-        $payload = $conversations->map(function (Conversation $conversation) use ($unreadByConversation) {
+        $payload = $conversations->map(function (Conversation $conversation) use ($unreadByConversation, $user) {
+            $isParticipant = $conversation->users->contains('id', $user->id);
+
             return [
                 ...$conversation->toArray(),
-                'unread_count' => (int) ($unreadByConversation[$conversation->id] ?? 0),
+                'unread_count' => $isParticipant
+                    ? (int) ($unreadByConversation[$conversation->id] ?? 0)
+                    : 0,
             ];
         })->values();
 
@@ -79,7 +85,8 @@ class ConversationController extends Controller
     {
         $user = $request->user();
         abort_unless(
-            $conversation->users()->whereKey($user->id)->exists(),
+            $user->isAdministrator()
+                || $conversation->users()->whereKey($user->id)->exists(),
             403
         );
 
@@ -121,14 +128,16 @@ class ConversationController extends Controller
 
     /**
      * Rename a conversation. Only administrators or department leaders
-     * (Líder) can edit the display name of a conversation they participate in.
+     * (Líder) can edit the display name; administrators may rename any
+     * conversation, leaders only the ones they participate in.
      */
     public function update(Request $request, Conversation $conversation): JsonResponse
     {
         $user = $request->user();
 
         abort_unless(
-            $conversation->users()->whereKey($user->id)->exists(),
+            $user->isAdministrator()
+                || $conversation->users()->whereKey($user->id)->exists(),
             403,
             'No participas en esta conversación.'
         );

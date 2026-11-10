@@ -30,7 +30,8 @@ class UpdateAnnouncementRequest extends FormRequest
         return [
             'title' => ['sometimes', 'string', 'max:255'],
             'content' => ['sometimes', 'string'],
-            'department_id' => ['sometimes', 'integer', 'exists:departments,id'],
+            'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
+            'publish_all' => ['sometimes', 'boolean'],
             'is_visible' => ['sometimes', 'boolean'],
             'publish_all' => ['sometimes', 'boolean'],
             'attachments' => ['sometimes', 'array'],
