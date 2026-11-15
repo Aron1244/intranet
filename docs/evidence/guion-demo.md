@@ -44,7 +44,7 @@ Hay dos caminos y conviene decidirlo con tiempo:
 
 **Qué se dice.** Coherev reúne en un solo lugar la comunicación interna, el contenido de la organización, la gestión documental y el control de acceso por rol. Siete módulos operativos de los diez previstos.
 
-**Qué se verifica.** Identidad de marca, coherencia con la voz de la marca (`docs/VOICE_TONE.md`).
+**Qué se verifica.** Identidad de marca, coherencia con la voz de la marca (`VOICE_TONE.md`).
 
 ---
 

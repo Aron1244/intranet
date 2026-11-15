@@ -32,7 +32,7 @@ El sistema cubre los siguientes módulos funcionales:
 | 9 | Directorio de colaboradores | Previsto (Iter 2) |
 | 10 | Panel de Novedades | Previsto (Iter 2) |
 
-> El estado de la columna anterior corresponde al corte del documento de la Fase 2.1. El estado real al 15 de noviembre de 2026 está en el [checklist de término](Fase%202.2/6-Checklist%20de%20termino%20del%20proyecto.md): 7 de 10 módulos operativos.
+> El estado de la columna anterior corresponde al corte del documento de la Fase 2.1. El estado real al 15 de noviembre de 2026 está en el [checklist de término](docs/Fase%202.2/6-Checklist%20de%20termino%20del%20proyecto.md): 7 de 10 módulos operativos.
 
 ## 3. Actores y roles
 
