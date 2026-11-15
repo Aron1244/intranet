@@ -10,7 +10,7 @@
 | --- | --- |
 | Proyecto | Coherev — Sistema de Intranet Corporativa |
 | Etapa | Fase 2.2 — Cierre de proyecto |
-| Versión | 1.2 |
+| Versión | 1.3 |
 | Fecha de emisión | 15 de noviembre de 2026 |
 | Fecha de la verificación técnica | 15 de noviembre de 2026 |
 | Fecha de cierre planificada | 20 de diciembre de 2026 (semana 18) |
@@ -54,6 +54,7 @@ Se verificaron 211 ítems en total: 115 completados, 14 parciales, 74 pendientes
 | 1.0 | 13 de noviembre de 2026 | Emisión inicial sobre el estado del repositorio a esa fecha |
 | 1.1 | 15 de noviembre de 2026 | Registro de verificación del entorno (§5.3) completo; cifras del repositorio corregidas (53 → 56 commits, 460 → 468 aserciones, 22 → 20 archivos de prueba); RF-CHT-06 y RF-CHT-07 degradados a [~] por DEF-032 y DEF-033; árbol de trabajo marcado como limpio; fuente Markdown y script de generación añadidos |
 | 1.2 | 15 de noviembre de 2026 | Tipografía Calibri, como el resto de la documentación del proyecto; escritos los cinco documentos prometidos en §3.1 (DATABASE, REQUIREMENTS, USER_STORIES, TRACEABILITY, VOICE_TONE) y el índice de docs/evidence/; recuento de ítems actualizado |
+| 1.3 | 15 de noviembre de 2026 | La evidencia de cierre se reenfoca: sin capturas de pantalla, con demo en vivo y su guion de 20 minutos en docs/evidence/. Se actualizan §3.1, §4, §7, §8 y §9 en consecuencia |
 
 <!-- pagebreak -->
 
@@ -184,7 +185,7 @@ Módulos previstos — RF-FUT
 | [x] | RNF-MANT-02 | Reglas de negocio en modelos y Policies, no en controladores | `app/Policies/`, `app/Models/User.php` |
 | [x] | RNF-MANT-03 | Cobertura de la funcionalidad crítica con tests PHPUnit; sin romper la suite existente | 133 pruebas / 468 aserciones en verde, 256,47 s (15 nov 2026), 20 archivos de prueba (19 Feature + 1 Unit) |
 | [x] | RNF-MANT-04 | Código consistente con Laravel Pint y las convenciones del monorepo | Commit 6726b45 (formato con Pint) |
-| [~] | RNF-MANT-05 | Documentación mantenida del proyecto (API, arquitectura, esquema ER, trazabilidad) | Parcial. Faltan seis archivos prometidos por el documento de arquitectura: `DATABASE.md`, `REQUIREMENTS.md`, `USER_STORIES.md`, `TRACEABILITY.md`, `VOICE_TONE.md` y `evidence/` (§3.1). Desde la v1.1, este checklist tiene además fuente Markdown regenerable |
+| [~] | RNF-MANT-05 | Documentación mantenida del proyecto (API, arquitectura, esquema ER, trazabilidad) | Parcial. Los cinco documentos prometidos por el documento de arquitectura están escritos (`DATABASE.md`, `REQUIREMENTS.md`, `USER_STORIES.md`, `TRACEABILITY.md`, `VOICE_TONE.md`); de `evidence/` solo queda el acta de la sesión con usuarios reales (§3.1). Este checklist tiene además fuente Markdown regenerable |
 | [x] | RNF-MANT-06 | Integraciones externas concentradas en la carpeta `lib/` del frontend | `lib/api-client.ts`, `lib/auth-token.ts`, `lib/echo-client.ts`, `lib/attachment-url.ts` |
 | [ ] | RNF-MANT-07 | Versionado público de la API planificado a futuro (/api/v1, /api/v2) | Fuera del alcance priorizado (roadmap) |
 
@@ -288,9 +289,9 @@ Por completar al cierre de cada ciclo. El resultado esperado de cada caso está 
 | [x] | Plan de pruebas | `docs/Fase 2.2/1-Plan de pruebas.pdf` | Objetivos, alcance, tipos, recursos, criterios de entrada/salida y cronograma |
 | [x] | Casos de prueba | `docs/Fase 2.2/2-Casos de prueba.pdf` | 34 casos con los 9 campos solicitados |
 | [x] | Registro de defectos por ciclos | `docs/Fase 2.2/3-Defectos por ciclos.pdf` | 31 defectos con ciclo, severidad, estado, responsable y evidencia |
-| [x] | Manual de usuario final | `docs/Fase 2.2/4-Manual de usuario final.pdf` | 15 capturas indicadas por vista, 13 procedimientos y 30 soluciones de problemas |
+| [x] | Manual de usuario final | `docs/Fase 2.2/4-Manual de usuario final.pdf` | 15 capturas indicadas por vista, 13 procedimientos y 30 soluciones de problemas. El manual especifica qué capturar, pero con la decisión de la v1.3 las capturas no se aportarán: la evidencia se demuestra en vivo |
 | [x] | Manual de implementación | `docs/Fase 2.2/5-Manual de implementacion.pdf` | Infraestructura, instalación, variables, dependencias, verificación y rollback |
-| [x] | Checklist de término del proyecto | `docs/Fase 2.2/6-Checklist de termino del proyecto.md` y `.pdf` | Este documento (v1.2) |
+| [x] | Checklist de término del proyecto | `docs/Fase 2.2/6-Checklist de termino del proyecto.md` y `.pdf` | Este documento (v1.3) |
 | [x] | Documento de arquitectura de software | `docs/Fase 2.1/14-documento arquitectura de software.docx` | 15 secciones, modelo 4+1, 7 decisiones de diseño, 8 riesgos |
 | [x] | Requerimientos funcionales y no funcionales | `docs/Fase 2.1/8 y 9-requerimientos F y NF.docx` | 51 RF y 35 RNF numerados |
 | [x] | Historias de usuario | `docs/Fase 2.1/10-historias de usuario.docx` | 13 historias, 3 o más por rol |
@@ -318,9 +319,9 @@ Por completar al cierre de cada ciclo. El resultado esperado de cada caso está 
 | [x] | `docs/USER_STORIES.md` | Ídem | Las 13 historias con sus criterios de aceptación y los RF asociados a cada una |
 | [x] | `docs/TRACEABILITY.md` | Ídem | Matriz Problema → RF → HU → Funcionalidad → Prueba sobre las 86 filas de requerimientos |
 | [x] | `docs/VOICE_TONE.md` | Ídem | Voz de la marca, patrones de mensaje de error, glosario y tokens visuales |
-| [~] | `docs/evidence/` | Ídem | El índice de la carpeta existe y detalla qué evidencia debe incorporarse y en qué formato. Faltan las capturas del tablero (EVI-001) y el acta de usabilidad (EVI-002) |
+| [~] | `docs/evidence/` | Ídem | Reorientado a demo en vivo: no habrá capturas de pantalla, sino la demo del sistema con su guion de 20 minutos (`guion-demo.md`). Queda pendiente el acta de la sesión con usuarios reales (EVI-002) |
 
-Los seis archivos estaban prometidos explícitamente por el documento de arquitectura que ya está entregado. Su ausencia era una inconsistencia documentada, registrada como riesgo R5 en el plan de hitos y entregables. Con la v1.2, cinco quedan resueltos; `docs/evidence/` sigue parcial porque depende de actividades —capturas del tablero y sesión con usuarios reales— que todavía no se han realizado y que no se pueden documentar sin que ocurran.
+Los seis archivos estaban prometidos explícitamente por el documento de arquitectura que ya está entregado. Su ausencia era una inconsistencia documentada, registrada como riesgo R5 en el plan de hitos y entregables. Con la v1.2, cinco quedan resueltos. `docs/evidence/` sigue parcial porque su contenido depende de una actividad que todavía no ha ocurrido: la evidencia de cierre se aporte como demo en vivo, no como paquete de capturas, y el acta de la sesión con usuarios reales (EVI-002) requiere que esa sesión se realice.
 
 <!-- pagebreak -->
 
@@ -336,7 +337,7 @@ Los seis archivos estaban prometidos explícitamente por el documento de arquite
 | [x] | .gitignore correcto | Completado | node_modules/, graphify-out/, .env y artefactos de generación |
 | [x] | Knowledge graph del proyecto consultable | Completado | `graphify-out/` (local, regenerable); graph.json con ≈1670 nodos, 3006 aristas, 143 comunidades |
 | [~] | README raíz, BACKLOG.md y ROADMAP.md unificados con el nombre oficial | Parcial | El README raíz ya dice Coherev (commit bd23e73). No se pudo verificar BACKLOG.md ni ROADMAP.md: no existen como archivo Markdown en el repositorio, cuya fuente de verdad es Fase 2.1/11-product backlog.xlsx (tarjeta EVI-005) |
-| [~] | Documentación del repositorio en docs/ completa y coherente | Parcial | Los cinco documentos de §3.1 están escritos; falta la evidencia de `docs/evidence/` (capturas del tablero y acta de usabilidad) |
+| [~] | Documentación del repositorio en docs/ completa y coherente | Parcial | Los cinco documentos de §3.1 están escritos y `docs/evidence/` tiene su índice y el guion de la demo; falta el acta de la sesión con usuarios reales |
 | [ ] | Etiqueta de versión capstone-v1.0 | Pendiente | `git tag` no devuelve ninguna etiqueta. Defecto DEF-031, abierto |
 | [x] | Repositorio presentable sin archivos temporales | Completado | Verificado el 15 nov 2026: árbol de trabajo limpio, sin archivos sin seguimiento (tarjeta EVI-006) |
 
@@ -437,7 +438,7 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 
 |  | Ítem | Estado | Evidencia | Responsable |
 | --- | --- | --- | --- | --- |
-| [ ] | Acta de pruebas de usabilidad con usuarios reales (3 a 5 pilotos) | Pendiente | Hito M4. Los 300 usuarios sintéticos no sirven para medir | Benjamín Herrera y Julián Tapia |
+| [ ] | Acta de pruebas de usabilidad con usuarios reales (3 a 5 pilotos) | Pendiente | Hito M4. Los 300 usuarios sintéticos no sirven para medir. La demo en vivo puede ser esa misma sesión con pilotos | Benjamín Herrera y Julián Tapia |
 | [ ] | Métrica NSM reportada (mensajes / WAU / semana; objetivo 5) | Pendiente | Se calcula desde la tabla de lecturas y de mensajes | Benjamín Herrera |
 | [ ] | WAU (usuarios activos semanales) medido | Pendiente | Mismo origen de datos | Benjamín Herrera |
 | [ ] | Tiempo hasta el primer mensaje de un ingreso nuevo | Pendiente | — | Julián Tapia |
@@ -451,7 +452,7 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 
 | ID | Riesgo | Impacto | Mitigación vigente |
 | --- | --- | --- | --- |
-| R1 | Los documentos de M3 no se escriben a tiempo | Alto | Reducido: la Fase 2.2 cubre los 6 entregables de cierre y los cinco documentos de `docs/` ya están escritos; solo queda la evidencia de `docs/evidence/` (§3.1) |
+| R1 | Los documentos de M3 no se escriben a tiempo | Alto | Reducido: la Fase 2.2 cubre los 6 entregables de cierre y los cinco documentos de `docs/` ya están escritos; solo queda el acta de la sesión con usuarios reales (§3.1) |
 | R2 | M4 depende de conseguir usuarios reales | Alto | Sin estrategia activa. Es el mayor riesgo de la entrega: la campaña con pilotos debe gestionarse en paralelo desde ya, no en la semana 14 |
 | R3 | M2 deja los tres módulos para el final | Alto | Materializado: Tareas, Directorio y Novedades siguen sin implementar |
 | R4 | La carga de trabajo queda desbalanceada entre los dos integrantes | Medio | Reparto actual: 15 defectos de backend y 15 de frontend |
@@ -469,13 +470,13 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 | --- | --- | --- | --- |
 | [ ] | Acta de pruebas firmada | Pendiente | Se firma al cerrar el Ciclo 3 (11 dic 2026) |
 | [ ] | Registro de defectos cerrado (0 defectos Críticos/Altos abiertos) | Pendiente | Hoy: 30 de 31 cerrados en el registro vigente; el abierto es DEF-031, de severidad Baja. Se incorporan además DEF-032 y DEF-033, detectados en la verificación técnica del 15 nov 2026 |
-| [ ] | Checklist de término completado y firmado | Pendiente | v1.2 emitida el 15 nov 2026; la firma se produce al cierre del proyecto (20 dic 2026) |
+| [ ] | Checklist de término completado y firmado | Pendiente | v1.3 emitida el 15 nov 2026; la firma se produce al cierre del proyecto (20 dic 2026) |
 | [ ] | Entrega de los manuales al cliente | Pendiente | Los 6 manuales de la Fase 2.2 están emitidos; falta la entrega formal |
 | [ ] | Repositorio etiquetado con la versión entregada | Pendiente | `git tag capstone-v1.0` (tarjeta EVI-006, DEF-031) |
 | [x] | Repositorio limpio, sin archivos sin seguimiento ni temporales | Completado | Verificado el 15 nov 2026: `git status` sin salida |
-| [ ] | PPT del capstone actualizada con el stack real | Pendiente | Debe reflejar MariaDB (no MySQL) y documentar Laravel Reverb (tarjeta EVI-004) |
+| [ ] | PPT del capstone actualizada con el stack real | Pendiente | Debe reflejar MariaDB (no MySQL) y documentar Laravel Reverb (tarjeta EVI-004). Es el riesgo R8 del documento de arquitectura, que ya prescribe el cambio: la presentación nombra MySQL donde el sistema usa MariaDB |
 | [ ] | Defensa ensayada con guion cronometrado (20 minutos) | Pendiente | Hito M6 |
-| [ ] | Evidencia ordenada y archivada (`docs/evidence/`) | Pendiente | Capturas del tablero Trello (EVI-001) y acta de usabilidad (EVI-002) |
+| [ ] | Evidencia ordenada y archivada (`docs/evidence/`) | Pendiente | La evidencia se aporta como demo en vivo, con su guion de 20 minutos ya redactado (`docs/evidence/guion-demo.md`). Falta el acta de la sesión con usuarios reales (EVI-002) |
 | [ ] | Backlog actualizado con el estado final de las 35 tarjetas | Pendiente | La distribución actual del .xlsx está desactualizada respecto del código |
 | [ ] | Cierre de los 6 módulos de la Fase 2.2 en el tablero | Pendiente | — |
 | [ ] | Evaluación final de la Fase 2 por la docente guía | Pendiente | — |
@@ -493,7 +494,7 @@ Ordenados por criticidad. Los tres primeros son condición necesaria para que el
 | 3 | 34 casos de prueba sin ejecutar | Verificación | Ejecutar la campaña del 1-Plan de pruebas entre el 16 nov y el 20 dic | Benjamín Herrera y Julián Tapia |
 | 4 | Validación con usuarios reales sin gestionar | Evidencia | Conseguir 3 a 5 pilotos antes de la semana 14 y ejecutar la campaña | Benjamín Herrera y Julián Tapia |
 | 5 | Sin etiqueta de versión (DEF-031) | Entrega | `git tag capstone-v1.0` tras integrar la versión final | Benjamín Herrera |
-| 6 | La evidencia de `docs/evidence/` sigue ausente (capturas del tablero y acta de usabilidad) | Documentación | Exportar el tablero real (EVI-001) y formalizar el acta de la sesión con usuarios reales (EVI-002) | Benjamín Herrera y Julián Tapia |
+| 6 | El acta de la sesión con usuarios reales sigue sin celebrar (EVI-002) | Documentación | Realizar la sesión con 3 a 5 pilotos y levantar el acta. La demo en vivo puede ser esa misma sesión, lo que cierra el bloque y la evidencia de golpe | Benjamín Herrera y Julián Tapia |
 | 7 | Accesibilidad WCAG AA sin auditoría con axe-core | Calidad | Declarar axe-core y ejecutar la auditoría (caso CP-033) | Julián Tapia |
 | 8 | Errores de formulario por campo pendientes (UX-003) | Calidad | Implementar el mapa de errores del servidor a cada input (caso CP-034) | Julián Tapia |
 | 9 | Nomenclatura anterior a Coherev en el backlog | Documentación | Unificar a Coherev (tarjeta EVI-005) | Benjamín Herrera y Julián Tapia |
@@ -511,4 +512,4 @@ Ordenados por criticidad. Los tres primeros son condición necesaria para que el
 | Desarrollador Frontend | Julián Tapia |  |  |
 | Docente guía / Sponsor | Cindy Betzabé Contador Cisterna |  |  |
 
-Checklist de término v1.2 emitido el 15 de noviembre de 2026 sobre el estado real del repositorio intranet (rama develop, commit verificado 6b15daa, 56 commits, 133 pruebas automatizadas con 468 aserciones en verde) y de los documentos de las Fases 1, 2 y 2.1. La v1.0 se emitió el 13 de noviembre de 2026 y la v1.1 el mismo 15 de noviembre tras completar la verificación técnica del entorno (§5.3), corregir las cifras del repositorio y de la suite, y degradar RF-CHT-06 y RF-CHT-07 a estado parcial por los defectos DEF-032 y DEF-033. La v1.2 adopta la tipografía Calibri del resto de la documentación del proyecto y da por escritos los cinco documentos de `docs/` prometidos en §3.1.
+Checklist de término v1.3 emitido el 15 de noviembre de 2026 sobre el estado real del repositorio intranet (rama develop, commit verificado 6b15daa, 56 commits, 133 pruebas automatizadas con 468 aserciones en verde) y de los documentos de las Fases 1, 2 y 2.1. La v1.0 se emitió el 13 de noviembre de 2026, la v1.1 el mismo 15 de noviembre tras completar la verificación técnica del entorno (§5.3), corregir las cifras del repositorio y de la suite y degradar RF-CHT-06 y RF-CHT-07 a estado parcial por los defectos DEF-032 y DEF-033. La v1.2 adopta la tipografía Calibri del resto de la documentación del proyecto y da por escritos los cinco documentos de `docs/` prometidos en §3.1. La v1.3 reenfoca la evidencia de cierre: no habrá capturas de pantalla, sino una demo en vivo con su guion de 20 minutos.
