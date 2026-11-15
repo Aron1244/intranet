@@ -47,13 +47,29 @@ SOURCE = DOC_DIR / "6-Checklist de termino del proyecto.md"
 OUTPUT = DOC_DIR / "6-Checklist de termino del proyecto.pdf"
 
 TITLE = "Checklist de Término del Proyecto"
-SUBTITLE = ("Cierre administrativo y validación de la entrega - Coherev, "
-            "Sistema de Intranet Corporativa - Docente guía: "
-            "Cindy Betzabé Contador Cisterna")
+SUBTITLE = "Cierre administrativo y validación de la entrega"
 AUTHOR = "Benjamín Herrera · Julián Tapia"
-DATE = "15 de noviembre de 2026"
+DATE = "15/11/2026"
 DOC_TYPE = "academic"
 ACCENT = "#1C4FA3"
+
+# ── Página y portada ─────────────────────────────────────────────────────────
+# Los seis entregables de la Fase 2.2 son US Letter (612x792 pt) con márgenes
+# de una pulgada y la portada de Word con el lockup institucional arriba. El
+# cuerpo se reproduce con esos mismos márgenes y esa misma página; la portada
+# se genera con HTML replicando la geometría de la original.
+PAGE_W_PT, PAGE_H_PT = 612, 792
+PAGE_W_PX, PAGE_H_PX = 816, 1056
+LOGO = DOC_DIR.parent / "assets" / "duocuc-sede-san-joaquin.jpeg"
+
+# Geometría de la portada original, en px sobre 816x1056 (Letter a 96 dpi).
+COVER = {
+    "logo_x": 177.5, "logo_y": 96.0, "logo_w": 461.0,
+    "title_y": 398.3, "title_fs": 34.7, "title_lh": 42.0,
+    "sub_y": 452.4, "sub_fs": 17.3, "sub_lh": 22.0,
+    "int_y": 683.5, "body_fs": 18.7, "body_lh": 25.7,
+    "doc_y": 805.0, "date_y": 920.0,
+}
 
 # ── Tipografía ───────────────────────────────────────────────────────────────
 # Una sola variable cambia la familia tipográfica de todo el documento (la
@@ -132,7 +148,6 @@ if not SCRIPTS.is_dir():
     )
 
 palette = load("palette")
-cover = load("cover")
 render_body = load("render_body")
 merge = load("merge")
 reformat_parse = load("reformat_parse")
@@ -147,7 +162,6 @@ reformat_parse = load("reformat_parse")
 # 4) Relleno interno más compacto: 10 pt a cada lado dejan sin sitio a los
 #    identificadores largos y duplican el número de páginas.
 _orig_table = render_body.Table
-
 
 def _table_repeat_rows(*args, **kwargs):
     kwargs.setdefault("repeatRows", 1)
@@ -186,41 +200,63 @@ def _style_compact(commands):
     commands.append(("BOTTOMPADDING", (0, 0), (-1, -1), 4))
     commands.append(("LEFTPADDING", (0, 0), (-1, -1), 6))
     commands.append(("RIGHTPADDING", (0, 0), (-1, -1), 6))
+    # Separadores verticales entre celdas de la cabecera, como en el original.
+    commands.append(("LINEBEFORE", (1, 0), (-1, 0), 0.5, HexColor("#FFFFFF")))
     return _orig_style(commands)
 
 
 render_body.TableStyle = _style_compact
 
+# Los estilos por defecto de la skill usan una jerarquía propia (h1 en negrita,
+# tablas a 9,5 pt). Los de la familia de la Fase 2.2 son: títulos en regular,
+# tablas a 11 pt y el destacado con texto gris azulado.
+from reportlab.lib.colors import HexColor  # noqa: E402
+from reportlab.lib.styles import ParagraphStyle  # noqa: E402
+
+_orig_make_styles = render_body.make_styles
+
+TABLE_SIZE = 11.0
+CALLOUT_TEXT = "#334455"
+
+
+def _make_styles_familia(tokens):
+    s = _orig_make_styles(tokens)
+    bf = tokens.get("font_body_rl", "Calibri")
+    s["h1"] = ParagraphStyle("H1f", parent=s["h1"], fontName=bf,
+                              fontSize=tokens["size_h1"],
+                              leading=tokens["size_h1"] * 1.25, spaceBefore=22)
+    s["h2"] = ParagraphStyle("H2f", parent=s["h2"], fontName=bf,
+                              fontSize=tokens["size_h2"],
+                              leading=tokens["size_h2"] * 1.25, spaceBefore=16)
+    s["h3"] = ParagraphStyle("H3f", parent=s["h3"], fontName=bf,
+                              fontSize=tokens["size_h3"],
+                              leading=tokens["size_h3"] * 1.35, spaceBefore=12)
+    s["table_cell"] = ParagraphStyle("TblCf", parent=s["table_cell"],
+                                      fontSize=TABLE_SIZE, leading=TABLE_SIZE * 1.4)
+    s["table_header"] = ParagraphStyle("TblHf", parent=s["table_header"],
+                                        fontSize=TABLE_SIZE, leading=TABLE_SIZE * 1.4)
+    s["callout"] = ParagraphStyle("CalF", parent=s["callout"], fontName=bf,
+                                   fontSize=10.6, leading=15,
+                                   textColor=HexColor(CALLOUT_TEXT))
+    s["caption"] = ParagraphStyle("CapF", parent=s["caption"], fontSize=9, leading=12)
+    return s
+
+
+render_body.make_styles = _make_styles_familia
+
 
 def _decorate(self, canv, doc):
-    """Encabezado y pie de página, con la numeración alineada al PDF final."""
+    """Solo el número de página, como en el original: sin cabecera ni pie.
+
+    El original numera abajo a la derecha, a 40 pt del borde inferior, sin
+    regla ni autor; el resto de la familia hace lo mismo.
+    """
     t = self._t
-    lm = doc.leftMargin
-    rm = doc.rightMargin
     pw = doc.pagesize[0]
-    ph = doc.pagesize[1]
-    top = ph - doc.topMargin
-
     canv.saveState()
-
-    canv.setStrokeColor(render_body.HexColor(t["accent"]))
-    canv.setLineWidth(1.5)
-    canv.line(lm, top + 12, pw - rm, top + 12)
-
-    canv.setFillColor(render_body.HexColor(t["muted"]))
-    canv.setFont(t["font_body_rl"], t["size_meta"])
-    canv.drawString(lm, top + 16, t["title"].upper())
-    canv.drawRightString(pw - rm, top + 16, t.get("date", ""))
-
-    canv.setStrokeColor(render_body.HexColor("#DDDDDD"))
-    canv.setLineWidth(0.5)
-    canv.line(lm, doc.bottomMargin - 12, pw - rm, doc.bottomMargin - 12)
-
-    canv.setFillColor(render_body.HexColor(t["muted"]))
-    canv.setFont(t["font_body_rl"], t["size_meta"])
-    canv.drawString(lm, doc.bottomMargin - 22, t.get("author", ""))
-    canv.drawRightString(pw - rm, doc.bottomMargin - 22, str(doc.page + 1))
-
+    canv.setFillColor(HexColor("#000000"))
+    canv.setFont(t["font_body_rl"], 11)
+    canv.drawRightString(pw - 72, 40, str(doc.page + 1))
     canv.restoreState()
 
 
@@ -247,6 +283,10 @@ def _register_fonts(tokens):
 
 
 render_body.register_fonts = _register_fonts
+
+# La Fase 2.2 se entrega en US Letter con márgenes de una pulgada, no en A4.
+# render_body usa el tamaño A4 para el cuerpo: se sustituye la constante.
+render_body.A4 = (PAGE_W_PT, PAGE_H_PT)
 
 
 # ── Construcción de bloques ───────────────────────────────────────────────────
@@ -299,7 +339,7 @@ def markdown_to_blocks(md_path: Path) -> list:
             if key in COL_WIDTHS:
                 b["col_widths"] = COL_WIDTHS[key]
             if key in SMALL_FONT_TABLES:
-                b["font_size"] = 8.5
+                b["font_size"] = 9.5
             b["headers"] = [_rl_markup(h) for h in b.get("headers", [])]
             b["rows"] = [[_rl_markup(c) for c in row] for row in b.get("rows", [])]
         out.append(b)
@@ -382,8 +422,11 @@ def locate_pages(body_pdf: Path, headings: list) -> dict:
                     continue
                 size = max(s.get("size", 0) for s in spans)
                 if size >= 14:
+                    # Los spans de una línea son contiguos: se unen sin
+                    # separador para no inventar espacios en los títulos que
+                    # mezclan tipografías.
                     heading_lines.append(
-                        (page.number, " ".join(s["text"] for s in spans).strip()))
+                        (page.number, "".join(s["text"] for s in spans).strip()))
     doc.close()
 
     page_map = {}
@@ -397,14 +440,60 @@ def locate_pages(body_pdf: Path, headings: list) -> dict:
 
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────
+COVER_HTML = """<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+html, body {{ margin:0; padding:0; width:{w}px; height:{h}px; overflow:hidden; background:#FFFFFF; }}
+.page {{ position:relative; width:{w}px; height:{h}px; background:#FFFFFF; }}
+.logo {{ position:absolute; left:{logo_x}px; top:{logo_y}px; width:{logo_w}px; }}
+.t {{ position:absolute; left:0; width:{w}px; text-align:center; margin:0;
+      color:#000000; font-family:'{font}',Arial,Helvetica,sans-serif; }}
+</style></head>
+<body><div class="page">
+<img class="logo" src="file:///{logo}">
+<div class="t" style="top:{title_y}px; font-size:{title_fs}px; line-height:{title_lh}px;">{title}</div>
+<div class="t" style="top:{sub_y}px; font-size:{sub_fs}px; line-height:{sub_lh}px;">{subtitle}</div>
+<div class="t" style="top:{int_y}px; font-size:{body_fs}px; line-height:{body_lh}px;">Integrantes:<br>Juli&aacute;n Tapia<br>Benjam&iacute;n Herrera</div>
+<div class="t" style="top:{doc_y}px; font-size:{body_fs}px; line-height:{body_lh}px;">Docente: Cindy Betzab&eacute; Contador Cisterna</div>
+<div class="t" style="top:{date_y}px; font-size:{body_fs}px; line-height:{body_lh}px;">{date}</div>
+</div></body></html>
+"""
+
+COVER_JS = """const path = require("path");
+const { chromium } = require("playwright");
+(async () => {
+  const [, , input, out, w, h] = process.argv;
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.goto("file://" + path.resolve(input));
+  await page.waitForTimeout(800);
+  await page.pdf({ path: out, width: w, height: h, printBackground: true });
+  await browser.close();
+  console.log(JSON.stringify({ status: "ok", out }));
+})();
+"""
+
+
 def render_cover(tokens: dict, out_pdf: Path, workdir: Path) -> None:
-    html = cover.render(tokens)
+    """Portada con el lockup institucional y la geometría del original."""
+    c = COVER
+    html = COVER_HTML.format(
+        w=PAGE_W_PX, h=PAGE_H_PX, font=FONT_FAMILY,
+        logo=LOGO.as_posix().replace("/", "/"),
+        title=TITLE, subtitle=SUBTITLE, date=DATE, **c,
+    )
     html_path = workdir / "cover.html"
     html_path.write_text(html, encoding="utf-8")
+
+    js_path = workdir / "render_cover.js"
+    js_path.write_text(COVER_JS, encoding="utf-8")
+
+    env = dict(os.environ)
+    env["NODE_PATH"] = str(SCRIPTS / "node_modules")
     subprocess.run(
-        ["node", str(SCRIPTS / "render_cover.js"),
-         "--input", str(html_path), "--out", str(out_pdf)],
-        check=True, cwd=str(SCRIPTS),
+        ["node", str(js_path), str(html_path), str(out_pdf),
+         f"{PAGE_W_PX}px", f"{PAGE_H_PX}px"],
+        check=True, env=env,
     )
 
 
@@ -442,6 +531,33 @@ def main() -> int:
     tokens["font_display"] = FONT_FAMILY
     tokens["font_body"] = FONT_FAMILY
     tokens["gfonts_import"] = ""  # sin Google Fonts: todo es local
+
+    # Letter con márgenes de una pulgada, como los documentos de la fase.
+    tokens["margin_left"] = 72
+    tokens["margin_right"] = 72
+    tokens["margin_top"] = 72
+    tokens["margin_bottom"] = 60
+
+    # Paleta y escala de la familia Fase 2.2, tomadas de los documentos
+    # originales: cabecera de tabla #2A596B, filas alternas #EBEFF2,
+    # destacado #F4F7F9, títulos en regular y tablas a 11 pt.
+    tokens["accent"] = "#2A596B"
+    tokens["accent_lt"] = "#EBEFF2"
+    tokens["dark"] = "#000000"
+    tokens["body_text"] = "#000000"
+    tokens["muted"] = "#333333"
+    tokens["page_bg"] = "#FFFFFF"
+    tokens["cover_bg"] = "#FFFFFF"
+    tokens["text_light"] = "#FFFFFF"
+    tokens["size_h1"] = 20
+    tokens["size_h2"] = 16
+    tokens["size_h3"] = 13
+    tokens["size_body"] = 11
+    tokens["size_caption"] = 9
+    tokens["size_meta"] = 10
+    tokens["line_gap"] = 15
+    tokens["section_gap"] = 22
+    tokens["para_gap"] = 8
 
     (workdir / "tokens.json").write_text(
         json.dumps(tokens, indent=2, ensure_ascii=False), encoding="utf-8")

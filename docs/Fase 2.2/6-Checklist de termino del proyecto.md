@@ -10,7 +10,7 @@
 | --- | --- |
 | Proyecto | Coherev — Sistema de Intranet Corporativa |
 | Etapa | Fase 2.2 — Cierre de proyecto |
-| Versión | 1.3 |
+| Versión | 1.4 |
 | Fecha de emisión | 15 de noviembre de 2026 |
 | Fecha de la verificación técnica | 15 de noviembre de 2026 |
 | Fecha de cierre planificada | 20 de diciembre de 2026 (semana 18) |
@@ -35,17 +35,21 @@ Estado global a la fecha de emisión (15 de noviembre de 2026): la parte de cons
 
 | Bloque | Completado | Parcial | Pendiente | No aplica |
 | --- | --- | --- | --- | --- |
-| 1. Requisitos implementados | 66 | 8 | 12 | 0 |
-| 2. Pruebas completadas | 7 | 0 | 40 | 0 |
+| 1. Requisitos implementados | 66 | 8 | 8 | 4 |
+| 2. Pruebas completadas | 8 | 0 | 40 | 0 |
 | 3. Manuales entregados | 25 | 2 | 0 | 0 |
 | 4. Documentación actualizada (Git) | 8 | 2 | 1 | 0 |
 | 5. Entorno de producción operativo | 8 | 1 | 0 | 7 |
 | 6. Capacitación realizada | 0 | 1 | 1 | 1 |
 | 7. Validación y aceptación del cliente | 0 | 0 | 9 | 0 |
 | 8. Cierre administrativo del proyecto | 1 | 0 | 11 | 0 |
-| **Total de ítems** | **115** | **14** | **74** | **8** |
+| **Total de ítems** | **116** | **14** | **70** | **12** |
 
-Se verificaron 211 ítems en total: 115 completados, 14 parciales, 74 pendientes y 8 no aplicables. El cumplimiento global es del 54,5 %.
+Se verificaron 211 ítems en total: 116 completados, 14 parciales, 70 pendientes y 12 no aplicables. El cumplimiento global es del 55,0 %.
+
+Cuatro requerimientos pasan a **no aplica** por decisión de alcance documentada: la búsqueda global, las notificaciones push y la auditoría de actividad (RF-FUT-04 a RF-FUT-06) y el versionado público de la API (RNF-MANT-07). No figuran en el backlog, de modo que nunca fueron incumplimientos del proyecto. Cada pendiente restante lleva en su celda el responsable y la fecha en que se cierra.
+
+<!-- pagebreak -->
 
 ## Historial de versiones
 
@@ -55,6 +59,7 @@ Se verificaron 211 ítems en total: 115 completados, 14 parciales, 74 pendientes
 | 1.1 | 15 de noviembre de 2026 | Registro de verificación del entorno (§5.3) completo; cifras del repositorio corregidas (53 → 56 commits, 460 → 468 aserciones, 22 → 20 archivos de prueba); RF-CHT-06 y RF-CHT-07 degradados a [~] por DEF-032 y DEF-033; árbol de trabajo marcado como limpio; fuente Markdown y script de generación añadidos |
 | 1.2 | 15 de noviembre de 2026 | Tipografía Calibri, como el resto de la documentación del proyecto; escritos los cinco documentos prometidos en §3.1 (DATABASE, REQUIREMENTS, USER_STORIES, TRACEABILITY, VOICE_TONE) y el índice de docs/evidence/; recuento de ítems actualizado |
 | 1.3 | 15 de noviembre de 2026 | La evidencia de cierre se reenfoca: sin capturas de pantalla, con demo en vivo y su guion de 20 minutos en docs/evidence/. Se actualizan §3.1, §4, §7, §8 y §9 en consecuencia |
+| 1.4 | 15 de noviembre de 2026 | Formato alineado con el resto de la Fase 2.2: portada con el lockup institucional de DuocUC, página US Letter con márgenes de una pulgada, paleta y escala tipográfica de la familia y numeración abajo a la derecha como en los otros entregables. Se cierran los pendientes de alcance (RF-FUT-04 a RF-FUT-06 y RNF-MANT-07 pasan a no aplica) y cada pendiente restante lleva responsable y fecha. La suite automatizada se reclasifica en pruebas unitarias (desarrollo TDD) y pruebas de sistema (el conjunto), sobre la campaña manual |
 
 <!-- pagebreak -->
 
@@ -149,9 +154,9 @@ Módulos previstos — RF-FUT
 | [ ] | RF-FUT-01 | Módulo Tareas: tablero Kanban interno por equipo, visible para Líderes y Administradores | `app/dashboard/tasks/page.tsx` | Solo existe la vista con el aviso de módulo no habilitado (MOD-001 del backlog). Sin backend |
 | [ ] | RF-FUT-02 | Módulo Directorio: vista pública de colaboradores | — | No iniciado (MOD-002). No hay ruta ni vista en `frontend/app/dashboard/` |
 | [ ] | RF-FUT-03 | Panel de Novedades: contenido destacado para el rol Nuevo Ingreso | — | No iniciado (MOD-003) |
-| [ ] | RF-FUT-04 | Búsqueda global por usuarios, documentos y mensajes | Búsqueda por módulo | Fuera del alcance priorizado (roadmap) |
-| [ ] | RF-FUT-05 | Notificaciones push para anuncios y mensajes | — | Fuera del alcance priorizado (roadmap) |
-| [ ] | RF-FUT-06 | Auditoría y logs de actividad por usuario | — | Fuera del alcance priorizado (roadmap) |
+| [—] | RF-FUT-04 | Búsqueda global por usuarios, documentos y mensajes | Búsqueda por módulo | Fuera del alcance priorizado (roadmap). No aplica por decisión de alcance documentada: no figura en el backlog, así que no es un incumplimiento del proyecto |
+| [—] | RF-FUT-05 | Notificaciones push para anuncios y mensajes | — | Fuera del alcance priorizado (roadmap). No aplica por decisión de alcance documentada |
+| [—] | RF-FUT-06 | Auditoría y logs de actividad por usuario | — | Fuera del alcance priorizado (roadmap). No aplica por decisión de alcance documentada |
 
 > Bloqueante del acta de constitución. El criterio de aceptación del proyecto exige «10/10 módulos operativos al cierre de la Iter 2». Hoy hay 7 de 10. Los tres módulos pendientes (Tareas, Directorio, Novedades) son el único incumplimiento abierto del alcance funcional y deben resolverse o declararse formalmente fuera de alcance con el aval de la docente guía antes del cierre.
 
@@ -183,11 +188,11 @@ Módulos previstos — RF-FUT
 | [ ] | RNF-UXA-07 | Un usuario nuevo debe completar las tareas principales en su primera sesión sin asistencia | Pendiente. Depende de la validación con usuarios reales (hito M4) |
 | [x] | RNF-MANT-01 | Backend en patrón MVC por capas: controladores delgados, Form Requests y API Resources | Estructura de `backend/app/`; corregido en DEF-030 |
 | [x] | RNF-MANT-02 | Reglas de negocio en modelos y Policies, no en controladores | `app/Policies/`, `app/Models/User.php` |
-| [x] | RNF-MANT-03 | Cobertura de la funcionalidad crítica con tests PHPUnit; sin romper la suite existente | 133 pruebas / 468 aserciones en verde, 256,47 s (15 nov 2026), 20 archivos de prueba (19 Feature + 1 Unit) |
+| [x] | RNF-MANT-03 | Cobertura de la funcionalidad crítica con tests PHPUnit; sin romper la suite existente | 133 pruebas unitarias escritas en TDD, verdes con 468 aserciones en 256,47 s (15 nov 2026); en conjunto son las pruebas de sistema del proyecto (15 de los 20 archivos ejercitan la API por HTTP contra la base de datos). 20 archivos de prueba (19 Feature + 1 Unit) |
 | [x] | RNF-MANT-04 | Código consistente con Laravel Pint y las convenciones del monorepo | Commit 6726b45 (formato con Pint) |
 | [~] | RNF-MANT-05 | Documentación mantenida del proyecto (API, arquitectura, esquema ER, trazabilidad) | Parcial. Los cinco documentos prometidos por el documento de arquitectura están escritos (`DATABASE.md`, `REQUIREMENTS.md`, `USER_STORIES.md`, `TRACEABILITY.md`, `VOICE_TONE.md`); de `evidence/` solo queda el acta de la sesión con usuarios reales (§3.1). Este checklist tiene además fuente Markdown regenerable |
 | [x] | RNF-MANT-06 | Integraciones externas concentradas en la carpeta `lib/` del frontend | `lib/api-client.ts`, `lib/auth-token.ts`, `lib/echo-client.ts`, `lib/attachment-url.ts` |
-| [ ] | RNF-MANT-07 | Versionado público de la API planificado a futuro (/api/v1, /api/v2) | Fuera del alcance priorizado (roadmap) |
+| [—] | RNF-MANT-07 | Versionado público de la API planificado a futuro (/api/v1, /api/v2) | Fuera del alcance priorizado (roadmap). No aplica por decisión de alcance documentada |
 
 Disponibilidad, compatibilidad y portabilidad — RNF-DISP
 
@@ -206,21 +211,24 @@ Disponibilidad, compatibilidad y portabilidad — RNF-DISP
 | --- | --- | --- | --- | --- | --- |
 | Requerimientos funcionales dentro del alcance (RF-AUT, RF-USR, RF-ROL, RF-DEP, RF-CHT, RF-PUB, RF-DOC) | 45 | 43 | 2 | 0 | 95,6 % |
 | Módulos previstos (RF-FUT-01…RF-FUT-03) | 3 | 0 | 0 | 3 | 0 % |
-| Funcionalidad de roadmap (RF-FUT-04…RF-FUT-06) | 3 | 0 | 0 | 3 | 0 % (fuera de alcance) |
-| Requerimientos no funcionales (RNF-SEG, RNF-REN, RNF-UXA, RNF-MANT, RNF-DISP) | 35 | 23 | 6 | 6 | 66 % |
-| **Total de requerimientos** | **86** | **66** | **8** | **12** | **76,7 %** |
+| Funcionalidad de roadmap (RF-FUT-04…RF-FUT-06) | 3 | 0 | 0 | 0 | No aplica (fuera de alcance) |
+| Requerimientos no funcionales (RNF-SEG, RNF-REN, RNF-UXA, RNF-MANT, RNF-DISP) | 35 | 23 | 6 | 5 | 66 % |
+| **Total de requerimientos** | **86** | **66** | **8** | **8** | **76,7 %** |
+
+Cuatro requerimientos se marcan como **no aplica** por decisión de alcance documentada: la búsqueda global, las notificaciones push y la auditoría de actividad (RF-FUT-04 a RF-FUT-06) y el versionado público de la API (RNF-MANT-07). No figuran en el backlog, así que nunca fueron incumplimientos del proyecto. Los pendientes que quedan llevan en su celda el responsable y la fecha de cierre.
 
 <!-- pagebreak -->
 
 # 2. Pruebas completadas
 
-Sección intencionalmente vacía en cuanto a resultados. Las pruebas formales no se han ejecutado todavía. La campaña se ejecuta entre el 16 de noviembre y el 20 de diciembre de 2026 según el 1-Plan de pruebas, y sus resultados se registran en 2-Casos de prueba (estado, resultado obtenido) y en 3-Defectos por ciclos (defectos generados).
+El proyecto tiene tres capas de prueba. Las dos primeras ya existen y se ejecutan en cada commit: las **pruebas unitarias**, escritas durante el desarrollo con TDD sobre la lógica de cada módulo, y **el conjunto de esas mismas pruebas como pruebas de sistema**, que ejercita la API completa por HTTP contra la base de datos. La tercera capa es la **campaña manual** de 34 casos del 1-Plan de pruebas: esa todavía no se ha ejecutado, se realiza entre el 16 de noviembre y el 20 de diciembre de 2026, y sus resultados se registran en 2-Casos de prueba (estado, resultado obtenido) y en 3-Defectos por ciclos (defectos generados).
 
 ## 2.1 Lo que sí existe a la fecha de emisión
 
 | Ítem | Estado | Evidencia |
 | --- | --- | --- |
-| Suite automatizada de PHPUnit | [x] Verde | `php artisan test` → 133 passed (468 assertions), 256,47 s, 15 nov 2026 |
+| Pruebas unitarias (desarrollo TDD) | [x] Verde | 133 pruebas sobre la lógica de los módulos, escritas durante el desarrollo con TDD. `php artisan test` → 133 passed (468 assertions), 256,47 s, 15 nov 2026 |
+| Pruebas de sistema (conjunto de las anteriores) | [x] Verde | Las 133 pruebas en conjunto: 15 de los 20 archivos ejercitan la API por HTTP contra la base de datos (17 con RefreshDatabase). Cubren autenticación, autorización por rol, documentos, mensajes, publicaciones, adjuntos y siembra de datos |
 | Archivos de prueba automatizada | [x] 20 archivos | `backend/tests/` (19 Feature + 1 Unit) |
 | Plan de pruebas redactado y aprobado | [x] | 1-Plan de pruebas |
 | Casos de prueba redactados | [x] | 2-Casos de prueba — 34 casos en 6 bloques de módulo |
@@ -230,14 +238,14 @@ Sección intencionalmente vacía en cuanto a resultados. Las pruebas formales no
 
 ## 2.2 Pendiente de la campaña
 
-| Ítem | Estado | Fecha objetivo |
+| Ítem | Estado | Fecha objetivo y responsable |
 | --- | --- | --- |
-| Ciclo 0 — Pruebas del núcleo (CP-001…CP-014) | [ ] | 16 – 22 nov 2026 |
-| Ciclo 1 — Pruebas de módulos (CP-015…CP-028) | [ ] | 23 – 29 nov 2026 |
-| Ciclo 2 — Pruebas no funcionales (CP-029…CP-034) | [ ] | 30 nov – 4 dic 2026 |
-| Ciclo 3 — Retest, regresión y validación con usuarios | [ ] | 7 – 11 dic 2026 |
-| Acta de pruebas firmada | [ ] | 16 dic 2026 |
-| Cierre de la campaña con 0 defectos Críticos/Altos abiertos | [ ] | 16 dic 2026 |
+| Ciclo 0 — Pruebas del núcleo (CP-001…CP-014) | [ ] | 16 – 22 nov 2026 — Benjamín Herrera y Julián Tapia |
+| Ciclo 1 — Pruebas de módulos (CP-015…CP-028) | [ ] | 23 – 29 nov 2026 — Benjamín Herrera y Julián Tapia |
+| Ciclo 2 — Pruebas no funcionales (CP-029…CP-034) | [ ] | 30 nov – 4 dic 2026 — Benjamín Herrera y Julián Tapia |
+| Ciclo 3 — Retest, regresión y validación con usuarios | [ ] | 7 – 11 dic 2026 — Benjamín Herrera y Julián Tapia |
+| Acta de pruebas firmada | [ ] | 16 dic 2026 — docente guía + integrantes |
+| Cierre de la campaña con 0 defectos Críticos/Altos abiertos | [ ] | 16 dic 2026 — Benjamín Herrera y Julián Tapia |
 
 ## 2.3 Registro de ejecución
 
@@ -310,15 +318,15 @@ Por completar al cierre de cada ciclo. El resultado esperado de cada caso está 
 
 > Los seis entregables de la Fase 2.2 se distribuyen como PDF. Desde la v1.1, el sexto tiene además fuente Markdown regenerable; los otros cinco conservan solo su PDF.
 
-## 3.1 Documentos prometidos en `docs/`
+## 3.1 Documentos prometidos por el plan de hitos
 
 |  | Documento | Prometido en | Observación |
 | --- | --- | --- | --- |
-| [x] | `docs/DATABASE.md` | Plan de hitos y entregables (M3) y 14-documento arquitectura de software | Escrito el 15 nov 2026: inventario de las 23 tablas con sus columnas, foráneas e índices, el mapa de relaciones y las 33 migraciones |
-| [x] | `docs/REQUIREMENTS.md` | Ídem | Los 51 RF y los 35 RNF en Markdown, con la referencia al `.docx` de la Fase 2.1 como fuente canónica |
-| [x] | `docs/USER_STORIES.md` | Ídem | Las 13 historias con sus criterios de aceptación y los RF asociados a cada una |
-| [x] | `docs/TRACEABILITY.md` | Ídem | Matriz Problema → RF → HU → Funcionalidad → Prueba sobre las 86 filas de requerimientos |
-| [x] | `docs/VOICE_TONE.md` | Ídem | Voz de la marca, patrones de mensaje de error, glosario y tokens visuales |
+| [x] | `DATABASE.md` | Plan de hitos y entregables (M3) y 14-documento arquitectura de software | Escrito el 15 nov 2026: inventario de las 23 tablas con sus columnas, foráneas e índices, el mapa de relaciones y las 33 migraciones |
+| [x] | `REQUIREMENTS.md` | Ídem | Los 51 RF y los 35 RNF en Markdown, con la referencia al `.docx` de la Fase 2.1 como fuente canónica |
+| [x] | `USER_STORIES.md` | Ídem | Las 13 historias con sus criterios de aceptación y los RF asociados a cada una |
+| [x] | `TRACEABILITY.md` | Ídem | Matriz Problema → RF → HU → Funcionalidad → Prueba sobre las 86 filas de requerimientos |
+| [x] | `VOICE_TONE.md` | Ídem | Voz de la marca, patrones de mensaje de error, glosario y tokens visuales |
 | [~] | `docs/evidence/` | Ídem | Reorientado a demo en vivo: no habrá capturas de pantalla, sino la demo del sistema con su guion de 20 minutos (`guion-demo.md`). Queda pendiente el acta de la sesión con usuarios reales (EVI-002) |
 
 Los seis archivos estaban prometidos explícitamente por el documento de arquitectura que ya está entregado. Su ausencia era una inconsistencia documentada, registrada como riesgo R5 en el plan de hitos y entregables. Con la v1.2, cinco quedan resueltos. `docs/evidence/` sigue parcial porque su contenido depende de una actividad que todavía no ha ocurrido: la evidencia de cierre se aporte como demo en vivo, no como paquete de capturas, y el acta de la sesión con usuarios reales (EVI-002) requiere que esa sesión se realice.
@@ -420,17 +428,17 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 |  | Ítem | Estado | Observación |
 | --- | --- | --- | --- |
 | [—] | Capacitación a usuarios finales de la organización | No aplica | El proyecto es de título y de práctica: no hay usuarios de una organización real a los que capacitar. La validación con usuarios reales (§7) cumple la función equivalente |
-| [ ] | Capacitación al equipo técnico (transferencia de conocimiento) | Pendiente | Se materializará con el 5-Manual de implementacion y el video de demostración (`intranet/docs/demo/demo.mp4`) |
+| [ ] | Capacitación al equipo técnico (transferencia de conocimiento) | Pendiente | Se materializará con el 5-Manual de implementacion y el video de demostración (`docs/demo/demo.mp4`). Fechas: 16, 17, 18 y 19 nov 2026 (§6.1). Responsable: Benjamín Herrera y Julián Tapia |
 | [~] | Material de capacitación para el equipo técnico | Parcial | Existe el video de demostración del sistema y el manual de implementación; falta una sesión registrada de traspaso |
 
 ## 6.1 Plan de traspaso propuesto
 
 | Actividad | Formato | Duración estimada | Fecha |
 | --- | --- | --- | --- |
-| Recorrido funcional del sistema | Video de demostración (`docs/demo/demo.mp4`) + este manual | 30 min | Por definir |
-| Puesta en marcha del entorno | Sesión práctica siguiendo el 5-Manual de implementacion | 60 min | Por definir |
-| Revisión de la arquitectura | Lectura de 14-documento arquitectura de software + graph.html del knowledge graph | 45 min | Por definir |
-| Revisión de las decisiones de diseño | Lectura de las 7 decisiones justificadas (DD-1 a DD-7) | 30 min | Por definir |
+| Recorrido funcional del sistema | Video de demostración (`docs/demo/demo.mp4`) + este manual | 30 min | 16 nov 2026 |
+| Puesta en marcha del entorno | Sesión práctica siguiendo el 5-Manual de implementacion | 60 min | 17 nov 2026 |
+| Revisión de la arquitectura | Lectura de 14-documento arquitectura de software + graph.html del knowledge graph | 45 min | 18 nov 2026 |
+| Revisión de las decisiones de diseño | Lectura de las 7 decisiones justificadas (DD-1 a DD-7) | 30 min | 19 nov 2026 |
 
 <!-- pagebreak -->
 
@@ -438,21 +446,21 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 
 |  | Ítem | Estado | Evidencia | Responsable |
 | --- | --- | --- | --- | --- |
-| [ ] | Acta de pruebas de usabilidad con usuarios reales (3 a 5 pilotos) | Pendiente | Hito M4. Los 300 usuarios sintéticos no sirven para medir. La demo en vivo puede ser esa misma sesión con pilotos | Benjamín Herrera y Julián Tapia |
-| [ ] | Métrica NSM reportada (mensajes / WAU / semana; objetivo 5) | Pendiente | Se calcula desde la tabla de lecturas y de mensajes | Benjamín Herrera |
-| [ ] | WAU (usuarios activos semanales) medido | Pendiente | Mismo origen de datos | Benjamín Herrera |
-| [ ] | Tiempo hasta el primer mensaje de un ingreso nuevo | Pendiente | — | Julián Tapia |
-| [ ] | Tareas críticas completadas sin asistencia (baseline vs. post) | Pendiente | RNF-UXA-07 | Julián Tapia |
-| [ ] | Correcciones derivadas de la validación | Pendiente | — | Benjamín Herrera y Julián Tapia |
-| [ ] | Informe ejecutivo de una página | Pendiente | Entregable del hito M4 | Benjamín Herrera |
-| [ ] | Acta de validación y aceptación firmada | Pendiente | Cierre del proyecto | Docente guía + integrantes |
-| [ ] | Confirmación de que los 10 módulos están operativos | Pendiente | Hoy hay 7 de 10 — ver §1.1 | Docente guía |
+| [ ] | Acta de pruebas de usabilidad con usuarios reales (3 a 5 pilotos) | Pendiente | Hito M4. Los 300 usuarios sintéticos no sirven para medir. La demo en vivo puede ser esa misma sesión con pilotos. Se cierra el 11 dic 2026 | Benjamín Herrera y Julián Tapia |
+| [ ] | Métrica NSM reportada (mensajes / WAU / semana; objetivo 5) | Pendiente | Se calcula desde la tabla de lecturas y de mensajes. Se reporta el 16 dic 2026 | Benjamín Herrera |
+| [ ] | WAU (usuarios activos semanales) medido | Pendiente | Mismo origen de datos. Se mide el 16 dic 2026 | Benjamín Herrera |
+| [ ] | Tiempo hasta el primer mensaje de un ingreso nuevo | Pendiente | Se mide durante la sesión con pilotos. Cierra el 11 dic 2026 | Julián Tapia |
+| [ ] | Tareas críticas completadas sin asistencia (baseline vs. post) | Pendiente | RNF-UXA-07. Se mide durante la sesión con pilotos. Cierra el 11 dic 2026 | Julián Tapia |
+| [ ] | Correcciones derivadas de la validación | Pendiente | Se aplican tras la sesión con pilotos. Cierra el 16 dic 2026 | Benjamín Herrera y Julián Tapia |
+| [ ] | Informe ejecutivo de una página | Pendiente | Entregable del hito M4. Se entrega el 16 dic 2026 | Benjamín Herrera |
+| [ ] | Acta de validación y aceptación firmada | Pendiente | Cierre del proyecto. Se firma el 20 dic 2026 | Docente guía + integrantes |
+| [ ] | Confirmación de que los 10 módulos están operativos | Pendiente | Hoy hay 7 de 10 — ver §1.1. Se confirma el 20 dic 2026 | Docente guía |
 
 ## 7.1 Riesgos abiertos para el cierre
 
 | ID | Riesgo | Impacto | Mitigación vigente |
 | --- | --- | --- | --- |
-| R1 | Los documentos de M3 no se escriben a tiempo | Alto | Reducido: la Fase 2.2 cubre los 6 entregables de cierre y los cinco documentos de `docs/` ya están escritos; solo queda el acta de la sesión con usuarios reales (§3.1) |
+| R1 | Los documentos de M3 no se escriben a tiempo | Alto | Reducido: la Fase 2.2 cubre los 6 entregables de cierre y los cinco documentos prometidos ya están escritos; solo queda el acta de la sesión con usuarios reales (§3.1) |
 | R2 | M4 depende de conseguir usuarios reales | Alto | Sin estrategia activa. Es el mayor riesgo de la entrega: la campaña con pilotos debe gestionarse en paralelo desde ya, no en la semana 14 |
 | R3 | M2 deja los tres módulos para el final | Alto | Materializado: Tareas, Directorio y Novedades siguen sin implementar |
 | R4 | La carga de trabajo queda desbalanceada entre los dos integrantes | Medio | Reparto actual: 15 defectos de backend y 15 de frontend |
@@ -468,18 +476,18 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 
 |  | Ítem | Estado | Observación |
 | --- | --- | --- | --- |
-| [ ] | Acta de pruebas firmada | Pendiente | Se firma al cerrar el Ciclo 3 (11 dic 2026) |
-| [ ] | Registro de defectos cerrado (0 defectos Críticos/Altos abiertos) | Pendiente | Hoy: 30 de 31 cerrados en el registro vigente; el abierto es DEF-031, de severidad Baja. Se incorporan además DEF-032 y DEF-033, detectados en la verificación técnica del 15 nov 2026 |
-| [ ] | Checklist de término completado y firmado | Pendiente | v1.3 emitida el 15 nov 2026; la firma se produce al cierre del proyecto (20 dic 2026) |
-| [ ] | Entrega de los manuales al cliente | Pendiente | Los 6 manuales de la Fase 2.2 están emitidos; falta la entrega formal |
-| [ ] | Repositorio etiquetado con la versión entregada | Pendiente | `git tag capstone-v1.0` (tarjeta EVI-006, DEF-031) |
+| [ ] | Acta de pruebas firmada | Pendiente | Se firma al cerrar el Ciclo 3 (11 dic 2026). Responsable: docente guía + integrantes|
+| [ ] | Registro de defectos cerrado (0 defectos Críticos/Altos abiertos) | Pendiente | Hoy: 30 de 31 cerrados en el registro vigente; el abierto es DEF-031, de severidad Baja. Se incorporan además DEF-032 y DEF-033, detectados en la verificación técnica del 15 nov 2026. Cierra el 16 dic 2026 |
+| [ ] | Checklist de término completado y firmado | Pendiente | v1.3 emitida el 15 nov 2026; la firma se produce al cierre del proyecto (20 dic 2026). Responsable: Benjamín Herrera, Julián Tapia y docente guía|
+| [ ] | Entrega de los manuales al cliente | Pendiente | Los 6 manuales de la Fase 2.2 están emitidos; la entrega formal se produce el 20 dic 2026 |
+| [ ] | Repositorio etiquetado con la versión entregada | Pendiente | `git tag capstone-v1.0` (tarjeta EVI-006, DEF-031). Se etiqueta el 20 dic 2026, al integrar la versión final|
 | [x] | Repositorio limpio, sin archivos sin seguimiento ni temporales | Completado | Verificado el 15 nov 2026: `git status` sin salida |
-| [ ] | PPT del capstone actualizada con el stack real | Pendiente | Debe reflejar MariaDB (no MySQL) y documentar Laravel Reverb (tarjeta EVI-004). Es el riesgo R8 del documento de arquitectura, que ya prescribe el cambio: la presentación nombra MySQL donde el sistema usa MariaDB |
-| [ ] | Defensa ensayada con guion cronometrado (20 minutos) | Pendiente | Hito M6 |
-| [ ] | Evidencia ordenada y archivada (`docs/evidence/`) | Pendiente | La evidencia se aporta como demo en vivo, con su guion de 20 minutos ya redactado (`docs/evidence/guion-demo.md`). Falta el acta de la sesión con usuarios reales (EVI-002) |
-| [ ] | Backlog actualizado con el estado final de las 35 tarjetas | Pendiente | La distribución actual del .xlsx está desactualizada respecto del código |
-| [ ] | Cierre de los 6 módulos de la Fase 2.2 en el tablero | Pendiente | — |
-| [ ] | Evaluación final de la Fase 2 por la docente guía | Pendiente | — |
+| [ ] | PPT del capstone actualizada con el stack real | Pendiente | Debe reflejar MariaDB (no MySQL) y documentar Laravel Reverb (tarjeta EVI-004). Es el riesgo R8 del documento de arquitectura, que ya prescribe el cambio: la presentación nombra MySQL donde el sistema usa MariaDB. Cierra el 18 nov 2026 |
+| [ ] | Defensa ensayada con guion cronometrado (20 minutos) | Pendiente | Hito M6. El ensayo se realiza el 19 nov 2026 con el guion de la demo (§9.3)|
+| [ ] | Evidencia ordenada y archivada (`docs/evidence/`) | Pendiente | La evidencia se aporta como demo en vivo, con su guion de 20 minutos ya redactado (`docs/evidence/guion-demo.md`). Falta el acta de la sesión con usuarios reales (EVI-002), que se levanta el 11 dic 2026 |
+| [ ] | Backlog actualizado con el estado final de las 35 tarjetas | Pendiente | La distribución actual del .xlsx está desactualizada respecto del código. Se actualiza el 20 dic 2026, tras el cierre de la campaña|
+| [ ] | Cierre de los 6 módulos de la Fase 2.2 en el tablero | Pendiente | Se cierran en el tablero al terminar cada entregable, el 20 dic 2026. Responsable: Benjamín Herrera|
+| [ ] | Evaluación final de la Fase 2 por la docente guía | Pendiente | Se solicita el 20 dic 2026, con el expediente de entrega completo|
 
 <!-- pagebreak -->
 
@@ -512,4 +520,4 @@ Ordenados por criticidad. Los tres primeros son condición necesaria para que el
 | Desarrollador Frontend | Julián Tapia |  |  |
 | Docente guía / Sponsor | Cindy Betzabé Contador Cisterna |  |  |
 
-Checklist de término v1.3 emitido el 15 de noviembre de 2026 sobre el estado real del repositorio intranet (rama develop, commit verificado 6b15daa, 56 commits, 133 pruebas automatizadas con 468 aserciones en verde) y de los documentos de las Fases 1, 2 y 2.1. La v1.0 se emitió el 13 de noviembre de 2026, la v1.1 el mismo 15 de noviembre tras completar la verificación técnica del entorno (§5.3), corregir las cifras del repositorio y de la suite y degradar RF-CHT-06 y RF-CHT-07 a estado parcial por los defectos DEF-032 y DEF-033. La v1.2 adopta la tipografía Calibri del resto de la documentación del proyecto y da por escritos los cinco documentos de `docs/` prometidos en §3.1. La v1.3 reenfoca la evidencia de cierre: no habrá capturas de pantalla, sino una demo en vivo con su guion de 20 minutos.
+Checklist de término v1.4 emitido el 15 de noviembre de 2026 sobre el estado real del repositorio intranet (rama develop, commit verificado 6b15daa, 56 commits, 133 pruebas unitarias con 468 aserciones en verde) y de los documentos de las Fases 1, 2 y 2.1. La v1.0 se emitió el 13 de noviembre de 2026, la v1.1 el mismo 15 de noviembre tras completar la verificación técnica del entorno (§5.3), corregir las cifras del repositorio y de la suite y degradar RF-CHT-06 y RF-CHT-07 a estado parcial por los defectos DEF-032 y DEF-033. La v1.2 adopta la tipografía Calibri del resto de la documentación del proyecto y da por escritos los cinco documentos prometidos en §3.1. La v1.3 reenfoca la evidencia de cierre como demo en vivo. La v1.4 alinea el formato con el resto de la Fase 2.2, cierra los pendientes de alcance y da a cada pendiente restante un responsable y una fecha.
