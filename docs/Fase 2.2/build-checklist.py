@@ -79,6 +79,7 @@ FONT_PATHS = {
 # La primera columna, cuando existe, es la marca de estado sin encabezado.
 COL_WIDTHS = {
     ("Campo", "Detalle"): [0.26, 0.74],
+    ("Versión", "Fecha", "Cambios"): [0.12, 0.18, 0.70],
     ("Bloque", "Completado", "Parcial", "Pendiente", "No aplica"): [0.40, 0.15, 0.15, 0.15, 0.15],
     ("Marca", "Significado"): [0.16, 0.84],
     ("Cambio", "Detalle"): [0.28, 0.72],
