@@ -55,6 +55,26 @@ DATE = "15 de noviembre de 2026"
 DOC_TYPE = "academic"
 ACCENT = "#1C4FA3"
 
+# ── Tipografía ───────────────────────────────────────────────────────────────
+# Una sola variable cambia la familia tipográfica de todo el documento (la
+# portada HTML y el cuerpo ReportLab). El PDF original de la Fase 2.2 usaba
+# Arial 11 pt con Consolas para el código; aquí se usa Calibri, que es lo
+# pedido, y se deja el cambio a una línea si se prefiere otra familia.
+FONT_FAMILY = "Calibri"
+CODE_FAMILY = "Consolas"
+
+_FONTS = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
+
+FONT_PATHS = {
+    "Calibri":            _FONTS / "calibri.ttf",
+    "Calibri-Bold":       _FONTS / "calibrib.ttf",
+    "Calibri-Italic":     _FONTS / "calibrii.ttf",
+    "Calibri-BoldItalic": _FONTS / "calibriz.ttf",
+    "Calibri-Light":      _FONTS / "calibril.ttf",
+    "Consolas":           _FONTS / "consola.ttf",
+    "Consolas-Bold":      _FONTS / "consolab.ttf",
+}
+
 # Anchos de columna por firma de encabezados (fracciones que suman 1.0).
 # La primera columna, cuando existe, es la marca de estado sin encabezado.
 COL_WIDTHS = {
@@ -63,7 +83,7 @@ COL_WIDTHS = {
     ("Marca", "Significado"): [0.16, 0.84],
     ("Cambio", "Detalle"): [0.28, 0.72],
     ("Contenido", "Página"): [0.88, 0.12],
-    ("", "ID", "Requerimiento", "Módulo o archivo", "Evidencia"): [0.06, 0.15, 0.22, 0.24, 0.33],
+    ("", "ID", "Requerimiento", "Módulo o archivo", "Evidencia"): [0.06, 0.15, 0.22, 0.26, 0.31],
     ("", "ID", "Requerimiento", "Evidencia / observación"): [0.07, 0.18, 0.37, 0.38],
     ("", "Ítem", "Estado", "Evidencia"): [0.06, 0.36, 0.14, 0.44],
     ("", "Ítem", "Estado", "Fecha objetivo"): [0.06, 0.56, 0.14, 0.24],
@@ -205,6 +225,28 @@ def _decorate(self, canv, doc):
 
 render_body.BeautifulDoc._decorate = _decorate
 
+# La skill re-registra los nombres estándar (Helvetica, Times, Courier…) como
+# alias de la fuente elegida, pero no declara la familia de la fuente propia.
+# Sin esto, el énfasis <b> dentro de un párrafo en Calibri caería a Helvetica.
+_orig_register_fonts = render_body.register_fonts
+
+
+def _register_fonts(tokens):
+    from reportlab.pdfbase import pdfmetrics
+
+    _orig_register_fonts(tokens)
+    body = tokens.get("font_body_rl", FONT_FAMILY)
+    pdfmetrics.registerFontFamily(
+        body,
+        normal=body,
+        bold=tokens.get("font_body_b_rl", body),
+        italic=tokens.get("font_code_rl", body),
+        boldItalic=tokens.get("font_body_b_rl", body),
+    )
+
+
+render_body.register_fonts = _register_fonts
+
 
 # ── Construcción de bloques ───────────────────────────────────────────────────
 def _rl_markup(text: str) -> str:
@@ -215,6 +257,10 @@ def _rl_markup(text: str) -> str:
     énfasis y el código a marcado de ReportLab. Los fragmentos de código se
     apartan antes de buscar énfasis: su contenido puede traer asteriscos
     (por ejemplo `Access-Control-Allow-Origin: *`) que no son énfasis.
+
+    El fragmento de código se emite con el nombre real de la fuente —no con
+    el alias "Courier" de ReportLab: ese alias resuelve por familia y acaba
+    cayendo en la negrita de Calibri.
     """
     codes: list[str] = []
 
@@ -227,7 +273,7 @@ def _rl_markup(text: str) -> str:
     text = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"<i>\1</i>", text)
     text = re.sub(
         "\ue001(\\d+)\ue001",
-        lambda m: f'<font name="Courier">{codes[int(m.group(1))]}</font>',
+        lambda m: f'<font name="{CODE_FAMILY}">{codes[int(m.group(1))]}</font>',
         text,
     )
     return text
@@ -285,9 +331,23 @@ def split_toc(blocks: list):
     return None, None, blocks
 
 
+def _strip_markup(text: str) -> str:
+    """Texto legible de un título que puede traer marcado de ReportLab.
+
+    Los títulos se indexan y se buscan en el PDF por su texto plano: si
+    llevan un fragmento de código, el marcado hay que retirarlo antes de
+    comparar.
+    """
+    t = re.sub(r"<font[^>]*>", "", text)
+    for tag in ("</font>", "<b>", "</b>", "<i>", "</i>"):
+        t = t.replace(tag, "")
+    return t.replace("`", "").strip()
+
+
 def collect_headings(blocks: list) -> list:
     """Títulos de nivel 1 y 2 que figuran en el índice."""
-    return [(b["type"], b["text"]) for b in blocks if b.get("type") in ("h1", "h2")]
+    return [(b["type"], _strip_markup(b["text"]))
+            for b in blocks if b.get("type") in ("h1", "h2")]
 
 
 def build_toc_table(headings: list, page_map: dict) -> dict:
@@ -367,6 +427,21 @@ def main() -> int:
         accent_override=ACCENT,
     )
     tokens["subtitle"] = SUBTITLE
+
+    # Tipografía: Calibri en todo el documento (portada y cuerpo) y Consolas
+    # para el código, igual que en el resto de la documentación del proyecto.
+    missing = [n for n, p in FONT_PATHS.items() if not p.exists()]
+    if missing:
+        sys.exit(f"Faltan archivos de fuente en {_FONTS}: {', '.join(missing)}")
+    tokens["font_paths"] = {n: str(p) for n, p in FONT_PATHS.items()}
+    tokens["font_body_rl"] = FONT_FAMILY
+    tokens["font_body_b_rl"] = f"{FONT_FAMILY}-Bold"
+    tokens["font_display_rl"] = f"{FONT_FAMILY}-Bold"
+    tokens["font_code_rl"] = CODE_FAMILY
+    tokens["font_display"] = FONT_FAMILY
+    tokens["font_body"] = FONT_FAMILY
+    tokens["gfonts_import"] = ""  # sin Google Fonts: todo es local
+
     (workdir / "tokens.json").write_text(
         json.dumps(tokens, indent=2, ensure_ascii=False), encoding="utf-8")
 

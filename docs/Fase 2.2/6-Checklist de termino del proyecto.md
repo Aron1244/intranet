@@ -10,7 +10,7 @@
 | --- | --- |
 | Proyecto | Coherev — Sistema de Intranet Corporativa |
 | Etapa | Fase 2.2 — Cierre de proyecto |
-| Versión | 1.1 |
+| Versión | 1.2 |
 | Fecha de emisión | 15 de noviembre de 2026 |
 | Fecha de la verificación técnica | 15 de noviembre de 2026 |
 | Fecha de cierre planificada | 20 de diciembre de 2026 (semana 18) |
@@ -37,26 +37,23 @@ Estado global a la fecha de emisión (15 de noviembre de 2026): la parte de cons
 | --- | --- | --- | --- | --- |
 | 1. Requisitos implementados | 66 | 8 | 12 | 0 |
 | 2. Pruebas completadas | 7 | 0 | 40 | 0 |
-| 3. Manuales entregados | 20 | 1 | 6 | 0 |
+| 3. Manuales entregados | 25 | 2 | 0 | 0 |
 | 4. Documentación actualizada (Git) | 8 | 2 | 1 | 0 |
 | 5. Entorno de producción operativo | 8 | 1 | 0 | 7 |
 | 6. Capacitación realizada | 0 | 1 | 1 | 1 |
 | 7. Validación y aceptación del cliente | 0 | 0 | 9 | 0 |
 | 8. Cierre administrativo del proyecto | 1 | 0 | 11 | 0 |
-| **Total de ítems** | **110** | **13** | **80** | **8** |
+| **Total de ítems** | **115** | **14** | **74** | **8** |
 
-Se verificaron 211 ítems en total: 110 completados, 13 parciales, 80 pendientes y 8 no aplicables. El cumplimiento global es del 52,1 %.
+Se verificaron 211 ítems en total: 115 completados, 14 parciales, 74 pendientes y 8 no aplicables. El cumplimiento global es del 54,5 %.
 
-## Cambios respecto de la v1.0
+## Historial de versiones
 
-| Cambio | Detalle |
-| --- | --- |
-| Cifras del repositorio | 53 → 56 commits. El número de archivos de prueba de la v1.0 (22) era incorrecto: son 20 (19 Feature + 1 Unit). Las aserciones suben de 460 a 468 |
-| Registro de verificación del entorno | §5.3 estaba íntegramente vacío («Por completar»); ahora registra la verificación ejecutada el 15 de noviembre de 2026, con las incidencias detectadas |
-| RF-CHT-06 y RF-CHT-07 | Pasan de [x] a [~]: la entrega en tiempo real no se produce. Hallazgos DEF-032 y DEF-033 |
-| Árbol de trabajo | «Repositorio presentable sin archivos temporales» pasa de [ ] a [x] |
-| Bloqueos de §9 | Se retira el ítem de archivos sin seguimiento (resuelto) y se incorpora el realtime roto, que bloquea el Ciclo 1 de la campaña |
-| Trazabilidad de entregables | Se corrigen las rutas de los seis entregables de la Fase 2.2, que la v1.0 declaraba en formato Markdown inexistente, y se marca el plan de hitos como no versionado |
+| Versión | Fecha | Cambios |
+| --- | --- | --- |
+| 1.0 | 13 de noviembre de 2026 | Emisión inicial sobre el estado del repositorio a esa fecha |
+| 1.1 | 15 de noviembre de 2026 | Registro de verificación del entorno (§5.3) completo; cifras del repositorio corregidas (53 → 56 commits, 460 → 468 aserciones, 22 → 20 archivos de prueba); RF-CHT-06 y RF-CHT-07 degradados a [~] por DEF-032 y DEF-033; árbol de trabajo marcado como limpio; fuente Markdown y script de generación añadidos |
+| 1.2 | 15 de noviembre de 2026 | Tipografía Calibri, como el resto de la documentación del proyecto; escritos los cinco documentos prometidos en §3.1 (DATABASE, REQUIREMENTS, USER_STORIES, TRACEABILITY, VOICE_TONE) y el índice de docs/evidence/; recuento de ítems actualizado |
 
 <!-- pagebreak -->
 
@@ -293,7 +290,7 @@ Por completar al cierre de cada ciclo. El resultado esperado de cada caso está 
 | [x] | Registro de defectos por ciclos | `docs/Fase 2.2/3-Defectos por ciclos.pdf` | 31 defectos con ciclo, severidad, estado, responsable y evidencia |
 | [x] | Manual de usuario final | `docs/Fase 2.2/4-Manual de usuario final.pdf` | 15 capturas indicadas por vista, 13 procedimientos y 30 soluciones de problemas |
 | [x] | Manual de implementación | `docs/Fase 2.2/5-Manual de implementacion.pdf` | Infraestructura, instalación, variables, dependencias, verificación y rollback |
-| [x] | Checklist de término del proyecto | `docs/Fase 2.2/6-Checklist de termino del proyecto.md` y `.pdf` | Este documento (v1.1) |
+| [x] | Checklist de término del proyecto | `docs/Fase 2.2/6-Checklist de termino del proyecto.md` y `.pdf` | Este documento (v1.2) |
 | [x] | Documento de arquitectura de software | `docs/Fase 2.1/14-documento arquitectura de software.docx` | 15 secciones, modelo 4+1, 7 decisiones de diseño, 8 riesgos |
 | [x] | Requerimientos funcionales y no funcionales | `docs/Fase 2.1/8 y 9-requerimientos F y NF.docx` | 51 RF y 35 RNF numerados |
 | [x] | Historias de usuario | `docs/Fase 2.1/10-historias de usuario.docx` | 13 historias, 3 o más por rol |
@@ -312,18 +309,18 @@ Por completar al cierre de cada ciclo. El resultado esperado de cada caso está 
 
 > Los seis entregables de la Fase 2.2 se distribuyen como PDF. Desde la v1.1, el sexto tiene además fuente Markdown regenerable; los otros cinco conservan solo su PDF.
 
-## 3.1 Documentos prometidos y aún ausentes
+## 3.1 Documentos prometidos en `docs/`
 
 |  | Documento | Prometido en | Observación |
 | --- | --- | --- | --- |
-| [ ] | `docs/DATABASE.md` | Plan de hitos y entregables (M3) y 14-documento arquitectura de software | El diagrama ER y el esquema SQL ya existen; falta el documento que los explica |
-| [ ] | `docs/REQUIREMENTS.md` | Ídem | El contenido existe en el .docx de la Fase 2.1, pero no en el formato Markdown del repositorio |
-| [ ] | `docs/USER_STORIES.md` | Ídem | Ídem |
-| [ ] | `docs/TRACEABILITY.md` | Ídem | Matriz Problema → RF → HU → Funcionalidad → Prueba |
-| [ ] | `docs/VOICE_TONE.md` | Ídem | Voz y tono de la marca, glosario y reescritura de errores |
-| [ ] | `docs/evidence/` | Ídem | Acta de usabilidad y capturas del tablero |
+| [x] | `docs/DATABASE.md` | Plan de hitos y entregables (M3) y 14-documento arquitectura de software | Escrito el 15 nov 2026: inventario de las 23 tablas con sus columnas, foráneas e índices, el mapa de relaciones y las 33 migraciones |
+| [x] | `docs/REQUIREMENTS.md` | Ídem | Los 51 RF y los 35 RNF en Markdown, con la referencia al `.docx` de la Fase 2.1 como fuente canónica |
+| [x] | `docs/USER_STORIES.md` | Ídem | Las 13 historias con sus criterios de aceptación y los RF asociados a cada una |
+| [x] | `docs/TRACEABILITY.md` | Ídem | Matriz Problema → RF → HU → Funcionalidad → Prueba sobre las 86 filas de requerimientos |
+| [x] | `docs/VOICE_TONE.md` | Ídem | Voz de la marca, patrones de mensaje de error, glosario y tokens visuales |
+| [~] | `docs/evidence/` | Ídem | El índice de la carpeta existe y detalla qué evidencia debe incorporarse y en qué formato. Faltan las capturas del tablero (EVI-001) y el acta de usabilidad (EVI-002) |
 
-Estos seis archivos están prometidos explícitamente por el documento de arquitectura que ya está entregado. Su ausencia es una inconsistencia documentada, registrada como riesgo R5 en el plan de hitos y entregables.
+Los seis archivos estaban prometidos explícitamente por el documento de arquitectura que ya está entregado. Su ausencia era una inconsistencia documentada, registrada como riesgo R5 en el plan de hitos y entregables. Con la v1.2, cinco quedan resueltos; `docs/evidence/` sigue parcial porque depende de actividades —capturas del tablero y sesión con usuarios reales— que todavía no se han realizado y que no se pueden documentar sin que ocurran.
 
 <!-- pagebreak -->
 
@@ -332,14 +329,14 @@ Estos seis archivos están prometidos explícitamente por el documento de arquit
 |  | Ítem | Estado | Evidencia |
 | --- | --- | --- | --- |
 | [x] | Repositorio Git único con `backend/` y `frontend/` | Completado | github.com/Aron1244/intranet |
-| [x] | Historial de commits trazable por tarjeta | Completado | 56 commits; el mensaje incluye el ID de la tarjeta (SEC-003: …, ROL-002: …, BRAND-…) |
+| [x] | Historial de commits trazable por tarjeta | Completado | 56 commits en el commit verificado (6b15daa); el mensaje incluye el ID de la tarjeta (SEC-003: …, ROL-002: …, BRAND-…) |
 | [x] | Convención de commits | Completado | Conventional Commits (feat, fix, docs, refactor, chore, build, test) |
 | [x] | Integración por pull request con revisión del otro integrante | Completado | PR #1 mergeado con revisión cruzada (fa11f34) |
-| [x] | Ramas de trabajo definidas | Completado | develop (activa, 56 commits) y main |
+| [x] | Ramas de trabajo definidas | Completado | develop (activa, 56 commits en el commit verificado) y main |
 | [x] | .gitignore correcto | Completado | node_modules/, graphify-out/, .env y artefactos de generación |
 | [x] | Knowledge graph del proyecto consultable | Completado | `graphify-out/` (local, regenerable); graph.json con ≈1670 nodos, 3006 aristas, 143 comunidades |
 | [~] | README raíz, BACKLOG.md y ROADMAP.md unificados con el nombre oficial | Parcial | El README raíz ya dice Coherev (commit bd23e73). No se pudo verificar BACKLOG.md ni ROADMAP.md: no existen como archivo Markdown en el repositorio, cuya fuente de verdad es Fase 2.1/11-product backlog.xlsx (tarjeta EVI-005) |
-| [~] | Documentación del repositorio en docs/ completa y coherente | Parcial | Faltan los 6 archivos del §3.1 |
+| [~] | Documentación del repositorio en docs/ completa y coherente | Parcial | Los cinco documentos de §3.1 están escritos; falta la evidencia de `docs/evidence/` (capturas del tablero y acta de usabilidad) |
 | [ ] | Etiqueta de versión capstone-v1.0 | Pendiente | `git tag` no devuelve ninguna etiqueta. Defecto DEF-031, abierto |
 | [x] | Repositorio presentable sin archivos temporales | Completado | Verificado el 15 nov 2026: árbol de trabajo limpio, sin archivos sin seguimiento (tarjeta EVI-006) |
 
@@ -348,12 +345,14 @@ Estos seis archivos están prometidos explícitamente por el documento de arquit
 | Dato | Valor |
 | --- | --- |
 | Rama activa | develop |
-| Commits en total | 56 |
+| Commits en total | 56 (en el commit verificado 6b15daa) |
 | Commits del período 17 ago – 15 nov 2026 | 56 |
 | Pull requests mergeados | 1 |
 | Etiquetas de versión | 0 |
 | Fecha de verificación | 15 de noviembre de 2026 |
 | Archivos sin seguimiento | Ninguno — árbol de trabajo limpio |
+
+El conteo de commits corresponde al commit verificado (6b15daa), no al HEAD del momento de leer este documento: el propio commit que publica el checklist añade commits al repositorio, de modo que fijar la cifra al HEAD la dejaría desactualizada de inmediato.
 
 <!-- pagebreak -->
 
@@ -452,7 +451,7 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 
 | ID | Riesgo | Impacto | Mitigación vigente |
 | --- | --- | --- | --- |
-| R1 | Los documentos de M3 no se escriben a tiempo | Alto | Reducido: la Fase 2.2 cubre los 6 entregables de cierre; faltan 6 archivos de docs/ (§3.1) |
+| R1 | Los documentos de M3 no se escriben a tiempo | Alto | Reducido: la Fase 2.2 cubre los 6 entregables de cierre y los cinco documentos de `docs/` ya están escritos; solo queda la evidencia de `docs/evidence/` (§3.1) |
 | R2 | M4 depende de conseguir usuarios reales | Alto | Sin estrategia activa. Es el mayor riesgo de la entrega: la campaña con pilotos debe gestionarse en paralelo desde ya, no en la semana 14 |
 | R3 | M2 deja los tres módulos para el final | Alto | Materializado: Tareas, Directorio y Novedades siguen sin implementar |
 | R4 | La carga de trabajo queda desbalanceada entre los dos integrantes | Medio | Reparto actual: 15 defectos de backend y 15 de frontend |
@@ -470,7 +469,7 @@ Incidencias detectadas en la verificación del 15 de noviembre de 2026
 | --- | --- | --- | --- |
 | [ ] | Acta de pruebas firmada | Pendiente | Se firma al cerrar el Ciclo 3 (11 dic 2026) |
 | [ ] | Registro de defectos cerrado (0 defectos Críticos/Altos abiertos) | Pendiente | Hoy: 30 de 31 cerrados en el registro vigente; el abierto es DEF-031, de severidad Baja. Se incorporan además DEF-032 y DEF-033, detectados en la verificación técnica del 15 nov 2026 |
-| [ ] | Checklist de término completado y firmado | Pendiente | v1.1 emitida el 15 nov 2026; la firma se produce al cierre del proyecto (20 dic 2026) |
+| [ ] | Checklist de término completado y firmado | Pendiente | v1.2 emitida el 15 nov 2026; la firma se produce al cierre del proyecto (20 dic 2026) |
 | [ ] | Entrega de los manuales al cliente | Pendiente | Los 6 manuales de la Fase 2.2 están emitidos; falta la entrega formal |
 | [ ] | Repositorio etiquetado con la versión entregada | Pendiente | `git tag capstone-v1.0` (tarjeta EVI-006, DEF-031) |
 | [x] | Repositorio limpio, sin archivos sin seguimiento ni temporales | Completado | Verificado el 15 nov 2026: `git status` sin salida |
@@ -494,7 +493,7 @@ Ordenados por criticidad. Los tres primeros son condición necesaria para que el
 | 3 | 34 casos de prueba sin ejecutar | Verificación | Ejecutar la campaña del 1-Plan de pruebas entre el 16 nov y el 20 dic | Benjamín Herrera y Julián Tapia |
 | 4 | Validación con usuarios reales sin gestionar | Evidencia | Conseguir 3 a 5 pilotos antes de la semana 14 y ejecutar la campaña | Benjamín Herrera y Julián Tapia |
 | 5 | Sin etiqueta de versión (DEF-031) | Entrega | `git tag capstone-v1.0` tras integrar la versión final | Benjamín Herrera |
-| 6 | 6 documentos de docs/ prometidos y ausentes | Documentación | Escribir DATABASE.md, REQUIREMENTS.md, USER_STORIES.md, TRACEABILITY.md, VOICE_TONE.md y evidence/ | Benjamín Herrera y Julián Tapia |
+| 6 | La evidencia de `docs/evidence/` sigue ausente (capturas del tablero y acta de usabilidad) | Documentación | Exportar el tablero real (EVI-001) y formalizar el acta de la sesión con usuarios reales (EVI-002) | Benjamín Herrera y Julián Tapia |
 | 7 | Accesibilidad WCAG AA sin auditoría con axe-core | Calidad | Declarar axe-core y ejecutar la auditoría (caso CP-033) | Julián Tapia |
 | 8 | Errores de formulario por campo pendientes (UX-003) | Calidad | Implementar el mapa de errores del servidor a cada input (caso CP-034) | Julián Tapia |
 | 9 | Nomenclatura anterior a Coherev en el backlog | Documentación | Unificar a Coherev (tarjeta EVI-005) | Benjamín Herrera y Julián Tapia |
@@ -512,4 +511,4 @@ Ordenados por criticidad. Los tres primeros son condición necesaria para que el
 | Desarrollador Frontend | Julián Tapia |  |  |
 | Docente guía / Sponsor | Cindy Betzabé Contador Cisterna |  |  |
 
-Checklist de término v1.1 emitido el 15 de noviembre de 2026 sobre el estado real del repositorio intranet (rama develop, commit 6b15daa, 56 commits, 133 pruebas automatizadas con 468 aserciones en verde) y de los documentos de las Fases 1, 2 y 2.1. La v1.0 se emitió el 13 de noviembre de 2026; esta versión incorpora la verificación técnica completa del entorno (§5.3), corrige las cifras del repositorio y de la suite automatizada, y degrada RF-CHT-06 y RF-CHT-07 a estado parcial por los defectos DEF-032 y DEF-033.
+Checklist de término v1.2 emitido el 15 de noviembre de 2026 sobre el estado real del repositorio intranet (rama develop, commit verificado 6b15daa, 56 commits, 133 pruebas automatizadas con 468 aserciones en verde) y de los documentos de las Fases 1, 2 y 2.1. La v1.0 se emitió el 13 de noviembre de 2026 y la v1.1 el mismo 15 de noviembre tras completar la verificación técnica del entorno (§5.3), corregir las cifras del repositorio y de la suite, y degradar RF-CHT-06 y RF-CHT-07 a estado parcial por los defectos DEF-032 y DEF-033. La v1.2 adopta la tipografía Calibri del resto de la documentación del proyecto y da por escritos los cinco documentos de `docs/` prometidos en §3.1.
